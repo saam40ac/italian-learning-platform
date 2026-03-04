@@ -343,7 +343,7 @@ app.post('/api/user/usage', authenticate, async (req, res) => {
 // ============================================
 
 app.post('/api/chat', authenticate, async (req, res) => {
-    const { message, conversation_history = [], session_type = 'conversation', level, topic } = req.body;
+    const { message, conversation_history = [], session_type = 'conversation', level, topic, tutor } = req.body;
 
     if (!message) {
         return res.status(400).json({ error: 'Messaggio richiesto' });
@@ -398,10 +398,11 @@ app.post('/api/chat', authenticate, async (req, res) => {
             [userLevel, userTopic]
         );
 
-        // Determina nome tutor in base alla sessione
-        const tutorName = session_type === 'grammar' ? 'Marco' : 'Sofia';
-        const tutorStyle = session_type === 'grammar' 
-            ? 'professionale ma amichevole, specializzato in grammatica italiana' 
+        // Determina nome tutor — priorità alla scelta esplicita del frontend
+        const selectedTutor = tutor || (session_type === 'grammar' ? 'marco' : 'sofia');
+        const tutorName  = selectedTutor === 'marco' ? 'Marco' : 'Sofia';
+        const tutorStyle = selectedTutor === 'marco'
+            ? 'professionale ma amichevole, specializzato in grammatica italiana'
             : 'calorosa e incoraggiante, esperta di conversazione';
 
         // Build enhanced system prompt (ITALIANO)
