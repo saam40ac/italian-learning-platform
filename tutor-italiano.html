@@ -1,0 +1,1214 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Impara Italiano AI — Sofia & Marco</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
+    <style>
+        /* ─── VARIABILI ─────────────────────────────── */
+        :root {
+            --verde:      #009246;
+            --verde-dark: #006f35;
+            --verde-pale: #e8f5ee;
+            --rosso:      #CE2B37;
+            --rosso-dark: #a52029;
+            --bianco:     #FFFFFF;
+            --avorio:     #fafaf7;
+            --grigio-100: #f4f4f2;
+            --grigio-200: #e8e8e5;
+            --grigio-400: #9a9a95;
+            --grigio-700: #3d3d3a;
+            --nero:       #1a1a17;
+            --shadow-sm:  0 1px 4px rgba(0,0,0,.08);
+            --shadow-md:  0 4px 16px rgba(0,0,0,.10);
+            --shadow-lg:  0 8px 32px rgba(0,0,0,.13);
+            --radius:     14px;
+            --radius-sm:  8px;
+            --transition: .2s cubic-bezier(.4,0,.2,1);
+        }
+
+        /* ─── RESET & BASE ──────────────────────────── */
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        html { height: 100%; font-size: 16px; }
+        body {
+            font-family: 'Lato', sans-serif;
+            background: var(--avorio);
+            color: var(--grigio-700);
+            height: 100%;
+            overflow: hidden;
+        }
+
+        /* ─── BANDIERA decorativa top ───────────────── */
+        .flag-strip {
+            height: 4px;
+            background: linear-gradient(to right,
+                var(--verde) 33.33%,
+                var(--bianco) 33.33% 66.66%,
+                var(--rosso) 66.66%);
+            position: fixed; top: 0; left: 0; width: 100%; z-index: 999;
+        }
+
+        /* ─── SCHERMATA LOGIN ────────────────────────── */
+        #loginScreen {
+            position: fixed; inset: 0;
+            background: linear-gradient(145deg, #0d4a28 0%, #006f35 40%, #009246 100%);
+            display: flex; align-items: center; justify-content: center;
+            z-index: 100;
+            padding-top: 4px;
+        }
+        #loginScreen::before {
+            content: '';
+            position: absolute; inset: 0;
+            background-image: radial-gradient(circle at 20% 80%, rgba(206,43,55,.15) 0%, transparent 50%),
+                              radial-gradient(circle at 80% 20%, rgba(255,255,255,.05) 0%, transparent 40%);
+        }
+
+        .login-card {
+            background: var(--bianco);
+            border-radius: 20px;
+            padding: 48px 44px;
+            width: 100%; max-width: 420px;
+            box-shadow: 0 24px 60px rgba(0,0,0,.25);
+            position: relative;
+            animation: slideUp .5s cubic-bezier(.4,0,.2,1) both;
+        }
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(24px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        .login-logo {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+        .login-logo .logo-flag {
+            display: flex; justify-content: center; gap: 4px; margin-bottom: 12px;
+        }
+        .login-logo .flag-bar {
+            width: 10px; height: 36px; border-radius: 3px;
+        }
+        .login-logo h1 {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.75rem; font-weight: 700;
+            color: var(--verde-dark);
+            line-height: 1.2;
+        }
+        .login-logo p {
+            font-size: .85rem; color: var(--grigio-400);
+            margin-top: 4px; letter-spacing: .03em;
+        }
+
+        .form-group { margin-bottom: 18px; }
+        .form-group label {
+            display: block;
+            font-size: .8rem; font-weight: 700; letter-spacing: .06em;
+            text-transform: uppercase; color: var(--grigio-700);
+            margin-bottom: 7px;
+        }
+        .form-group input {
+            width: 100%;
+            border: 1.5px solid var(--grigio-200);
+            border-radius: var(--radius-sm);
+            padding: 11px 14px;
+            font-family: 'Lato', sans-serif;
+            font-size: .95rem;
+            color: var(--nero);
+            background: var(--avorio);
+            transition: border-color var(--transition), box-shadow var(--transition);
+            outline: none;
+        }
+        .form-group input:focus {
+            border-color: var(--verde);
+            box-shadow: 0 0 0 3px rgba(0,146,70,.12);
+            background: #fff;
+        }
+
+        .btn-login {
+            width: 100%;
+            background: var(--verde);
+            color: #fff;
+            border: none; border-radius: var(--radius-sm);
+            padding: 13px;
+            font-family: 'Lato', sans-serif;
+            font-size: 1rem; font-weight: 700;
+            letter-spacing: .04em;
+            cursor: pointer;
+            transition: background var(--transition), transform var(--transition), box-shadow var(--transition);
+            margin-top: 8px;
+        }
+        .btn-login:hover  { background: var(--verde-dark); box-shadow: 0 4px 16px rgba(0,146,70,.3); transform: translateY(-1px); }
+        .btn-login:active { transform: translateY(0); }
+        .btn-login:disabled { opacity: .6; cursor: not-allowed; transform: none; }
+
+        .login-error {
+            background: #fff0f0; border: 1px solid #ffc7c7;
+            color: var(--rosso-dark); border-radius: var(--radius-sm);
+            padding: 10px 14px; font-size: .88rem;
+            margin-top: 14px; display: none;
+        }
+
+        /* ─── APP LAYOUT ─────────────────────────────── */
+        #app {
+            display: none;
+            height: 100vh;
+            padding-top: 4px;
+            flex-direction: column;
+        }
+        #app.visible { display: flex; }
+
+        /* ─── TOPBAR ─────────────────────────────────── */
+        .topbar {
+            background: var(--bianco);
+            border-bottom: 1px solid var(--grigio-200);
+            padding: 0 24px;
+            height: 60px;
+            display: flex; align-items: center; justify-content: space-between;
+            flex-shrink: 0;
+            box-shadow: var(--shadow-sm);
+        }
+        .topbar-brand {
+            display: flex; align-items: center; gap: 10px;
+        }
+        .topbar-brand .mini-flag {
+            display: flex; gap: 2px;
+        }
+        .topbar-brand .mini-flag span {
+            width: 6px; height: 20px; border-radius: 2px;
+        }
+        .topbar-brand h2 {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.1rem; font-weight: 700;
+            color: var(--verde-dark);
+        }
+
+        .topbar-user {
+            display: flex; align-items: center; gap: 16px;
+        }
+        .usage-badge {
+            background: var(--verde-pale);
+            border: 1px solid rgba(0,146,70,.2);
+            border-radius: 20px;
+            padding: 4px 12px;
+            font-size: .78rem; font-weight: 700;
+            color: var(--verde-dark);
+        }
+        .usage-badge.warning { background: #fff7e6; border-color: #f5a623; color: #b8720a; }
+        .usage-badge.danger  { background: #fff0f0; border-color: var(--rosso); color: var(--rosso-dark); }
+
+        .user-name {
+            font-size: .88rem; font-weight: 700; color: var(--grigio-700);
+        }
+        .btn-logout {
+            background: none; border: 1.5px solid var(--grigio-200);
+            border-radius: var(--radius-sm);
+            padding: 5px 12px;
+            font-family: 'Lato', sans-serif; font-size: .8rem; font-weight: 700;
+            color: var(--grigio-400); cursor: pointer;
+            transition: all var(--transition);
+        }
+        .btn-logout:hover { border-color: var(--rosso); color: var(--rosso); }
+
+        /* ─── MAIN AREA ──────────────────────────────── */
+        .main-area {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        /* ─── SIDEBAR ────────────────────────────────── */
+        .sidebar {
+            width: 280px; flex-shrink: 0;
+            background: var(--bianco);
+            border-right: 1px solid var(--grigio-200);
+            display: flex; flex-direction: column;
+            overflow-y: auto;
+        }
+
+        .sidebar-section {
+            padding: 20px;
+            border-bottom: 1px solid var(--grigio-100);
+        }
+        .sidebar-section h3 {
+            font-size: .7rem; font-weight: 700; letter-spacing: .1em;
+            text-transform: uppercase; color: var(--grigio-400);
+            margin-bottom: 14px;
+        }
+
+        /* ─── TUTOR CARDS ────────────────────────────── */
+        .tutor-card {
+            border: 2px solid var(--grigio-200);
+            border-radius: var(--radius);
+            padding: 14px;
+            cursor: pointer;
+            transition: all var(--transition);
+            margin-bottom: 10px;
+            display: flex; align-items: center; gap: 12px;
+        }
+        .tutor-card:last-child { margin-bottom: 0; }
+        .tutor-card:hover { border-color: var(--verde); background: var(--verde-pale); }
+        .tutor-card.active {
+            border-color: var(--verde);
+            background: var(--verde-pale);
+            box-shadow: 0 0 0 3px rgba(0,146,70,.12);
+        }
+
+        .tutor-avatar {
+            width: 46px; height: 46px;
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.5rem;
+            flex-shrink: 0;
+        }
+        .tutor-avatar.sofia { background: linear-gradient(135deg, #e8f5ee, #b8dfc8); }
+        .tutor-avatar.marco { background: linear-gradient(135deg, #e8f0ff, #b8cbff); }
+
+        .tutor-info h4 {
+            font-family: 'Playfair Display', serif;
+            font-size: 1rem; font-weight: 600;
+            color: var(--verde-dark);
+        }
+        .tutor-info p {
+            font-size: .78rem; color: var(--grigio-400); margin-top: 1px;
+        }
+        .tutor-info .badge-tipo {
+            display: inline-block;
+            background: var(--verde-pale);
+            border: 1px solid rgba(0,146,70,.25);
+            border-radius: 4px;
+            padding: 1px 6px;
+            font-size: .68rem; font-weight: 700;
+            color: var(--verde-dark);
+            text-transform: uppercase; letter-spacing: .04em;
+            margin-top: 4px;
+        }
+        .tutor-card.active .badge-tipo { background: #fff; }
+
+        /* ─── SESSION TYPE ────────────────────────────── */
+        .session-btns {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+        }
+        .btn-session {
+            border: 2px solid var(--grigio-200);
+            border-radius: var(--radius-sm);
+            padding: 9px 6px;
+            background: var(--bianco);
+            font-family: 'Lato', sans-serif;
+            font-size: .8rem; font-weight: 700;
+            color: var(--grigio-700);
+            cursor: pointer; text-align: center;
+            transition: all var(--transition);
+        }
+        .btn-session .icon { display: block; font-size: 1.2rem; margin-bottom: 3px; }
+        .btn-session:hover { border-color: var(--verde); color: var(--verde-dark); background: var(--verde-pale); }
+        .btn-session.active {
+            border-color: var(--verde); background: var(--verde);
+            color: #fff; box-shadow: 0 3px 10px rgba(0,146,70,.3);
+        }
+
+        /* ─── LIVELLO STUDENTE ────────────────────────── */
+        .level-display {
+            display: flex; align-items: center; justify-content: space-between;
+        }
+        .level-pill {
+            background: linear-gradient(135deg, var(--verde), var(--verde-dark));
+            color: #fff;
+            border-radius: 20px;
+            padding: 4px 14px;
+            font-size: .85rem; font-weight: 700;
+        }
+        .level-select {
+            border: 1.5px solid var(--grigio-200);
+            border-radius: var(--radius-sm);
+            padding: 5px 8px;
+            font-family: 'Lato', sans-serif; font-size: .82rem;
+            color: var(--grigio-700); background: var(--avorio);
+            cursor: pointer; outline: none;
+        }
+        .level-select:focus { border-color: var(--verde); }
+
+        /* ─── MATERIALI ──────────────────────────────── */
+        .material-item {
+            border: 1px solid var(--grigio-200);
+            border-radius: var(--radius-sm);
+            padding: 10px 12px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: all var(--transition);
+        }
+        .material-item:last-child { margin-bottom: 0; }
+        .material-item:hover { border-color: var(--verde); background: var(--verde-pale); }
+        .material-item h5 { font-size: .85rem; font-weight: 700; color: var(--grigio-700); }
+        .material-item span {
+            font-size: .73rem; color: var(--grigio-400);
+        }
+
+        /* ─── CHAT AREA ──────────────────────────────── */
+        .chat-area {
+            flex: 1;
+            display: flex; flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* ─── CHAT HEADER ────────────────────────────── */
+        .chat-header {
+            background: var(--bianco);
+            border-bottom: 1px solid var(--grigio-200);
+            padding: 16px 24px;
+            display: flex; align-items: center; justify-content: space-between;
+            flex-shrink: 0;
+        }
+        .chat-header-tutor {
+            display: flex; align-items: center; gap: 12px;
+        }
+        .active-tutor-avatar {
+            width: 40px; height: 40px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.4rem;
+        }
+        .active-tutor-avatar.sofia { background: linear-gradient(135deg, #e8f5ee, #b8dfc8); }
+        .active-tutor-avatar.marco { background: linear-gradient(135deg, #e8f0ff, #b8cbff); }
+        .active-tutor-info h3 {
+            font-family: 'Playfair Display', serif;
+            font-size: 1rem; font-weight: 600; color: var(--verde-dark);
+        }
+        .active-tutor-info p { font-size: .8rem; color: var(--grigio-400); }
+
+        .tts-status {
+            display: flex; align-items: center; gap: 8px;
+            font-size: .8rem; color: var(--grigio-400);
+        }
+        .tts-dot {
+            width: 8px; height: 8px; border-radius: 50%;
+            background: var(--grigio-200);
+        }
+        .tts-dot.active { background: var(--verde); animation: pulse 1.5s infinite; }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50%       { opacity: .6; transform: scale(1.3); }
+        }
+
+        /* ─── MESSAGES ───────────────────────────────── */
+        .messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 24px;
+            display: flex; flex-direction: column; gap: 18px;
+        }
+        .messages::-webkit-scrollbar { width: 6px; }
+        .messages::-webkit-scrollbar-track { background: transparent; }
+        .messages::-webkit-scrollbar-thumb { background: var(--grigio-200); border-radius: 3px; }
+
+        .message {
+            display: flex; gap: 12px;
+            animation: msgIn .25s ease both;
+        }
+        @keyframes msgIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+        .message.user { flex-direction: row-reverse; }
+
+        .msg-avatar {
+            width: 34px; height: 34px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1rem; flex-shrink: 0;
+        }
+        .msg-avatar.tutor { background: linear-gradient(135deg, #e8f5ee, #b8dfc8); }
+        .msg-avatar.user  { background: linear-gradient(135deg, #e8f0ff, #b8cbff); font-size: .8rem; font-weight: 700; color: #3d5af1; }
+
+        .msg-bubble {
+            max-width: 68%;
+            background: var(--bianco);
+            border: 1px solid var(--grigio-200);
+            border-radius: 16px;
+            padding: 12px 16px;
+            font-size: .92rem;
+            line-height: 1.6;
+            color: var(--grigio-700);
+            box-shadow: var(--shadow-sm);
+        }
+        .message.user .msg-bubble {
+            background: var(--verde);
+            border-color: var(--verde);
+            color: #fff;
+            border-radius: 16px 4px 16px 16px;
+        }
+        .message.tutor .msg-bubble {
+            border-radius: 4px 16px 16px 16px;
+        }
+
+        .msg-audio-btn {
+            display: inline-flex; align-items: center; gap: 5px;
+            margin-top: 8px;
+            background: var(--verde-pale);
+            border: 1px solid rgba(0,146,70,.2);
+            border-radius: 20px;
+            padding: 4px 10px;
+            font-size: .75rem; font-weight: 700; color: var(--verde-dark);
+            cursor: pointer; transition: all var(--transition);
+        }
+        .msg-audio-btn:hover { background: var(--verde); color: #fff; }
+
+        .typing-indicator {
+            display: flex; align-items: center; gap: 4px;
+            padding: 10px 14px;
+        }
+        .typing-indicator span {
+            width: 8px; height: 8px; border-radius: 50%;
+            background: var(--grigio-200);
+            animation: typing 1.2s infinite;
+        }
+        .typing-indicator span:nth-child(2) { animation-delay: .2s; }
+        .typing-indicator span:nth-child(3) { animation-delay: .4s; }
+        @keyframes typing {
+            0%, 60%, 100% { transform: translateY(0); background: var(--grigio-200); }
+            30%           { transform: translateY(-8px); background: var(--verde); }
+        }
+
+        /* ─── WELCOME MESSAGE ────────────────────────── */
+        .welcome-msg {
+            text-align: center;
+            padding: 40px 20px;
+        }
+        .welcome-msg .big-emoji { font-size: 3rem; margin-bottom: 16px; }
+        .welcome-msg h2 {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.5rem; font-weight: 700;
+            color: var(--verde-dark); margin-bottom: 8px;
+        }
+        .welcome-msg p { font-size: .92rem; color: var(--grigio-400); max-width: 360px; margin: 0 auto; }
+
+        /* ─── INPUT AREA ─────────────────────────────── */
+        .input-area {
+            background: var(--bianco);
+            border-top: 1px solid var(--grigio-200);
+            padding: 16px 24px;
+            flex-shrink: 0;
+        }
+        .input-row {
+            display: flex; gap: 10px; align-items: flex-end;
+        }
+        .input-wrapper {
+            flex: 1; position: relative;
+        }
+        textarea {
+            width: 100%;
+            border: 1.5px solid var(--grigio-200);
+            border-radius: var(--radius);
+            padding: 12px 16px;
+            font-family: 'Lato', sans-serif;
+            font-size: .95rem;
+            color: var(--nero);
+            background: var(--avorio);
+            resize: none; outline: none;
+            line-height: 1.5;
+            min-height: 48px; max-height: 140px;
+            transition: border-color var(--transition), box-shadow var(--transition);
+        }
+        textarea:focus {
+            border-color: var(--verde);
+            box-shadow: 0 0 0 3px rgba(0,146,70,.10);
+            background: #fff;
+        }
+        textarea::placeholder { color: var(--grigio-400); }
+
+        .btn-send {
+            width: 48px; height: 48px;
+            border-radius: 50%;
+            background: var(--verde);
+            color: #fff; border: none;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer;
+            transition: all var(--transition);
+            flex-shrink: 0;
+            font-size: 1.1rem;
+        }
+        .btn-send:hover  { background: var(--verde-dark); box-shadow: 0 4px 14px rgba(0,146,70,.35); transform: scale(1.05); }
+        .btn-send:active { transform: scale(.96); }
+        .btn-send:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+
+        .input-footer {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-top: 8px;
+        }
+        .input-hint { font-size: .75rem; color: var(--grigio-400); }
+
+        /* ─── NOTIFICATION TOAST ─────────────────────── */
+        .toast {
+            position: fixed; bottom: 24px; right: 24px;
+            background: var(--nero); color: #fff;
+            border-radius: var(--radius-sm);
+            padding: 12px 18px;
+            font-size: .88rem;
+            box-shadow: var(--shadow-lg);
+            z-index: 1000;
+            transform: translateY(80px);
+            opacity: 0;
+            transition: all .3s ease;
+        }
+        .toast.show { transform: translateY(0); opacity: 1; }
+        .toast.success { background: var(--verde-dark); }
+        .toast.error   { background: var(--rosso-dark); }
+
+        /* ─── LOADING OVERLAY ────────────────────────── */
+        .loading-overlay {
+            position: fixed; inset: 0;
+            background: rgba(255,255,255,.85);
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            z-index: 200; display: none;
+        }
+        .spinner {
+            width: 40px; height: 40px;
+            border: 3px solid var(--grigio-200);
+            border-top-color: var(--verde);
+            border-radius: 50%;
+            animation: spin .7s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* ─── RESPONSIVE ─────────────────────────────── */
+        @media (max-width: 768px) {
+            .sidebar { width: 240px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="flag-strip"></div>
+
+<!-- ═══════════════ LOGIN SCREEN ══════════════════ -->
+<div id="loginScreen">
+    <div class="login-card">
+        <div class="login-logo">
+            <div class="logo-flag">
+                <div class="flag-bar" style="background:#009246"></div>
+                <div class="flag-bar" style="background:#e0e0d8"></div>
+                <div class="flag-bar" style="background:#CE2B37"></div>
+            </div>
+            <h1>Impara Italiano AI</h1>
+            <p>Piattaforma Tutor Italiano — Sofia & Marco</p>
+        </div>
+
+        <div class="form-group">
+            <label>Email</label>
+            <input type="email" id="loginEmail" placeholder="tuonome@email.com" autocomplete="email">
+        </div>
+        <div class="form-group">
+            <label>Password</label>
+            <input type="password" id="loginPassword" placeholder="••••••••" autocomplete="current-password">
+        </div>
+
+        <button class="btn-login" id="btnLogin">Accedi</button>
+        <div class="login-error" id="loginError"></div>
+    </div>
+</div>
+
+<!-- ═══════════════ APP ═══════════════════════════ -->
+<div id="app">
+
+    <!-- TOPBAR -->
+    <div class="topbar">
+        <div class="topbar-brand">
+            <div class="mini-flag">
+                <span style="background:#009246"></span>
+                <span style="background:#e0e0d8"></span>
+                <span style="background:#CE2B37"></span>
+            </div>
+            <h2>Impara Italiano AI</h2>
+        </div>
+        <div class="topbar-user">
+            <div class="usage-badge" id="usageBadge">⏱ Caricamento...</div>
+            <span class="user-name" id="userName">—</span>
+            <button class="btn-logout" id="btnLogout">Esci</button>
+        </div>
+    </div>
+
+    <div class="main-area">
+
+        <!-- SIDEBAR -->
+        <div class="sidebar">
+
+            <!-- TUTOR SELECTION -->
+            <div class="sidebar-section">
+                <h3>Scegli il tuo tutor</h3>
+                <div class="tutor-card active" data-tutor="sofia" id="cardSofia">
+                    <div class="tutor-avatar sofia">👩‍🏫</div>
+                    <div class="tutor-info">
+                        <h4>Sofia</h4>
+                        <p>Conversazione Italiana</p>
+                        <span class="badge-tipo">Conversazione</span>
+                    </div>
+                </div>
+                <div class="tutor-card" data-tutor="marco" id="cardMarco">
+                    <div class="tutor-avatar marco">👨‍🏫</div>
+                    <div class="tutor-info">
+                        <h4>Marco</h4>
+                        <p>Esperto di Grammatica</p>
+                        <span class="badge-tipo">Grammatica</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SESSION TYPE -->
+            <div class="sidebar-section">
+                <h3>Tipo di sessione</h3>
+                <div class="session-btns">
+                    <button class="btn-session active" data-session="conversation">
+                        <span class="icon">💬</span>
+                        Conversazione
+                    </button>
+                    <button class="btn-session" data-session="grammar">
+                        <span class="icon">📖</span>
+                        Grammatica
+                    </button>
+                    <button class="btn-session" data-session="vocabulary">
+                        <span class="icon">📝</span>
+                        Vocabolario
+                    </button>
+                    <button class="btn-session" data-session="culture">
+                        <span class="icon">🏛️</span>
+                        Cultura
+                    </button>
+                </div>
+            </div>
+
+            <!-- LIVELLO -->
+            <div class="sidebar-section">
+                <h3>Livello italiano</h3>
+                <div class="level-display">
+                    <span class="level-pill" id="levelPill">A1</span>
+                    <select class="level-select" id="levelSelect">
+                        <option value="A1">A1 — Principiante</option>
+                        <option value="A2">A2 — Elementare</option>
+                        <option value="B1">B1 — Intermedio</option>
+                        <option value="B2">B2 — Intermedio+</option>
+                        <option value="C1">C1 — Avanzato</option>
+                        <option value="C2">C2 — Esperto</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- MATERIALI -->
+            <div class="sidebar-section">
+                <h3>Materiali Didattici</h3>
+                <div id="materialsList">
+                    <p style="font-size:.8rem;color:var(--grigio-400)">Caricamento...</p>
+                </div>
+            </div>
+
+        </div><!-- /sidebar -->
+
+        <!-- CHAT AREA -->
+        <div class="chat-area">
+
+            <!-- CHAT HEADER -->
+            <div class="chat-header">
+                <div class="chat-header-tutor">
+                    <div class="active-tutor-avatar sofia" id="activeAvatar">👩‍🏫</div>
+                    <div class="active-tutor-info">
+                        <h3 id="activeTutorName">Sofia</h3>
+                        <p id="activeTutorDesc">Conversazione Italiana — Tutor AI</p>
+                    </div>
+                </div>
+                <div class="tts-status">
+                    <div class="tts-dot" id="ttsDot"></div>
+                    <span id="ttsLabel">Audio pronto</span>
+                </div>
+            </div>
+
+            <!-- MESSAGES -->
+            <div class="messages" id="messages">
+                <div class="welcome-msg">
+                    <div class="big-emoji">🇮🇹</div>
+                    <h2>Benvenuto/a! Cominciamo!</h2>
+                    <p>Scegli il tuo tutor e scrivi un messaggio in italiano — o chiedi aiuto per iniziare!</p>
+                </div>
+            </div>
+
+            <!-- INPUT -->
+            <div class="input-area">
+                <div class="input-row">
+                    <div class="input-wrapper">
+                        <textarea
+                            id="msgInput"
+                            placeholder="Scrivi il tuo messaggio in italiano..."
+                            rows="1"
+                        ></textarea>
+                    </div>
+                    <button class="btn-send" id="btnSend" title="Invia messaggio">➤</button>
+                </div>
+                <div class="input-footer">
+                    <span class="input-hint">Premi Invio per inviare, Shift+Invio per andare a capo</span>
+                    <span class="input-hint" id="charCount">0 / 2000</span>
+                </div>
+            </div>
+
+        </div><!-- /chat-area -->
+
+    </div><!-- /main-area -->
+</div><!-- /app -->
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ──────────────────────────────────────────────────────
+// CONFIGURAZIONE
+// ──────────────────────────────────────────────────────
+const API_BASE = 'https://italian-learning-platform.onrender.com';
+// Cambia con il tuo URL Render dopo il deploy
+// const API_BASE = 'http://localhost:3001'; // per sviluppo locale
+
+// ──────────────────────────────────────────────────────
+// STATO APPLICAZIONE
+// ──────────────────────────────────────────────────────
+let state = {
+    token: localStorage.getItem('ital_token'),
+    user: null,
+    selectedTutor: 'sofia',
+    sessionType: 'conversation',
+    level: 'A1',
+    conversationHistory: [],
+    isLoading: false,
+    currentAudio: null,
+    sessionId: `session-${Date.now()}`
+};
+
+// ──────────────────────────────────────────────────────
+// UTILS
+// ──────────────────────────────────────────────────────
+const api = async (path, options = {}) => {
+    const res = await fetch(`${API_BASE}${path}`, {
+        headers: {
+            'Content-Type': 'application/json',
+            ...(state.token ? { Authorization: `Bearer ${state.token}` } : {})
+        },
+        ...options
+    });
+    if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: 'Errore di rete' }));
+        throw new Error(err.error || `HTTP ${res.status}`);
+    }
+    return res.json();
+};
+
+const showToast = (msg, type = '') => {
+    const el = document.getElementById('toast');
+    el.textContent = msg;
+    el.className = `toast ${type} show`;
+    setTimeout(() => el.classList.remove('show'), 3500);
+};
+
+// ──────────────────────────────────────────────────────
+// LOGIN
+// ──────────────────────────────────────────────────────
+document.getElementById('btnLogin').addEventListener('click', doLogin);
+document.getElementById('loginPassword').addEventListener('keydown', e => {
+    if (e.key === 'Enter') doLogin();
+});
+
+async function doLogin() {
+    const email    = document.getElementById('loginEmail').value.trim();
+    const password = document.getElementById('loginPassword').value;
+    const errEl    = document.getElementById('loginError');
+    const btn      = document.getElementById('btnLogin');
+
+    errEl.style.display = 'none';
+    if (!email || !password) {
+        errEl.textContent = 'Inserisci email e password.';
+        errEl.style.display = 'block';
+        return;
+    }
+
+    btn.disabled = true;
+    btn.textContent = 'Accesso in corso...';
+
+    try {
+        const data = await api('/api/auth/login', {
+            method: 'POST',
+            body: JSON.stringify({ email, password })
+        });
+        state.token = data.token;
+        state.user  = data.user;
+        localStorage.setItem('ital_token', data.token);
+        initApp();
+    } catch (err) {
+        errEl.textContent = err.message || 'Credenziali non valide.';
+        errEl.style.display = 'block';
+    } finally {
+        btn.disabled = false;
+        btn.textContent = 'Accedi';
+    }
+}
+
+// ──────────────────────────────────────────────────────
+// INIT APP
+// ──────────────────────────────────────────────────────
+async function initApp() {
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('app').classList.add('visible');
+
+    if (!state.user) {
+        try {
+            state.user = (await api('/api/user/profile')).user;
+        } catch {
+            logout();
+            return;
+        }
+    }
+
+    // Tutor admin → redirect
+    if (state.user.role === 'admin') {
+        showToast('Accesso admin — reindirizzo alla dashboard...', 'success');
+        setTimeout(() => window.location.href = 'admin-dashboard.html', 1500);
+        return;
+    }
+
+    document.getElementById('userName').textContent = state.user.name;
+    if (state.user.level) {
+        state.level = state.user.level;
+        document.getElementById('levelPill').textContent = state.user.level;
+        document.getElementById('levelSelect').value = state.user.level;
+    }
+
+    await refreshUsage();
+    await loadMaterials();
+}
+
+// Carica all'avvio se token presente
+if (state.token) {
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('app').classList.add('visible');
+    initApp();
+}
+
+// ──────────────────────────────────────────────────────
+// USAGE BADGE
+// ──────────────────────────────────────────────────────
+async function refreshUsage() {
+    try {
+        const u = await api('/api/user/usage');
+        const remaining = u.remaining_minutes;
+        const badge = document.getElementById('usageBadge');
+        badge.textContent = `⏱ ${Math.round(remaining)} min rimanenti`;
+
+        const pct = remaining / u.minutes_limit;
+        badge.className = 'usage-badge' + (pct < .1 ? ' danger' : pct < .25 ? ' warning' : '');
+    } catch {
+        document.getElementById('usageBadge').textContent = '⏱ —';
+    }
+}
+
+// ──────────────────────────────────────────────────────
+// MATERIALI
+// ──────────────────────────────────────────────────────
+async function loadMaterials() {
+    const container = document.getElementById('materialsList');
+    try {
+        const data = await api(`/api/materials?level=${state.level}`);
+        const mats = data.materials || [];
+        if (!mats.length) {
+            container.innerHTML = '<p style="font-size:.8rem;color:var(--grigio-400)">Nessun materiale per questo livello.</p>';
+            return;
+        }
+        container.innerHTML = mats.map(m => `
+            <div class="material-item" onclick="askAboutMaterial('${m.title.replace(/'/g,"\\'")}')">
+                <h5>${m.title}</h5>
+                <span>${m.level} — ${m.topic || m.category || 'Generale'}</span>
+            </div>
+        `).join('');
+    } catch {
+        container.innerHTML = '<p style="font-size:.8rem;color:var(--grigio-400)">Materiali non disponibili.</p>';
+    }
+}
+
+function askAboutMaterial(title) {
+    document.getElementById('msgInput').value = `Parliamo di "${title}". Puoi spiegarmi questo argomento?`;
+    document.getElementById('msgInput').focus();
+}
+
+// ──────────────────────────────────────────────────────
+// TUTOR SELECTION
+// ──────────────────────────────────────────────────────
+document.querySelectorAll('.tutor-card').forEach(card => {
+    card.addEventListener('click', () => {
+        document.querySelectorAll('.tutor-card').forEach(c => c.classList.remove('active'));
+        card.classList.add('active');
+        state.selectedTutor = card.dataset.tutor;
+        state.conversationHistory = [];
+
+        const isSofia = state.selectedTutor === 'sofia';
+        const avatar  = document.getElementById('activeAvatar');
+        avatar.className = `active-tutor-avatar ${state.selectedTutor}`;
+        avatar.textContent = isSofia ? '👩‍🏫' : '👨‍🏫';
+        document.getElementById('activeTutorName').textContent = isSofia ? 'Sofia' : 'Marco';
+        document.getElementById('activeTutorDesc').textContent = isSofia
+            ? 'Conversazione Italiana — Tutor AI'
+            : 'Esperto di Grammatica — Tutor AI';
+
+        clearMessages();
+    });
+});
+
+// ──────────────────────────────────────────────────────
+// SESSION TYPE
+// ──────────────────────────────────────────────────────
+document.querySelectorAll('.btn-session').forEach(btn => {
+    btn.addEventListener('click', () => {
+        document.querySelectorAll('.btn-session').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        state.sessionType = btn.dataset.session;
+    });
+});
+
+// ──────────────────────────────────────────────────────
+// LIVELLO
+// ──────────────────────────────────────────────────────
+document.getElementById('levelSelect').addEventListener('change', async e => {
+    state.level = e.target.value;
+    document.getElementById('levelPill').textContent = state.level;
+    await loadMaterials();
+});
+
+// ──────────────────────────────────────────────────────
+// MESSAGGI
+// ──────────────────────────────────────────────────────
+function clearMessages() {
+    document.getElementById('messages').innerHTML = `
+        <div class="welcome-msg">
+            <div class="big-emoji">🇮🇹</div>
+            <h2>Benvenuto/a! Cominciamo!</h2>
+            <p>Scrivi un messaggio per iniziare la conversazione con ${state.selectedTutor === 'sofia' ? 'Sofia' : 'Marco'}.</p>
+        </div>`;
+}
+
+function addMessage(role, text, showAudioBtn = false) {
+    const container = document.getElementById('messages');
+
+    // Rimuovi welcome se presente
+    const welcome = container.querySelector('.welcome-msg');
+    if (welcome) welcome.remove();
+
+    const isTutor = role === 'tutor';
+    const div = document.createElement('div');
+    div.className = `message ${isTutor ? 'tutor' : 'user'}`;
+    div.innerHTML = `
+        <div class="msg-avatar ${isTutor ? 'tutor' : 'user'}">${isTutor ? (state.selectedTutor === 'sofia' ? '👩‍🏫' : '👨‍🏫') : (state.user?.name?.charAt(0) || '👤')}</div>
+        <div class="msg-bubble">
+            ${text.replace(/\n/g, '<br>')}
+            ${isTutor && showAudioBtn ? `<div><button class="msg-audio-btn" onclick="playTTS(this, ${JSON.stringify(text)})">🔊 Ascolta</button></div>` : ''}
+        </div>`;
+    container.appendChild(div);
+    container.scrollTop = container.scrollHeight;
+}
+
+function addTyping() {
+    const container = document.getElementById('messages');
+    const div = document.createElement('div');
+    div.className = 'message tutor';
+    div.id = 'typingIndicator';
+    div.innerHTML = `
+        <div class="msg-avatar tutor">${state.selectedTutor === 'sofia' ? '👩‍🏫' : '👨‍🏫'}</div>
+        <div class="msg-bubble">
+            <div class="typing-indicator">
+                <span></span><span></span><span></span>
+            </div>
+        </div>`;
+    container.appendChild(div);
+    container.scrollTop = container.scrollHeight;
+}
+
+function removeTyping() {
+    const el = document.getElementById('typingIndicator');
+    if (el) el.remove();
+}
+
+// ──────────────────────────────────────────────────────
+// INVIO MESSAGGIO
+// ──────────────────────────────────────────────────────
+document.getElementById('btnSend').addEventListener('click', sendMessage);
+document.getElementById('msgInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage();
+    }
+});
+document.getElementById('msgInput').addEventListener('input', e => {
+    const len = e.target.value.length;
+    document.getElementById('charCount').textContent = `${len} / 2000`;
+    // Auto resize
+    e.target.style.height = 'auto';
+    e.target.style.height = Math.min(e.target.scrollHeight, 140) + 'px';
+});
+
+async function sendMessage() {
+    if (state.isLoading) return;
+    const input = document.getElementById('msgInput');
+    const text  = input.value.trim();
+    if (!text) return;
+
+    input.value = '';
+    input.style.height = 'auto';
+    document.getElementById('charCount').textContent = '0 / 2000';
+
+    addMessage('user', text);
+    state.conversationHistory.push({ role: 'user', content: text });
+
+    state.isLoading = true;
+    document.getElementById('btnSend').disabled = true;
+    addTyping();
+
+    try {
+        const data = await api('/api/chat', {
+            method: 'POST',
+            body: JSON.stringify({
+                message: text,
+                conversation_history: state.conversationHistory,
+                session_type: state.sessionType,
+                level: state.level,
+                topic: state.sessionType,
+                sessionId: state.sessionId
+            })
+        });
+
+        removeTyping();
+        const reply = data.response;
+        state.conversationHistory.push({ role: 'assistant', content: reply });
+        addMessage('tutor', reply, true);
+
+        // Auto-play TTS
+        autoPlayTTS(reply);
+
+        // Aggiorna usage
+        await refreshUsage();
+
+    } catch (err) {
+        removeTyping();
+        if (err.message.includes('Limite mensile')) {
+            addMessage('tutor', '⚠️ Hai raggiunto il limite mensile di minuti. Contatta il tuo insegnante per aumentare il limite.');
+        } else {
+            addMessage('tutor', `❌ Errore: ${err.message}. Riprova tra un momento.`);
+        }
+        showToast('Errore durante la chat', 'error');
+    } finally {
+        state.isLoading = false;
+        document.getElementById('btnSend').disabled = false;
+    }
+}
+
+// ──────────────────────────────────────────────────────
+// TTS
+// ──────────────────────────────────────────────────────
+async function playTTS(btn, text) {
+    if (state.currentAudio) {
+        state.currentAudio.pause();
+        state.currentAudio = null;
+    }
+
+    const dot   = document.getElementById('ttsDot');
+    const label = document.getElementById('ttsLabel');
+    dot.classList.add('active');
+    label.textContent = 'Audio in riproduzione...';
+    btn.textContent = '⏹ Ferma';
+
+    try {
+        const voiceName   = state.selectedTutor === 'sofia' ? 'it-IT-Neural2-A' : 'it-IT-Neural2-C';
+        const voiceGender = state.selectedTutor === 'sofia' ? 'FEMALE' : 'MALE';
+
+        const data = await api('/api/tts', {
+            method: 'POST',
+            body: JSON.stringify({
+                text,
+                voiceLang: 'it-IT',
+                voiceGender,
+                voiceName,
+                sessionId: state.sessionId,
+                sessionType: state.sessionType
+            })
+        });
+
+        const audio = new Audio(`data:audio/mp3;base64,${data.audioContent}`);
+        state.currentAudio = audio;
+
+        audio.play();
+        audio.onended = () => {
+            state.currentAudio = null;
+            dot.classList.remove('active');
+            label.textContent = 'Audio pronto';
+            btn.textContent = '🔊 Ascolta';
+        };
+        btn.onclick = () => {
+            audio.pause();
+            state.currentAudio = null;
+            dot.classList.remove('active');
+            label.textContent = 'Audio pronto';
+            btn.textContent = '🔊 Ascolta';
+            btn.onclick = () => playTTS(btn, text);
+        };
+
+    } catch (err) {
+        dot.classList.remove('active');
+        label.textContent = 'TTS non disponibile';
+        btn.textContent = '🔊 Ascolta';
+
+        // Fallback browser TTS
+        if ('speechSynthesis' in window) {
+            const utt = new SpeechSynthesisUtterance(text);
+            utt.lang = 'it-IT';
+            utt.rate = 0.9;
+            speechSynthesis.speak(utt);
+            label.textContent = 'Audio browser (fallback)';
+        }
+    }
+}
+
+async function autoPlayTTS(text) {
+    const dot   = document.getElementById('ttsDot');
+    const label = document.getElementById('ttsLabel');
+    dot.classList.add('active');
+    label.textContent = 'Audio in riproduzione...';
+
+    try {
+        const voiceName   = state.selectedTutor === 'sofia' ? 'it-IT-Neural2-A' : 'it-IT-Neural2-C';
+        const voiceGender = state.selectedTutor === 'sofia' ? 'FEMALE' : 'MALE';
+
+        const data = await api('/api/tts', {
+            method: 'POST',
+            body: JSON.stringify({ text: text.substring(0, 800), voiceLang: 'it-IT', voiceGender, voiceName, sessionId: state.sessionId, sessionType: state.sessionType })
+        });
+
+        const audio = new Audio(`data:audio/mp3;base64,${data.audioContent}`);
+        state.currentAudio = audio;
+        audio.play();
+        audio.onended = () => {
+            state.currentAudio = null;
+            dot.classList.remove('active');
+            label.textContent = 'Audio pronto';
+        };
+    } catch {
+        dot.classList.remove('active');
+        label.textContent = 'Audio pronto';
+    }
+}
+
+// ──────────────────────────────────────────────────────
+// LOGOUT
+// ──────────────────────────────────────────────────────
+document.getElementById('btnLogout').addEventListener('click', logout);
+
+function logout() {
+    localStorage.removeItem('ital_token');
+    state.token = null;
+    state.user  = null;
+    state.conversationHistory = [];
+    document.getElementById('app').classList.remove('visible');
+    document.getElementById('loginScreen').style.display = 'flex';
+    document.getElementById('loginEmail').value    = '';
+    document.getElementById('loginPassword').value = '';
+}
+</script>
+</body>
+</html>
