@@ -9,157 +9,109 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
     <style>
         :root {
-            --verde:       #009246;
-            --verde-dark:  #006f35;
-            --verde-pale:  #e8f5ee;
-            --rosso:       #CE2B37;
-            --rosso-pale:  #fdf0f1;
-            --rosso-dark:  #a52029;
-            --bianco:      #FFFFFF;
-            --avorio:      #fafaf7;
-            --grigio-100:  #f4f4f2;
-            --grigio-200:  #e8e8e5;
-            --grigio-400:  #9a9a95;
-            --grigio-700:  #3d3d3a;
-            --nero:        #1a1a17;
-            --oro:         #d4a017;
-            --blu:         #3d5af1;
-            --shadow-sm:   0 1px 4px rgba(0,0,0,.08);
-            --shadow-md:   0 4px 16px rgba(0,0,0,.10);
-            --radius:      12px;
-            --radius-sm:   8px;
-            --transition:  .2s cubic-bezier(.4,0,.2,1);
+            --verde: #009246; --verde-dark: #006f35; --verde-pale: #e8f5ee;
+            --rosso: #CE2B37; --rosso-pale: #fdf0f1; --rosso-dark: #a52029;
+            --bianco: #FFFFFF; --avorio: #fafaf7;
+            --grigio-100: #f4f4f2; --grigio-200: #e8e8e5; --grigio-400: #9a9a95; --grigio-700: #3d3d3a; --nero: #1a1a17;
+            --oro: #d4a017; --blu: #3d5af1;
+            --shadow-sm: 0 1px 4px rgba(0,0,0,.08); --shadow-md: 0 4px 16px rgba(0,0,0,.10);
+            --radius: 12px; --radius-sm: 8px; --transition: .2s cubic-bezier(.4,0,.2,1);
         }
-
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
         html, body { height: 100%; font-size: 15px; }
-        body {
-            font-family: 'Lato', sans-serif;
-            background: var(--avorio);
-            color: var(--grigio-700);
-            display: flex; flex-direction: column;
-        }
+        body { font-family: 'Lato', sans-serif; background: var(--avorio); color: var(--grigio-700); display: flex; flex-direction: column; }
 
-        .flag-strip {
-            height: 4px;
-            background: linear-gradient(to right, var(--verde) 33.33%, var(--bianco) 33.33% 66.66%, var(--rosso) 66.66%);
-        }
+        .flag-strip { height: 4px; background: linear-gradient(to right, var(--verde) 33.33%, var(--bianco) 33.33% 66.66%, var(--rosso) 66.66%); }
 
-        /* ─── LOGIN ─── */
-        #loginScreen {
-            position: fixed; inset: 4px 0 0 0;
-            background: linear-gradient(145deg, #0d4a28, #009246);
-            display: flex; align-items: center; justify-content: center; z-index: 100;
-        }
-        .login-card {
-            background: var(--bianco); border-radius: 18px; padding: 44px 40px;
-            width: 100%; max-width: 400px;
-            box-shadow: 0 24px 60px rgba(0,0,0,.25);
-            animation: slideUp .4s ease both;
-        }
-        @keyframes slideUp { from { opacity:0;transform:translateY(20px); } to { opacity:1;transform:translateY(0); } }
+        /* LOGIN */
+        #loginScreen { position: fixed; inset: 4px 0 0 0; background: linear-gradient(145deg, #0d4a28, #009246); display: flex; align-items: center; justify-content: center; z-index: 100; }
+        .login-card { background: var(--bianco); border-radius: 18px; padding: 44px 40px; width: 100%; max-width: 400px; box-shadow: 0 24px 60px rgba(0,0,0,.25); animation: slideUp .4s ease both; }
+        @keyframes slideUp { from{opacity:0;transform:translateY(20px);}to{opacity:1;transform:translateY(0);} }
         .login-card h1 { font-family:'Playfair Display',serif; font-size:1.6rem; color:var(--verde-dark); text-align:center; margin-bottom:4px; }
-        .login-card p { text-align:center; color:var(--grigio-400); font-size:.82rem; margin-bottom:28px; }
-        .form-group { margin-bottom:16px; }
-        .form-group label { display:block; font-size:.75rem; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:var(--grigio-700); margin-bottom:6px; }
-        .form-group input { width:100%; border:1.5px solid var(--grigio-200); border-radius:var(--radius-sm); padding:10px 13px; font-family:'Lato',sans-serif; font-size:.92rem; color:var(--nero); background:var(--avorio); outline:none; transition:border-color var(--transition); }
-        .form-group input:focus { border-color:var(--verde); background:#fff; }
+        .login-card p  { text-align:center; color:var(--grigio-400); font-size:.82rem; margin-bottom:28px; }
+        .fg { margin-bottom:16px; }
+        .fg label { display:block; font-size:.75rem; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:var(--grigio-700); margin-bottom:6px; }
+        .fg input { width:100%; border:1.5px solid var(--grigio-200); border-radius:var(--radius-sm); padding:10px 13px; font-family:'Lato',sans-serif; font-size:.92rem; color:var(--nero); background:var(--avorio); outline:none; transition:border-color var(--transition); }
+        .fg input:focus { border-color:var(--verde); background:#fff; }
         .btn-primary { width:100%; background:var(--verde); color:#fff; border:none; border-radius:var(--radius-sm); padding:12px; font-family:'Lato',sans-serif; font-size:.95rem; font-weight:700; cursor:pointer; transition:background var(--transition); }
         .btn-primary:hover { background:var(--verde-dark); }
         .btn-primary:disabled { opacity:.6; cursor:not-allowed; }
         .login-error { background:#fff0f0; border:1px solid #ffc7c7; color:var(--rosso-dark); border-radius:var(--radius-sm); padding:9px 13px; font-size:.85rem; margin-top:12px; display:none; }
 
-        /* ─── APP ─── */
+        /* APP */
         #app { display:none; flex:1; flex-direction:column; height:100vh; padding-top:4px; }
         #app.visible { display:flex; }
 
-        /* ─── TOPBAR ─── */
-        .topbar {
-            background: var(--verde-dark); color:#fff;
-            padding:0 28px; height:58px;
-            display:flex; align-items:center; justify-content:space-between;
-            flex-shrink:0;
-        }
+        /* TOPBAR */
+        .topbar { background:var(--verde-dark); color:#fff; padding:0 28px; height:58px; display:flex; align-items:center; justify-content:space-between; flex-shrink:0; }
         .topbar-brand h2 { font-family:'Playfair Display',serif; font-size:1.05rem; }
         .topbar-brand p  { font-size:.75rem; opacity:.7; margin-top:2px; }
         .topbar-right { display:flex; align-items:center; gap:12px; }
+        .tab-btn { border:2px solid rgba(255,255,255,.3); background:none; color:rgba(255,255,255,.7); border-radius:20px; padding:4px 14px; font-family:'Lato',sans-serif; font-size:.8rem; font-weight:700; cursor:pointer; transition:all var(--transition); }
+        .tab-btn:hover  { border-color:#fff; color:#fff; }
+        .tab-btn.active { background:#fff; color:var(--verde-dark); border-color:#fff; }
         .btn-sm { background:rgba(255,255,255,.15); color:#fff; border:1px solid rgba(255,255,255,.25); border-radius:var(--radius-sm); padding:5px 12px; font-family:'Lato',sans-serif; font-size:.78rem; font-weight:700; cursor:pointer; transition:background var(--transition); }
         .btn-sm:hover { background:rgba(255,255,255,.25); }
 
-        /* ─── PERIOD TABS ─── */
-        .period-tabs {
-            display:flex; gap:8px;
-        }
-        .tab-btn {
-            border:2px solid rgba(255,255,255,.3); background:none;
-            color:rgba(255,255,255,.7); border-radius:20px;
-            padding:4px 14px; font-family:'Lato',sans-serif; font-size:.8rem; font-weight:700;
-            cursor:pointer; transition:all var(--transition);
-        }
-        .tab-btn:hover { border-color:#fff; color:#fff; }
-        .tab-btn.active { background:#fff; color:var(--verde-dark); border-color:#fff; }
-
-        /* ─── CONTENT ─── */
+        /* CONTENT */
         .content { flex:1; overflow-y:auto; padding:28px; }
         .content::-webkit-scrollbar { width:6px; }
         .content::-webkit-scrollbar-thumb { background:var(--grigio-200); border-radius:3px; }
 
-        /* ─── COST CARDS ─── */
-        .cost-grid {
-            display:grid; grid-template-columns:repeat(auto-fit,minmax(210px,1fr));
-            gap:16px; margin-bottom:28px;
-        }
-        .cost-card {
-            background:var(--bianco); border-radius:var(--radius);
-            padding:20px 22px; box-shadow:var(--shadow-sm);
-            border-top:4px solid var(--verde);
-            transition:box-shadow var(--transition);
-        }
+        /* LAST UPDATE */
+        .last-update { font-size:.75rem; color:var(--grigio-400); margin-bottom:20px; display:flex; align-items:center; gap:8px; }
+        .last-update .dot { width:8px; height:8px; border-radius:50%; background:var(--verde); animation:pulse 2s infinite; }
+        @keyframes pulse { 0%,100%{opacity:1;}50%{opacity:.4;} }
+
+        /* KPI CARDS */
+        .cost-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:16px; margin-bottom:28px; }
+        .cost-card { background:var(--bianco); border-radius:var(--radius); padding:20px 22px; box-shadow:var(--shadow-sm); border-top:4px solid var(--verde); transition:box-shadow var(--transition); }
         .cost-card:hover { box-shadow:var(--shadow-md); }
         .cost-card.rosso  { border-top-color:var(--rosso); }
         .cost-card.oro    { border-top-color:var(--oro); }
         .cost-card.blu    { border-top-color:var(--blu); }
         .cost-card.viola  { border-top-color:#9b59b6; }
         .cost-label { font-size:.72rem; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--grigio-400); margin-bottom:6px; }
-        .cost-value { font-size:1.9rem; font-weight:700; color:var(--nero); line-height:1; font-family:'Lato',sans-serif; }
-        .cost-unit  { font-size:.8rem; color:var(--grigio-400); margin-top:4px; }
-        .cost-delta { font-size:.78rem; margin-top:6px; }
-        .cost-delta.up   { color:var(--rosso); }
-        .cost-delta.down { color:var(--verde); }
+        .cost-value { font-size:1.9rem; font-weight:700; color:var(--nero); line-height:1; }
+        .cost-unit  { font-size:.78rem; color:var(--grigio-400); margin-top:4px; }
+        .cost-sub   { font-size:.78rem; margin-top:6px; }
+        .cost-sub.up   { color:var(--rosso); }
+        .cost-sub.down { color:var(--verde); }
 
-        /* ─── PANELS ─── */
+        /* PANELS */
         .panels-row { display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-bottom:20px; }
         .panel { background:var(--bianco); border-radius:var(--radius); box-shadow:var(--shadow-sm); overflow:hidden; }
         .panel.full { grid-column:1/-1; }
         .panel-header { padding:16px 20px; border-bottom:1px solid var(--grigio-100); display:flex; align-items:center; justify-content:space-between; }
         .panel-header h3 { font-family:'Playfair Display',serif; font-size:1rem; font-weight:600; color:var(--grigio-700); }
+        .panel-header small { font-size:.75rem; color:var(--grigio-400); }
         .panel-body { padding:20px; }
 
-        /* ─── BREAKDOWN TABLE ─── */
-        .breakdown-table { width:100%; border-collapse:collapse; }
-        .breakdown-table th { text-align:left; padding:8px 12px; font-size:.72rem; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--grigio-400); background:var(--grigio-100); border-bottom:1px solid var(--grigio-200); }
-        .breakdown-table td { padding:11px 12px; font-size:.88rem; border-bottom:1px solid var(--grigio-100); }
-        .breakdown-table tr:last-child td { border-bottom:none; font-weight:700; background:var(--verde-pale); }
-        .breakdown-table tr:hover:not(:last-child) td { background:var(--verde-pale); }
+        /* TABLES */
+        table { width:100%; border-collapse:collapse; }
+        th { text-align:left; padding:8px 12px; font-size:.72rem; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--grigio-400); background:var(--grigio-100); border-bottom:1px solid var(--grigio-200); }
+        td { padding:11px 12px; font-size:.88rem; border-bottom:1px solid var(--grigio-100); }
+        tr:last-child td { border-bottom:none; }
+        tr.total-row td { font-weight:700; background:var(--verde-pale); border-top:2px solid rgba(0,146,70,.15); }
+        tr:hover:not(.total-row) td { background:var(--verde-pale); }
 
-        /* ─── PROGRESS BAR ─── */
+        /* PROGRESS BAR */
         .progress-wrap { margin-bottom:14px; }
         .progress-label { display:flex; justify-content:space-between; font-size:.8rem; margin-bottom:4px; }
         .progress-label span:first-child { font-weight:700; color:var(--grigio-700); }
         .progress-label span:last-child  { color:var(--grigio-400); }
-        .progress-bar { height:8px; background:var(--grigio-100); border-radius:4px; overflow:hidden; }
+        .progress-bar  { height:8px; background:var(--grigio-100); border-radius:4px; overflow:hidden; }
         .progress-fill { height:100%; border-radius:4px; transition:width .6s ease; }
 
-        /* ─── BUDGET ALERT ─── */
-        .budget-section { padding:20px; }
-        .budget-row { display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; }
-        .budget-label { font-size:.9rem; font-weight:700; color:var(--grigio-700); }
+        /* BUDGET */
+        .budget-row  { display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; }
+        .budget-label h4 { font-size:.9rem; font-weight:700; color:var(--grigio-700); }
+        .budget-label p  { font-size:.78rem; color:var(--grigio-400); }
         .budget-input-wrap { display:flex; gap:8px; align-items:center; }
         .budget-input { border:1.5px solid var(--grigio-200); border-radius:var(--radius-sm); padding:7px 10px; font-family:'Lato',sans-serif; font-size:.9rem; color:var(--nero); background:var(--avorio); outline:none; width:110px; }
         .budget-input:focus { border-color:var(--verde); }
-        .btn-save { background:var(--verde); color:#fff; border:none; border-radius:var(--radius-sm); padding:7px 14px; font-family:'Lato',sans-serif; font-size:.82rem; font-weight:700; cursor:pointer; transition:background var(--transition); }
+        .btn-save { background:var(--verde); color:#fff; border:none; border-radius:var(--radius-sm); padding:7px 14px; font-family:'Lato',sans-serif; font-size:.82rem; font-weight:700; cursor:pointer; }
         .btn-save:hover { background:var(--verde-dark); }
-
         .alert-box { border-radius:var(--radius-sm); padding:14px 16px; margin-bottom:14px; display:flex; align-items:flex-start; gap:10px; }
         .alert-box.verde { background:var(--verde-pale); border:1px solid rgba(0,146,70,.2); }
         .alert-box.rosso { background:var(--rosso-pale); border:1px solid rgba(206,43,55,.2); }
@@ -168,33 +120,31 @@
         .alert-box .text h4 { font-size:.88rem; font-weight:700; margin-bottom:2px; }
         .alert-box .text p  { font-size:.8rem; color:var(--grigio-400); }
 
-        /* ─── CHART ─── */
+        /* CHART */
         .chart-container { position:relative; height:250px; }
 
-        /* ─── TOAST ─── */
+        /* NO DATA */
+        .no-data { text-align:center; padding:40px 20px; color:var(--grigio-400); }
+        .no-data .icon { font-size:2rem; margin-bottom:8px; }
+        .no-data p { font-size:.88rem; }
+
+        /* TOAST */
         .toast { position:fixed; bottom:24px; right:24px; background:var(--nero); color:#fff; border-radius:var(--radius-sm); padding:11px 18px; font-size:.88rem; box-shadow:0 4px 20px rgba(0,0,0,.2); z-index:1000; transform:translateY(60px); opacity:0; transition:all .3s ease; }
-        .toast.show { transform:translateY(0); opacity:1; }
+        .toast.show    { transform:translateY(0); opacity:1; }
         .toast.success { background:var(--verde-dark); }
         .toast.error   { background:var(--rosso-dark); }
     </style>
 </head>
 <body>
-
 <div class="flag-strip"></div>
 
 <!-- LOGIN -->
 <div id="loginScreen">
     <div class="login-card">
         <h1>💰 Dashboard Costi</h1>
-        <p>Impara Italiano AI — Area Admin</p>
-        <div class="form-group">
-            <label>Email Admin</label>
-            <input type="email" id="loginEmail" placeholder="admin@italiano.ai">
-        </div>
-        <div class="form-group">
-            <label>Password</label>
-            <input type="password" id="loginPassword" placeholder="••••••••">
-        </div>
+        <p>Impara Italiano AI — Dati Reali</p>
+        <div class="fg"><label>Email Admin</label><input type="email" id="loginEmail" placeholder="admin@italiano.ai"></div>
+        <div class="fg"><label>Password</label><input type="password" id="loginPassword" placeholder="••••••••"></div>
         <button class="btn-primary" id="btnLogin">Accedi</button>
         <div class="login-error" id="loginError"></div>
     </div>
@@ -202,17 +152,16 @@
 
 <!-- APP -->
 <div id="app">
-
     <div class="topbar">
         <div class="topbar-brand">
             <h2>💰 Monitoraggio Costi — Impara Italiano AI</h2>
-            <p>Analisi spese API in tempo reale</p>
+            <p>Dati reali da Claude API · Google TTS</p>
         </div>
         <div class="topbar-right">
-            <div class="period-tabs">
-                <button class="tab-btn" data-period="7"  onclick="setPeriod(7)">7 giorni</button>
-                <button class="tab-btn active" data-period="30" onclick="setPeriod(30)">30 giorni</button>
-                <button class="tab-btn" data-period="90" onclick="setPeriod(90)">3 mesi</button>
+            <div style="display:flex;gap:6px">
+                <button class="tab-btn" data-days="7"  onclick="setPeriod(7)">7 giorni</button>
+                <button class="tab-btn active" data-days="30" onclick="setPeriod(30)">30 giorni</button>
+                <button class="tab-btn" data-days="90" onclick="setPeriod(90)">3 mesi</button>
             </div>
             <button class="btn-sm" onclick="loadAll()">🔄 Aggiorna</button>
             <button class="btn-sm" onclick="window.location.href='admin-dashboard.html'">← Admin</button>
@@ -221,75 +170,79 @@
     </div>
 
     <div class="content">
+        <div class="last-update">
+            <div class="dot"></div>
+            <span id="lastUpdate">Caricamento dati reali...</span>
+        </div>
 
-        <!-- KPI CARDS -->
+        <!-- KPI -->
         <div class="cost-grid">
             <div class="cost-card">
                 <div class="cost-label">Costo Totale Periodo</div>
-                <div class="cost-value" id="kpiTotale">$—</div>
-                <div class="cost-unit">USD · periodo selezionato</div>
+                <div class="cost-value" id="kpiTotale">—</div>
+                <div class="cost-unit">USD · dati reali</div>
             </div>
             <div class="cost-card rosso">
                 <div class="cost-label">Proiezione Fine Mese</div>
-                <div class="cost-value" id="kpiProiezione">$—</div>
-                <div class="cost-unit">stima basata su trend</div>
+                <div class="cost-value" id="kpiProiezione">—</div>
+                <div class="cost-unit">trend corrente</div>
+                <div class="cost-sub" id="kpiDelta">—</div>
             </div>
             <div class="cost-card oro">
-                <div class="cost-label">Costo per Studente</div>
-                <div class="cost-value" id="kpiPerStudente">$—</div>
+                <div class="cost-label">Costo per Studente Attivo</div>
+                <div class="cost-value" id="kpiPerStudente">—</div>
                 <div class="cost-unit">media nel periodo</div>
             </div>
             <div class="cost-card blu">
                 <div class="cost-label">Costo per Sessione</div>
-                <div class="cost-value" id="kpiPerSessione">$—</div>
+                <div class="cost-value" id="kpiPerSessione">—</div>
                 <div class="cost-unit">media nel periodo</div>
             </div>
             <div class="cost-card viola">
                 <div class="cost-label">Token Claude Totali</div>
                 <div class="cost-value" id="kpiToken">—</div>
-                <div class="cost-unit">input + output tokens</div>
+                <div class="cost-unit">input + output</div>
             </div>
         </div>
 
-        <!-- CHARTS ROW -->
+        <!-- GRAFICI -->
         <div class="panels-row">
             <div class="panel">
-                <div class="panel-header"><h3>📈 Trend Giornaliero Costi</h3></div>
+                <div class="panel-header">
+                    <h3>📈 Trend Giornaliero</h3>
+                    <small>Costi reali per giorno</small>
+                </div>
                 <div class="panel-body">
-                    <div class="chart-container">
-                        <canvas id="chartTrend"></canvas>
-                    </div>
+                    <div class="chart-container"><canvas id="chartTrend"></canvas></div>
                 </div>
             </div>
             <div class="panel">
-                <div class="panel-header"><h3>🍕 Distribuzione per Servizio</h3></div>
+                <div class="panel-header">
+                    <h3>🍕 Distribuzione Servizi</h3>
+                    <small>Ripartizione costi reali</small>
+                </div>
                 <div class="panel-body">
-                    <div class="chart-container">
-                        <canvas id="chartPie"></canvas>
-                    </div>
+                    <div class="chart-container"><canvas id="chartPie"></canvas></div>
                 </div>
             </div>
         </div>
 
-        <!-- BREAKDOWN + BUDGET -->
+        <!-- DETTAGLIO + BUDGET -->
         <div class="panels-row">
             <div class="panel">
-                <div class="panel-header"><h3>📋 Dettaglio Costi per Servizio</h3></div>
+                <div class="panel-header">
+                    <h3>📋 Dettaglio per Servizio</h3>
+                    <small id="periodLabel">ultimi 30 giorni</small>
+                </div>
                 <div class="panel-body">
-                    <table class="breakdown-table">
+                    <table>
                         <thead>
-                            <tr>
-                                <th>Servizio</th>
-                                <th>Utilizzo</th>
-                                <th>Costo (USD)</th>
-                                <th>% sul totale</th>
-                            </tr>
+                            <tr><th>Servizio</th><th>Utilizzo</th><th>Costo (USD)</th><th>%</th></tr>
                         </thead>
                         <tbody id="breakdownTable">
-                            <tr><td colspan="4" style="text-align:center;color:var(--grigio-400);padding:20px">Caricamento...</td></tr>
+                            <tr><td colspan="4" style="text-align:center;padding:20px;color:var(--grigio-400)">Caricamento...</td></tr>
                         </tbody>
                     </table>
-
                     <div style="margin-top:20px">
                         <p style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--grigio-400);margin-bottom:10px">Quota per Servizio</p>
                         <div id="progressBars"></div>
@@ -299,44 +252,44 @@
 
             <div class="panel">
                 <div class="panel-header"><h3>🎯 Budget & Avvisi</h3></div>
-                <div class="budget-section">
+                <div class="panel-body">
                     <div class="budget-row">
-                        <span class="budget-label">Budget mensile (USD)</span>
+                        <div class="budget-label">
+                            <h4>Budget mensile (USD)</h4>
+                            <p>Soglia per gli avvisi</p>
+                        </div>
                         <div class="budget-input-wrap">
-                            <span style="font-size:.9rem;color:var(--grigio-400)">$</span>
-                            <input type="number" class="budget-input" id="budgetInput" min="0" step="10" value="100">
+                            <span style="color:var(--grigio-400)">$</span>
+                            <input type="number" class="budget-input" id="budgetInput" min="0" step="5" value="50">
                             <button class="btn-save" onclick="saveBudget()">Salva</button>
                         </div>
                     </div>
 
                     <div id="alertsContainer">
                         <div class="alert-box verde">
-                            <span class="icon">✅</span>
-                            <div class="text">
-                                <h4>Entro Budget</h4>
-                                <p>Aggiornamento dati in corso...</p>
-                            </div>
+                            <span class="icon">⏳</span>
+                            <div class="text"><h4>Caricamento dati...</h4><p>Recupero informazioni dal database</p></div>
                         </div>
                     </div>
 
-                    <div style="margin-top:20px">
-                        <p style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--grigio-400);margin-bottom:8px">Utilizzo Budget</p>
+                    <div style="margin-top:16px">
+                        <p style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--grigio-400);margin-bottom:8px">Utilizzo Budget Mese Corrente</p>
                         <div class="progress-bar" style="height:14px">
                             <div class="progress-fill" id="budgetProgress" style="width:0%;background:var(--verde)"></div>
                         </div>
                         <p style="font-size:.78rem;color:var(--grigio-400);margin-top:6px" id="budgetLabel">—</p>
                     </div>
 
-                    <div style="margin-top:24px; padding-top:20px; border-top:1px solid var(--grigio-100)">
-                        <p style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--grigio-400);margin-bottom:12px">Confronto Periodi</p>
+                    <div style="margin-top:22px;padding-top:18px;border-top:1px solid var(--grigio-100)">
+                        <p style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--grigio-400);margin-bottom:12px">Confronto Mesi Reale</p>
                         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
                             <div style="background:var(--grigio-100);border-radius:var(--radius-sm);padding:12px">
                                 <p style="font-size:.72rem;color:var(--grigio-400)">Mese Corrente</p>
-                                <p style="font-size:1.1rem;font-weight:700;color:var(--verde-dark)" id="compMese">$—</p>
+                                <p style="font-size:1.1rem;font-weight:700;color:var(--verde-dark)" id="compMese">—</p>
                             </div>
                             <div style="background:var(--grigio-100);border-radius:var(--radius-sm);padding:12px">
                                 <p style="font-size:.72rem;color:var(--grigio-400)">Mese Scorso</p>
-                                <p style="font-size:1.1rem;font-weight:700;color:var(--grigio-700)" id="compScorso">$—</p>
+                                <p style="font-size:1.1rem;font-weight:700;color:var(--grigio-700)" id="compScorso">—</p>
                             </div>
                         </div>
                     </div>
@@ -344,47 +297,46 @@
             </div>
         </div>
 
-        <!-- USAGE TOP STUDENTS -->
+        <!-- TOP STUDENTI -->
         <div class="panel full" style="margin-bottom:0">
             <div class="panel-header">
-                <h3>🏆 Top Studenti per Utilizzo</h3>
-                <span style="font-size:.8rem;color:var(--grigio-400)">Minuti di conversazione nel periodo</span>
+                <h3>🏆 Top Studenti per Utilizzo API</h3>
+                <small>Dati reali dal database</small>
             </div>
-            <div class="panel-body">
-                <table class="breakdown-table">
+            <div class="panel-body" style="padding:0">
+                <table>
                     <thead>
-                        <tr><th>Studente</th><th>Livello</th><th>Minuti Usati</th><th>Sessioni</th><th>Costo Est.</th></tr>
+                        <tr><th>Studente</th><th>Livello</th><th>Token Input</th><th>Token Output</th><th>Sessioni</th><th>Costo Est.</th></tr>
                     </thead>
                     <tbody id="topStudentsTable">
-                        <tr><td colspan="5" style="text-align:center;color:var(--grigio-400);padding:20px">Caricamento...</td></tr>
+                        <tr><td colspan="6" style="text-align:center;padding:24px;color:var(--grigio-400)">Caricamento...</td></tr>
                     </tbody>
                 </table>
             </div>
         </div>
-
-    </div><!-- /content -->
-</div><!-- /app -->
+    </div>
+</div>
 
 <div class="toast" id="toast"></div>
 
 <script>
-// ──────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════
 const API_BASE = 'https://italian-learning-platform.onrender.com';
-// const API_BASE = 'http://localhost:3001';
 
-// Prezzi API (USD)
+// Prezzi esatti (sincronizzati con server.js)
 const PRICES = {
-    claude_input:  0.000003,   // $3 per 1M tokens
-    claude_output: 0.000015,   // $15 per 1M tokens
-    tts:           0.000016,   // $16 per 1M chars
+    claude_input:  0.000003,
+    claude_output: 0.000015,
+    tts:           0.000016
 };
 
 let state = {
-    token: localStorage.getItem('ital_costs_token'),
-    user: null,
+    token:  localStorage.getItem('ital_costs_token'),
+    user:   null,
     period: 30,
-    budget: parseFloat(localStorage.getItem('ital_budget') || '100'),
-    charts: { trend: null, pie: null }
+    budget: parseFloat(localStorage.getItem('ital_budget') || '50'),
+    charts: { trend: null, pie: null },
+    lastData: null
 };
 
 const api = async (path, opts = {}) => {
@@ -402,8 +354,8 @@ const showToast = (msg, type='') => {
     setTimeout(() => el.classList.remove('show'), 3500);
 };
 
-const fmt$ = v => `$${(+v||0).toFixed(4)}`;
-const fmtN = v => (+v||0).toLocaleString('it-IT');
+const fmt$  = v => `$${(+v||0).toFixed(4)}`;
+const fmtN  = v => Math.round(+v||0).toLocaleString('it-IT');
 
 // ─── LOGIN ───────────────────────────────────────
 document.getElementById('btnLogin').addEventListener('click', doLogin);
@@ -411,18 +363,18 @@ document.getElementById('loginPassword').addEventListener('keydown', e => { if(e
 
 async function doLogin() {
     const email = document.getElementById('loginEmail').value.trim();
-    const password = document.getElementById('loginPassword').value;
+    const pass  = document.getElementById('loginPassword').value;
     const errEl = document.getElementById('loginError');
-    const btn = document.getElementById('btnLogin');
+    const btn   = document.getElementById('btnLogin');
     errEl.style.display = 'none';
     btn.disabled = true; btn.textContent = 'Accesso...';
     try {
-        const data = await api('/api/auth/login', { method:'POST', body: JSON.stringify({ email, password }) });
-        if (data.user.role !== 'admin') throw new Error('Accesso riservato agli amministratori.');
-        state.token = data.token; state.user = data.user;
-        localStorage.setItem('ital_costs_token', data.token);
+        const d = await api('/api/auth/login', { method:'POST', body:JSON.stringify({ email, password:pass }) });
+        if (d.user.role !== 'admin') throw new Error('Solo gli amministratori possono accedere.');
+        state.token = d.token; state.user = d.user;
+        localStorage.setItem('ital_costs_token', d.token);
         initApp();
-    } catch (err) {
+    } catch(err) {
         errEl.textContent = err.message; errEl.style.display = 'block';
     } finally { btn.disabled = false; btn.textContent = 'Accedi'; }
 }
@@ -441,246 +393,227 @@ async function initApp() {
     await loadAll();
 }
 
-if (state.token) { document.getElementById('loginScreen').style.display='none'; document.getElementById('app').classList.add('visible'); initApp(); }
+if (state.token) {
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('app').classList.add('visible');
+    initApp();
+}
 
-// ─── PERIOD ──────────────────────────────────────
+// ─── PERIODO ─────────────────────────────────────
 function setPeriod(days) {
     state.period = days;
-    document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', parseInt(b.dataset.period) === days));
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', parseInt(b.dataset.days) === days));
+    document.getElementById('periodLabel').textContent = `ultimi ${days} giorni`;
     loadAll();
 }
 
-// ─── LOAD ALL ────────────────────────────────────
+// ─── CARICA TUTTO ────────────────────────────────
 async function loadAll() {
-    await Promise.allSettled([
-        loadCostSummary(),
-        loadTopStudents()
-    ]);
-}
-
-async function loadCostSummary() {
+    document.getElementById('lastUpdate').textContent = 'Aggiornamento in corso...';
     try {
         const afterDate = new Date();
         afterDate.setDate(afterDate.getDate() - state.period);
         const after = afterDate.toISOString().split('T')[0];
 
+        // Chiama il nuovo endpoint reale
         const data = await api(`/api/admin/costs/summary?after=${after}`);
-        renderSummary(data);
-    } catch (err) {
-        // API costi non ancora implementata — usa dati simulati per demo
-        renderSummary(generateDemoData());
+        state.lastData = data;
+        renderAll(data);
+
+        document.getElementById('lastUpdate').textContent =
+            `Ultimo aggiornamento: ${new Date().toLocaleTimeString('it-IT')} · Dati reali dal database`;
+
+    } catch(err) {
+        showToast(`Errore: ${err.message}`, 'error');
+        document.getElementById('lastUpdate').textContent = `Errore caricamento: ${err.message}`;
     }
 }
 
-function generateDemoData() {
-    const factor = state.period / 30;
-    return {
-        claude_input_tokens:  Math.round(850000 * factor),
-        claude_output_tokens: Math.round(210000 * factor),
-        tts_characters:       Math.round(1200000 * factor),
-        total_sessions:       Math.round(340 * factor),
-        total_students:       12,
-        daily_breakdown: generateDailyBreakdown(state.period)
-    };
-}
-
-function generateDailyBreakdown(days) {
-    const result = [];
-    for (let i = days - 1; i >= 0; i--) {
-        const d = new Date();
-        d.setDate(d.getDate() - i);
-        const day = d.toISOString().split('T')[0];
-        const base = 0.8 + Math.random() * 2.5;
-        result.push({ date: day, cost: parseFloat(base.toFixed(4)) });
-    }
-    return result;
-}
-
-function renderSummary(data) {
-    // Calcola costi
+// ─── RENDER PRINCIPALE ───────────────────────────
+function renderAll(data) {
+    // Calcola costi dai volumi reali
     const costInput  = (data.claude_input_tokens  || 0) * PRICES.claude_input;
     const costOutput = (data.claude_output_tokens || 0) * PRICES.claude_output;
     const costTTS    = (data.tts_characters       || 0) * PRICES.tts;
     const costTotale = costInput + costOutput + costTTS;
-    const sessions   = data.total_sessions || 1;
-    const students   = data.total_students || 1;
+
+    const sessions = Math.max(data.total_sessions  || 1, 1);
+    const students = Math.max(data.total_students  || 1, 1);
 
     // Proiezione fine mese
-    const daysPassed = Math.min(state.period, new Date().getDate());
+    const daysPassed = state.period;
     const daysInMonth = new Date(new Date().getFullYear(), new Date().getMonth()+1, 0).getDate();
-    const dailyAvg   = costTotale / Math.max(daysPassed, 1);
-    const proiezione = dailyAvg * daysInMonth;
+    const daysPeriod  = Math.min(daysPassed, new Date().getDate());
+    const dailyAvg    = costTotale / Math.max(daysPeriod, 1);
+    const proiezione  = dailyAvg * daysInMonth;
+
+    // vs mese scorso
+    const costLastMonth = data.cost_last_month || 0;
+    const diffPct = costLastMonth > 0
+        ? ((data.cost_this_month - costLastMonth) / costLastMonth * 100).toFixed(1)
+        : null;
 
     // KPI
     document.getElementById('kpiTotale').textContent     = fmt$(costTotale);
     document.getElementById('kpiProiezione').textContent  = fmt$(proiezione);
     document.getElementById('kpiPerStudente').textContent = fmt$(costTotale / students);
     document.getElementById('kpiPerSessione').textContent = fmt$(costTotale / sessions);
-    document.getElementById('kpiToken').textContent       = fmtN((data.claude_input_tokens || 0) + (data.claude_output_tokens || 0));
+    document.getElementById('kpiToken').textContent       = fmtN((data.claude_input_tokens||0) + (data.claude_output_tokens||0));
 
-    // Comparazione mesi
-    document.getElementById('compMese').textContent   = fmt$(costTotale);
-    document.getElementById('compScorso').textContent = fmt$(costTotale * (0.7 + Math.random() * 0.6));
+    if (diffPct !== null) {
+        const deltaEl = document.getElementById('kpiDelta');
+        deltaEl.textContent = diffPct > 0 ? `▲ +${diffPct}% vs mese scorso` : `▼ ${diffPct}% vs mese scorso`;
+        deltaEl.className   = 'cost-sub ' + (parseFloat(diffPct) > 0 ? 'up' : 'down');
+    }
 
-    // Breakdown table
+    // Confronto mesi
+    document.getElementById('compMese').textContent   = fmt$(data.cost_this_month || 0);
+    document.getElementById('compScorso').textContent = fmt$(data.cost_last_month || 0);
+
+    // Breakdown servizi
     const breakdown = [
-        { name:'Claude Input',  uso: fmtN(data.claude_input_tokens) + ' tokens',  costo: costInput,  pct: costTotale > 0 ? costInput/costTotale*100 : 0,  color:'var(--verde)' },
-        { name:'Claude Output', uso: fmtN(data.claude_output_tokens) + ' tokens', costo: costOutput, pct: costTotale > 0 ? costOutput/costTotale*100 : 0, color:'var(--rosso)' },
-        { name:'Google TTS',    uso: fmtN(data.tts_characters) + ' chars',        costo: costTTS,    pct: costTotale > 0 ? costTTS/costTotale*100 : 0,    color:'var(--blu)' },
+        { name:'Claude Input',  color:'var(--verde)', uso:`${fmtN(data.claude_input_tokens)} tokens`,  costo:costInput,  pct: costTotale>0 ? costInput/costTotale*100 : 0 },
+        { name:'Claude Output', color:'var(--rosso)', uso:`${fmtN(data.claude_output_tokens)} tokens`, costo:costOutput, pct: costTotale>0 ? costOutput/costTotale*100 : 0 },
+        { name:'Google TTS',    color:'var(--blu)',   uso:`${fmtN(data.tts_characters)} caratteri`,    costo:costTTS,    pct: costTotale>0 ? costTTS/costTotale*100 : 0 },
     ];
 
     const tbody = document.getElementById('breakdownTable');
-    tbody.innerHTML = breakdown.map(r => `
-        <tr>
-            <td><span style="display:inline-block;width:10px;height:10px;background:${r.color};border-radius:50%;margin-right:6px"></span>${r.name}</td>
-            <td style="color:var(--grigio-400)">${r.uso}</td>
-            <td><strong>${fmt$(r.costo)}</strong></td>
-            <td>${r.pct.toFixed(1)}%</td>
-        </tr>`).join('') + `
-        <tr>
-            <td colspan="2"><strong>TOTALE</strong></td>
-            <td><strong>${fmt$(costTotale)}</strong></td>
-            <td>100%</td>
-        </tr>`;
-
-    // Progress bars
-    const pb = document.getElementById('progressBars');
-    pb.innerHTML = breakdown.map(r => `
-        <div class="progress-wrap">
-            <div class="progress-label"><span>${r.name}</span><span>${fmt$(r.costo)}</span></div>
-            <div class="progress-bar"><div class="progress-fill" style="width:${r.pct}%;background:${r.color}"></div></div>
-        </div>`).join('');
-
-    // Budget alert
-    const budgetPct = (costTotale / state.budget) * 100;
-    const fill = document.getElementById('budgetProgress');
-    const lbl  = document.getElementById('budgetLabel');
-    fill.style.width = Math.min(budgetPct, 100) + '%';
-    fill.style.background = budgetPct > 90 ? 'var(--rosso)' : budgetPct > 70 ? 'var(--oro)' : 'var(--verde)';
-    lbl.textContent = `${fmt$(costTotale)} / ${fmt$(state.budget)} (${budgetPct.toFixed(0)}%)`;
-
-    const alertBox = document.getElementById('alertsContainer');
-    if (budgetPct >= 100) {
-        alertBox.innerHTML = `<div class="alert-box rosso"><span class="icon">🚨</span><div class="text"><h4>Budget Superato!</h4><p>Hai speso ${fmt$(costTotale)} su un budget di ${fmt$(state.budget)}. Considera di ridurre l'utilizzo o aumentare il budget.</p></div></div>`;
-    } else if (budgetPct >= 80) {
-        alertBox.innerHTML = `<div class="alert-box oro"><span class="icon">⚠️</span><div class="text"><h4>Attenzione Budget</h4><p>Hai utilizzato il ${budgetPct.toFixed(0)}% del budget mensile. Proiezione fine mese: ${fmt$(proiezione)}.</p></div></div>`;
+    if (costTotale === 0) {
+        tbody.innerHTML = `<tr><td colspan="4"><div class="no-data"><div class="icon">📊</div><p>Nessun utilizzo registrato nel periodo.<br>I dati appariranno dopo le prime conversazioni.</p></div></td></tr>`;
     } else {
-        alertBox.innerHTML = `<div class="alert-box verde"><span class="icon">✅</span><div class="text"><h4>Entro Budget</h4><p>Stai usando il ${budgetPct.toFixed(0)}% del budget mensile. Tutto sotto controllo!</p></div></div>`;
+        tbody.innerHTML = breakdown.map(r => `
+            <tr>
+                <td><span style="display:inline-block;width:10px;height:10px;background:${r.color};border-radius:50%;margin-right:6px"></span>${r.name}</td>
+                <td style="color:var(--grigio-400)">${r.uso}</td>
+                <td><strong>${fmt$(r.costo)}</strong></td>
+                <td>${r.pct.toFixed(1)}%</td>
+            </tr>`).join('') +
+            `<tr class="total-row">
+                <td colspan="2"><strong>TOTALE PERIODO</strong></td>
+                <td><strong>${fmt$(costTotale)}</strong></td>
+                <td>100%</td>
+            </tr>`;
+
+        document.getElementById('progressBars').innerHTML = breakdown.map(r => `
+            <div class="progress-wrap">
+                <div class="progress-label"><span>${r.name}</span><span>${fmt$(r.costo)}</span></div>
+                <div class="progress-bar"><div class="progress-fill" style="width:${r.pct}%;background:${r.color}"></div></div>
+            </div>`).join('');
     }
 
-    // Charts
-    renderTrendChart(data.daily_breakdown || generateDailyBreakdown(state.period));
-    renderPieChart(breakdown);
+    // Budget (basato su mese corrente reale)
+    const costMonth = data.cost_this_month || 0;
+    const budgetPct = state.budget > 0 ? (costMonth / state.budget * 100) : 0;
+    const fill = document.getElementById('budgetProgress');
+    fill.style.width      = Math.min(budgetPct, 100) + '%';
+    fill.style.background = budgetPct > 90 ? 'var(--rosso)' : budgetPct > 70 ? 'var(--oro)' : 'var(--verde)';
+    document.getElementById('budgetLabel').textContent =
+        `${fmt$(costMonth)} usati di ${fmt$(state.budget)} (${budgetPct.toFixed(0)}%) — mese corrente`;
+
+    const alertEl = document.getElementById('alertsContainer');
+    if (costMonth === 0) {
+        alertEl.innerHTML = `<div class="alert-box verde"><span class="icon">ℹ️</span><div class="text"><h4>Nessun costo questo mese</h4><p>Non sono ancora stati registrati utilizzi nel mese corrente.</p></div></div>`;
+    } else if (budgetPct >= 100) {
+        alertEl.innerHTML = `<div class="alert-box rosso"><span class="icon">🚨</span><div class="text"><h4>Budget Superato!</h4><p>Speso ${fmt$(costMonth)} su budget ${fmt$(state.budget)}. Valuta di ridurre i limiti degli studenti.</p></div></div>`;
+    } else if (budgetPct >= 80) {
+        alertEl.innerHTML = `<div class="alert-box oro"><span class="icon">⚠️</span><div class="text"><h4>Attenzione Budget (${budgetPct.toFixed(0)}%)</h4><p>Proiezione fine mese: ${fmt$(proiezione)}.</p></div></div>`;
+    } else {
+        alertEl.innerHTML = `<div class="alert-box verde"><span class="icon">✅</span><div class="text"><h4>Entro Budget (${budgetPct.toFixed(0)}%)</h4><p>Tutto sotto controllo. Proiezione fine mese: ${fmt$(proiezione)}.</p></div></div>`;
+    }
+
+    // Grafici
+    renderTrendChart(data.daily_breakdown || []);
+    renderPieChart(breakdown, costTotale);
+    renderTopStudents(data.top_students || []);
 }
 
-function renderTrendChart(dailyData) {
-    const labels = dailyData.map(d => {
-        const dt = new Date(d.date);
-        return dt.toLocaleDateString('it-IT', { month:'short', day:'numeric' });
-    });
-    const values = dailyData.map(d => d.cost || (Math.random() * 3 + 0.5));
-
+// ─── GRAFICI ─────────────────────────────────────
+function renderTrendChart(daily) {
     if (state.charts.trend) state.charts.trend.destroy();
     const ctx = document.getElementById('chartTrend').getContext('2d');
+
+    if (!daily.length) {
+        ctx.font = '14px Lato'; ctx.fillStyle = '#9a9a95'; ctx.textAlign = 'center';
+        ctx.fillText('Nessun dato nel periodo', ctx.canvas.width/2, ctx.canvas.height/2);
+        return;
+    }
+
     state.charts.trend = new Chart(ctx, {
         type: 'line',
         data: {
-            labels,
+            labels: daily.map(d => new Date(d.date).toLocaleDateString('it-IT', { month:'short', day:'numeric' })),
             datasets: [{
                 label: 'Costo giornaliero (USD)',
-                data: values,
-                borderColor: '#009246',
-                backgroundColor: 'rgba(0,146,70,.1)',
-                borderWidth: 2.5,
-                fill: true,
-                tension: 0.4,
-                pointBackgroundColor: '#009246',
-                pointRadius: 3
+                data:  daily.map(d => d.cost || 0),
+                borderColor: '#009246', backgroundColor: 'rgba(0,146,70,.1)',
+                borderWidth: 2.5, fill: true, tension: 0.4,
+                pointBackgroundColor: '#009246', pointRadius: 3
             }]
         },
         options: {
             responsive: true, maintainAspectRatio: false,
             plugins: { legend: { display: false } },
             scales: {
-                x: { grid: { display: false }, ticks: { font: { size: 11 }, maxTicksLimit: 8 } },
-                y: { grid: { color: '#f4f4f2' }, ticks: { font: { size: 11 }, callback: v => `$${v.toFixed(2)}` } }
+                x: { grid: { display:false }, ticks: { font:{size:11}, maxTicksLimit:8 } },
+                y: { grid: { color:'#f4f4f2' }, ticks: { font:{size:11}, callback: v => `$${v.toFixed(4)}` }, beginAtZero: true }
             }
         }
     });
 }
 
-function renderPieChart(breakdown) {
-    const totale = breakdown.reduce((s, r) => s + r.costo, 0);
+function renderPieChart(breakdown, total) {
     if (state.charts.pie) state.charts.pie.destroy();
     const ctx = document.getElementById('chartPie').getContext('2d');
+
+    if (total === 0) {
+        ctx.font = '14px Lato'; ctx.fillStyle = '#9a9a95'; ctx.textAlign = 'center';
+        ctx.fillText('Nessun dato nel periodo', ctx.canvas.width/2, ctx.canvas.height/2);
+        return;
+    }
+
     state.charts.pie = new Chart(ctx, {
         type: 'doughnut',
         data: {
             labels: breakdown.map(r => r.name),
-            datasets: [{
-                data: breakdown.map(r => parseFloat(r.costo.toFixed(6))),
-                backgroundColor: ['#009246', '#CE2B37', '#3d5af1'],
-                borderWidth: 2, borderColor: '#fff'
-            }]
+            datasets: [{ data: breakdown.map(r => +r.costo.toFixed(8)), backgroundColor: ['#009246','#CE2B37','#3d5af1'], borderWidth:2, borderColor:'#fff' }]
         },
         options: {
             responsive: true, maintainAspectRatio: false,
             plugins: {
-                legend: { position: 'bottom', labels: { font: { size: 12 }, padding: 14 } },
-                tooltip: { callbacks: { label: ctx => ` ${fmt$(ctx.raw)} (${(ctx.raw/totale*100).toFixed(1)}%)` } }
+                legend: { position:'bottom', labels:{ font:{size:12}, padding:14 } },
+                tooltip: { callbacks: { label: ctx => ` ${fmt$(ctx.raw)} (${(ctx.raw/total*100).toFixed(1)}%)` } }
             },
             cutout: '60%'
         }
     });
 }
 
-// ─── TOP STUDENTS ────────────────────────────────
-async function loadTopStudents() {
+// ─── TOP STUDENTI ────────────────────────────────
+function renderTopStudents(students) {
     const tbody = document.getElementById('topStudentsTable');
-    try {
-        const data = await api(`/api/admin/users/usage?days=${state.period}`);
-        const users = data.users || [];
-        if (!users.length) {
-            tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:var(--grigio-400);padding:20px">Nessun dato disponibile.</td></tr>`;
-            return;
-        }
-        tbody.innerHTML = users.slice(0, 10).map(u => {
-            const estCost = (u.minutes_used || 0) * 0.005;
-            return `<tr>
-                <td><strong>${esc(u.name)}</strong></td>
-                <td><span style="background:var(--grigio-100);border-radius:4px;padding:1px 7px;font-size:.76rem;font-weight:700">${u.level || 'A1'}</span></td>
-                <td>${Math.round(u.minutes_used || 0)} min</td>
-                <td>${u.session_count || '—'}</td>
-                <td>${fmt$(estCost)}</td>
-            </tr>`;
-        }).join('');
-    } catch {
-        // Dati demo per top students
-        const demo = [
-            { name:'Marco Rossi',    level:'B1', minutes:180, sessions:12 },
-            { name:'Emma Schmidt',   level:'A2', minutes:145, sessions:9  },
-            { name:'John Smith',     level:'A1', minutes:120, sessions:8  },
-            { name:'Maria Garcia',   level:'B2', minutes:95,  sessions:6  },
-            { name:'Pierre Dupont',  level:'A2', minutes:78,  sessions:5  },
-        ];
-        tbody.innerHTML = demo.map(u => `<tr>
-            <td><strong>${u.name}</strong></td>
-            <td><span style="background:var(--grigio-100);border-radius:4px;padding:1px 7px;font-size:.76rem;font-weight:700">${u.level}</span></td>
-            <td>${u.minutes} min</td>
-            <td>${u.sessions}</td>
-            <td>${fmt$(u.minutes * 0.005)}</td>
-        </tr>`).join('');
+    if (!students.length) {
+        tbody.innerHTML = `<tr><td colspan="6"><div class="no-data" style="padding:24px"><div class="icon">👥</div><p>Nessun dato di utilizzo nel periodo.</p></div></td></tr>`;
+        return;
     }
+    tbody.innerHTML = students.map(s => `
+        <tr>
+            <td><strong>${esc(s.name)}</strong></td>
+            <td><span style="background:var(--grigio-100);border-radius:4px;padding:1px 7px;font-size:.76rem;font-weight:700">${s.level}</span></td>
+            <td>${fmtN(s.input_tokens)}</td>
+            <td>${fmtN(s.output_tokens)}</td>
+            <td>${s.session_count}</td>
+            <td><strong>${fmt$(s.cost_usd)}</strong></td>
+        </tr>`).join('');
 }
 
 // ─── BUDGET ──────────────────────────────────────
 function saveBudget() {
     const val = parseFloat(document.getElementById('budgetInput').value);
-    if (isNaN(val) || val <= 0) { showToast('Inserisci un valore valido.', 'error'); return; }
+    if (isNaN(val) || val < 0) { showToast('Valore non valido.', 'error'); return; }
     state.budget = val;
-    localStorage.setItem('ital_budget', val.toString());
+    localStorage.setItem('ital_budget', val);
     showToast('✅ Budget salvato.', 'success');
-    loadAll();
+    if (state.lastData) renderAll(state.lastData);
 }
 
 // ─── LOGOUT ──────────────────────────────────────
@@ -692,9 +625,7 @@ function logout() {
     document.getElementById('loginScreen').style.display = 'flex';
 }
 
-function esc(str) {
-    return String(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-}
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 </script>
 </body>
 </html>
