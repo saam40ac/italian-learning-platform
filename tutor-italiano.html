@@ -793,12 +793,28 @@ async function sendMessage() {
 }
 
 // ═══════════════════════════════════════════════════════════
-// TTS — FIX #2: testo pulito prima di inviare
+// TTS — Riproduzione sequenziale per testi lunghi
 // ═══════════════════════════════════════════════════════════
-async function callTTS(rawText) {
-    const text = cleanForTTS(rawText);
-    if (!text) return null;
-    const voiceName   = state.selectedTutor === 'sofia' ? 'it-IT-Neural2-A' : 'it-IT-Neural2-C';
+
+// Spezza il testo in frasi di max 500 chars, rispettando la punteggiatura
+function splitIntoChunks(text, maxLen = 500) {
+    const sentences = text.match(/[^.!?:;\n]+[.!?:;\n]*/g) || [text];
+    const chunks = [];
+    let current = '';
+    for (const s of sentences) {
+        if ((current + s).length > maxLen && current) {
+            chunks.push(current.trim());
+            current = s;
+        } else {
+            current += s;
+        }
+    }
+    if (current.trim()) chunks.push(current.trim());
+    return chunks.filter(c => c.length > 0);
+}
+
+async function fetchTTSChunk(text) {
+    const voiceName   = state.selectedTutor === 'sofia' ? 'it-IT-Studio-C' : 'it-IT-Studio-B';
     const voiceGender = state.selectedTutor === 'sofia' ? 'FEMALE' : 'MALE';
     return api('/api/tts', {
         method: 'POST',
@@ -806,40 +822,65 @@ async function callTTS(rawText) {
     });
 }
 
-async function playTTS(btn, rawText) {
-    if (state.currentAudio) { state.currentAudio.pause(); state.currentAudio = null; }
+// Stato riproduzione globale
+state.playQueue   = [];
+state.isPlaying   = false;
+state.stopRequest = false;
+
+async function playQueue(chunks, onDone) {
+    state.stopRequest = false;
+    state.isPlaying   = true;
     const dot = document.getElementById('ttsDot');
     const lbl = document.getElementById('ttsLabel');
-    dot.classList.add('active'); lbl.textContent = 'Audio in riproduzione...';
-    btn.textContent = '⏹ Ferma';
-    try {
-        const data  = await callTTS(rawText);
-        const audio = new Audio(`data:audio/mp3;base64,${data.audioContent}`);
-        state.currentAudio = audio;
-        audio.play();
-        audio.onended = () => { state.currentAudio = null; dot.classList.remove('active'); lbl.textContent = 'Audio pronto'; btn.textContent = '🔊 Ascolta'; };
-        btn.onclick = () => { audio.pause(); state.currentAudio = null; dot.classList.remove('active'); lbl.textContent = 'Audio pronto'; btn.textContent = '🔊 Ascolta'; btn.onclick = () => playTTS(btn, rawText); };
-    } catch {
-        dot.classList.remove('active'); lbl.textContent = 'Audio pronto'; btn.textContent = '🔊 Ascolta';
-        const clean = cleanForTTS(rawText);
-        if ('speechSynthesis' in window && clean) {
-            const utt = new SpeechSynthesisUtterance(clean); utt.lang = 'it-IT'; utt.rate = 0.9;
-            speechSynthesis.speak(utt); lbl.textContent = 'Audio browser (fallback)';
-        }
+    dot.classList.add('active');
+
+    for (let i = 0; i < chunks.length; i++) {
+        if (state.stopRequest) break;
+        try {
+            lbl.textContent = chunks.length > 1 ? `Audio ${i+1}/${chunks.length}...` : 'Audio in riproduzione...';
+            const data  = await fetchTTSChunk(chunks[i]);
+            if (state.stopRequest) break;
+            await new Promise((resolve, reject) => {
+                const audio = new Audio(`data:audio/mp3;base64,${data.audioContent}`);
+                state.currentAudio = audio;
+                audio.onended  = resolve;
+                audio.onerror  = reject;
+                audio.play().catch(reject);
+            });
+        } catch { break; }
     }
+
+    state.currentAudio = null;
+    state.isPlaying    = false;
+    dot.classList.remove('active');
+    lbl.textContent = 'Audio pronto';
+    if (onDone) onDone();
+}
+
+function stopTTS() {
+    state.stopRequest = true;
+    if (state.currentAudio) { state.currentAudio.pause(); state.currentAudio = null; }
+}
+
+async function playTTS(btn, rawText) {
+    if (state.isPlaying) {
+        stopTTS();
+        btn.textContent = '🔊 Ascolta';
+        return;
+    }
+    const text = cleanForTTS(rawText);
+    if (!text) return;
+    const chunks = splitIntoChunks(text, 500);
+    btn.textContent = '⏹ Ferma';
+    await playQueue(chunks, () => { btn.textContent = '🔊 Ascolta'; });
 }
 
 async function autoPlayTTS(rawText) {
-    const dot = document.getElementById('ttsDot');
-    const lbl = document.getElementById('ttsLabel');
-    dot.classList.add('active'); lbl.textContent = 'Audio in riproduzione...';
-    try {
-        const shortText = cleanForTTS(rawText).substring(0, 800);
-        const data  = await callTTS(shortText);
-        const audio = new Audio(`data:audio/mp3;base64,${data.audioContent}`);
-        state.currentAudio = audio; audio.play();
-        audio.onended = () => { state.currentAudio = null; dot.classList.remove('active'); lbl.textContent = 'Audio pronto'; };
-    } catch { dot.classList.remove('active'); lbl.textContent = 'Audio pronto'; }
+    const text = cleanForTTS(rawText);
+    if (!text) return;
+    if (state.isPlaying) stopTTS();
+    const chunks = splitIntoChunks(text, 500);
+    await playQueue(chunks);
 }
 
 // ═══════════════════════════════════════════════════════════
