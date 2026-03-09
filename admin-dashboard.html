@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard Amministratore — Impara Italiano AI</title>
+    <title>Saam 4.0 Italian Voice — Admin</title>
+    <link rel="icon" type="image/png" href="OminiLOGO_Saam40_ItalianVoice.png">Dashboard Amministratore — Impara Italiano AI</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
     <style>
@@ -52,10 +53,33 @@
             display: flex; align-items: center; justify-content: center;
             z-index: 100;
         }
+        @keyframes slideUp { from{opacity:0;transform:translateY(24px) scale(.97)}to{opacity:1;transform:translateY(0) scale(1)} }
+        /* ── LOGIN CARD due colonne ── */
+        .login-card {
+            display: grid;
+            grid-template-columns: 210px 1fr;
+            gap: 0 36px;
+            align-items: center;
+            max-width: 640px !important;
+        }
+        .login-logo-col {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-right: 1px solid var(--grigio-200);
+            padding-right: 36px;
+            grid-row: 1 / span 10;
+        }
+        .login-logo-col img { width: 170px; height: auto; }
+        .login-form-col { grid-column: 2; }
+        .login-headline { margin-bottom: 26px; }
+        .login-headline p  { font-family: 'Lato', sans-serif; font-size: 1rem; color: #555; line-height: 1.45; margin: 0; }
+        .login-headline strong { color: var(--grigio-700); font-size: 1.2rem; }
+        .login-headline .brand-role { font-weight: 900; color: var(--verde-dark); font-size: 1.05rem; }
         .login-card {
             background: var(--bianco); border-radius: 18px;
             padding: 44px 40px; width: 100%; max-width: 400px;
-            box-shadow: 0 24px 60px rgba(0,0,0,.25);
+            box-shadow: 0 32px 80px rgba(0,0,0,.28); animation: slideUp .5s cubic-bezier(.22,1,.36,1) both;
             animation: slideUp .4s ease both;
         }
         @keyframes slideUp { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
@@ -334,21 +358,32 @@
 <!-- ══════════════════ LOGIN ══════════════════ -->
 <div id="loginScreen">
     <div class="login-card">
-        <div style="text-align:center; margin-bottom:6px">
-            <span class="admin-badge">🔐 Area Admin</span>
+
+        <!-- colonna sinistra: logo -->
+        <div class="login-logo-col">
+            <img src="LOGO_Saam40_ItalianVoice.png" alt="Saam 4.0 Italian Voice">
         </div>
-        <h1>Impara Italiano AI</h1>
-        <p>Dashboard Amministratore</p>
-        <div class="form-group">
-            <label>Email</label>
-            <input type="email" id="loginEmail" placeholder="admin@italiano.ai" autocomplete="email">
+
+        <!-- colonna destra: testo + form -->
+        <div class="login-form-col">
+            <div class="login-headline">
+                <p>Pannello di Controllo<br>
+                   <strong>Amministratori</strong><br>
+                   <span class="brand-role">🔐 Area Riservata</span>
+                </p>
+            </div>
+            <div class="form-group">
+                <label>Email</label>
+                <input type="email" id="loginEmail" placeholder="admin@italiano.ai" autocomplete="email">
+            </div>
+            <div class="form-group">
+                <label>Password</label>
+                <input type="password" id="loginPassword" placeholder="••••••••">
+            </div>
+            <button class="btn-primary" id="btnLogin">Accedi</button>
+            <div class="login-error" id="loginError"></div>
         </div>
-        <div class="form-group">
-            <label>Password</label>
-            <input type="password" id="loginPassword" placeholder="••••••••">
-        </div>
-        <button class="btn-primary" id="btnLogin">Accedi</button>
-        <div class="login-error" id="loginError"></div>
+
     </div>
 </div>
 
@@ -358,9 +393,10 @@
     <!-- TOPBAR -->
     <div class="topbar">
         <div class="topbar-brand">
+            <img src="OminiLOGO_Saam40_ItalianVoice.png" style="width:32px;height:32px;object-fit:contain" alt="Logo">
             <div>
-                <h2>🇮🇹 Impara Italiano AI</h2>
-                <span>Pannello di Controllo</span>
+                <h2>Saam 4.0 Italian Voice</h2>
+                <span>Pannello di Controllo Admin</span>
             </div>
         </div>
         <div class="topbar-right">
