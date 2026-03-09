@@ -4,7 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Saam 4.0 Italian Voice — Admin</title>
-    <link rel="icon" type="image/png" href="OminiLOGO_Saam40_ItalianVoice.png">Dashboard Amministratore — Impara Italiano AI</title>
+    <link rel="icon" type="image/png" href="OminiLOGO_Saam40_ItalianVoice.png">
+    <link rel="manifest" href="manifest-admin.json">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="IV Admin">
+    <meta name="theme-color" content="#006f35">
+    <link rel="apple-touch-icon" href="LOGO_Saam40_ItalianVoice.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
     <style>
@@ -349,6 +356,96 @@
         .setting-row:last-child { border-bottom: none; }
         .setting-label h4 { font-size: .9rem; font-weight: 700; color: var(--grigio-700); }
         .setting-label p  { font-size: .78rem; color: var(--grigio-400); }
+
+        /* ══════════════════════════════════════════════
+           ADMIN — RESPONSIVE MOBILE
+        ══════════════════════════════════════════════ */
+        .nav-overlay {
+            display: none; position: fixed; inset: 0;
+            background: rgba(0,0,0,.5); z-index: 48;
+            backdrop-filter: blur(2px);
+        }
+        .nav-overlay.show { display: block; }
+
+        .btn-hamburger {
+            display: none; background: rgba(255,255,255,.15);
+            border: 1px solid rgba(255,255,255,.25); border-radius: 6px;
+            cursor: pointer; padding: 6px 10px;
+            color: #fff; font-size: 1.2rem; line-height: 1;
+        }
+
+        @media (max-width: 768px) {
+            /* Login */
+            #loginScreen { padding: 20px 16px; align-items: flex-start; padding-top: 8vh; }
+            .login-card {
+                grid-template-columns: 1fr !important;
+                padding: 26px 22px !important;
+                max-width: 100% !important;
+                gap: 0 !important;
+            }
+            .login-logo-col {
+                border-right: none !important;
+                border-bottom: 1px solid var(--grigio-200) !important;
+                padding-right: 0 !important;
+                padding-bottom: 16px !important;
+                margin-bottom: 16px !important;
+                grid-row: auto !important;
+            }
+            .login-logo-col img { width: 90px !important; }
+            .login-form-col { grid-column: 1 !important; }
+
+            /* Topbar */
+            .topbar { padding: 0 12px !important; height: 52px !important; }
+            .topbar-brand span { display: none; }
+            .topbar-brand h2 { font-size: .85rem !important; }
+            .topbar-right { gap: 6px !important; }
+            .btn-sm[onclick*="tutor"], .btn-sm[onclick*="costi"] { display: none; }
+            .admin-pill { font-size: .68rem !important; padding: 3px 7px !important; }
+            .btn-hamburger { display: flex !important; align-items: center; order: -1; }
+
+            /* Nav sidebar drawer */
+            .nav-sidebar {
+                position: fixed !important;
+                left: -230px !important;
+                top: 0 !important; bottom: 0 !important;
+                z-index: 49 !important;
+                width: 220px !important;
+                transition: left .28s cubic-bezier(.4,0,.2,1) !important;
+                box-shadow: 6px 0 24px rgba(0,0,0,.3) !important;
+                overflow-y: auto !important;
+            }
+            .nav-sidebar.open { left: 0 !important; }
+
+            /* Content */
+            .content { padding: 16px !important; }
+
+            /* Stats grid: 1 column */
+            .stats-grid { grid-template-columns: 1fr 1fr !important; gap: 10px !important; }
+
+            /* Tables: horizontal scroll */
+            .data-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+            table { min-width: 540px; }
+            th, td { font-size: .78rem !important; padding: 8px 10px !important; }
+
+            /* Panels */
+            .panel { padding: 16px !important; }
+            .panel-title { font-size: .92rem !important; }
+
+            /* Form rows stack */
+            .form-row { grid-template-columns: 1fr !important; }
+            .form-row.three { grid-template-columns: 1fr !important; }
+
+            /* Modals full width */
+            .modal { width: 96% !important; max-height: 90vh !important; overflow-y: auto; padding: 20px !important; }
+
+            /* Tabs scroll */
+            .tabs { overflow-x: auto; -webkit-overflow-scrolling: touch; flex-wrap: nowrap !important; }
+        }
+
+        @media (max-width: 380px) {
+            .stats-grid { grid-template-columns: 1fr !important; }
+            .topbar-brand { gap: 6px !important; }
+        }
     </style>
 </head>
 <body>
@@ -399,6 +496,7 @@
                 <span>Pannello di Controllo Admin</span>
             </div>
         </div>
+        <button class="btn-hamburger" id="btnHamburger" aria-label="Menu">☰</button>
         <div class="topbar-right">
             <span class="admin-pill">👤 <span id="adminName">Admin</span></span>
             <button class="btn-sm" onclick="window.open('tutor-italiano.html','_blank')">🎓 Vai alla Piattaforma</button>
@@ -407,6 +505,7 @@
         </div>
     </div>
 
+    <div class="nav-overlay" id="navOverlay"></div>
     <div class="main-layout">
 
         <!-- NAV SIDEBAR -->
@@ -1101,6 +1200,37 @@ function logout() {
 function esc(str) {
     return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
+
+// ── NAV SIDEBAR MOBILE ──
+(function() {
+    const hamburger = document.getElementById('btnHamburger');
+    const nav     = document.querySelector('.nav-sidebar');
+    const overlay = document.getElementById('navOverlay');
+    if (!hamburger || !nav || !overlay) return;
+
+    function openNav() { nav.classList.add('open'); overlay.classList.add('show'); document.body.style.overflow='hidden'; }
+    function closeNav() { nav.classList.remove('open'); overlay.classList.remove('show'); document.body.style.overflow=''; }
+    hamburger.addEventListener('click', openNav);
+    overlay.addEventListener('click', closeNav);
+    document.querySelectorAll('.nav-item').forEach(el => {
+        el.addEventListener('click', () => { if (window.innerWidth <= 768) closeNav(); });
+    });
+})();
+
+// ── PWA INSTALL ──
+let deferredPromptAdmin;
+window.addEventListener('beforeinstallprompt', e => {
+    e.preventDefault(); deferredPromptAdmin = e;
+    setTimeout(() => {
+        if (deferredPromptAdmin && !window.matchMedia('(display-mode: standalone)').matches) {
+            const b = document.createElement('div');
+            b.style.cssText = 'position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#fff;border:1.5px solid var(--verde);border-radius:12px;padding:12px 18px;box-shadow:0 8px 24px rgba(0,0,0,.15);z-index:999;display:flex;align-items:center;gap:12px;font-family:Lato,sans-serif;white-space:nowrap';
+            b.innerHTML = `<img src="OminiLOGO_Saam40_ItalianVoice.png" style="width:26px;height:26px;object-fit:contain"><span style="font-size:.82rem;font-weight:700;color:#3d3d3a">Installa Admin App</span><button onclick="deferredPromptAdmin&&deferredPromptAdmin.prompt();this.closest('div').remove()" style="background:var(--verde);color:#fff;border:none;border-radius:8px;padding:6px 12px;font-size:.78rem;font-weight:700;cursor:pointer">Installa</button><button onclick="this.closest('div').remove()" style="background:none;border:none;font-size:1.1rem;cursor:pointer;color:#9a9a95">✕</button>`;
+            document.body.appendChild(b);
+        }
+    }, 3000);
+});
+
 </script>
 </body>
 </html>
