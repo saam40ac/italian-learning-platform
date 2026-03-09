@@ -5,8 +5,23 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { Pool } = require('pg');
 const { google } = require('googleapis');
-// Tracking costi API
-const { trackApiUsage, trackConversationSession } = require('./utils/tracking');
+// ── Tracking costi API (inline — non dipende da file esterni) ──
+async function trackApiUsage(pool, userId, apiType, units, sessionType, sessionId) {
+    try {
+        const costPerUnit = apiType === 'claude_input'  ? 0.000003
+                          : apiType === 'claude_output' ? 0.000015
+                          : apiType === 'tts'           ? 0.000016 : 0;
+        const costUsd = (units || 0) * costPerUnit;
+        await pool.query(
+            `INSERT INTO api_usage (user_id, api_type, units, session_type, session_id, cost_usd, created_at)
+             VALUES ($1, $2, $3, $4, $5, $6, NOW())`,
+            [userId, apiType, units || 0, sessionType || 'conversation', sessionId || null, costUsd]
+        );
+    } catch (err) {
+        console.error('trackApiUsage error:', err.message);
+    }
+}
+async function trackConversationSession() {} // placeholder compatibilità
 // routes/admin-costs rimosso — endpoint costi inline nel server
 
 const app = express();
@@ -610,7 +625,7 @@ app.get('/api/user/tts-usage', authenticate, async (req, res) => {
         );
         const dailyLimit = settingsResult.rows.length > 0 
             ? parseInt(settingsResult.rows[0].config_value) 
-            : 15;
+            : 200;
 
         // Get today's usage
         const usageResult = await client.query(
@@ -680,9 +695,11 @@ app.post('/api/tts', authenticate, async (req, res) => {
         const settingsResult = await client.query(
             `SELECT config_value FROM api_configs WHERE config_key = 'tts_daily_limit'`
         );
-        const dailyLimit = settingsResult.rows.length > 0 
+        // Limite minimo garantito 200 (ignora valori legacy ≤ 15 nel DB)
+        const rawLimit = settingsResult.rows.length > 0 
             ? parseInt(settingsResult.rows[0].config_value) 
-            : 15;
+            : 200;
+        const dailyLimit = rawLimit <= 15 ? 200 : rawLimit;
 
         // Get today's usage
         const usageResult = await client.query(
@@ -707,57 +724,45 @@ app.post('/api/tts', authenticate, async (req, res) => {
         // Limita lunghezza testo (max 5000 caratteri)
         const limitedText = text.substring(0, 5000);
 
-        // ✅ ITALIAN VOICE SELECTION - Sofia (F) & Marco (M)
-        // Priority 1: Use voiceName if provided by frontend
-        // Priority 2: Map from voiceGender
-        let actualVoiceName = voiceName;
-        let actualVoiceLang = voiceLang;
-        
-        if (!actualVoiceName) {
-            // Fallback mapping per voci italiane
-            if (voiceGender === 'FEMALE') {
-                // Sofia: Voce femminile italiana
-                actualVoiceName = 'it-IT-Neural2-A';
-                actualVoiceLang = 'it-IT';
-            } else {
-                // Marco: Voce maschile italiana (default)
-                actualVoiceName = 'it-IT-Neural2-C';
-                actualVoiceLang = 'it-IT';
-            }
-        }
+        // Voce: priorità al nome esplicito dal frontend, fallback su genere
+        const actualVoiceName = voiceName || (voiceGender === 'FEMALE' ? 'it-IT-Neural2-A' : 'it-IT-Neural2-C');
+        const actualVoiceLang = 'it-IT';
+        const actualGender    = voiceGender === 'FEMALE' ? 'FEMALE' : 'MALE';
 
-        console.log('✅ Selected voice:', {
-            actualVoiceName,
-            actualVoiceLang,
-            voiceGender
-        });
+        console.log('✅ TTS voice:', actualVoiceName, '| chars:', limitedText.length);
 
         const apiKey = process.env.GOOGLE_TTS_API_KEY || process.env.GOOGLE_API_KEY;
+        if (!apiKey) throw new Error('Google API Key not configured');
 
-        if (!apiKey) {
-            throw new Error('Google API Key not configured');
+        // Converti testo in SSML per punteggiatura e pause naturali
+        function toSSML(txt) {
+            const escaped = txt
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;');
+            return `<speak>${escaped}</speak>`;
         }
 
-        // Call Google Cloud TTS
+        // Call Google Cloud TTS con SSML per lettura naturale
         const response = await fetch(
             `https://texttospeech.googleapis.com/v1/text:synthesize?key=${apiKey}`,
             {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    input: { text: limitedText },
+                    input: { ssml: toSSML(limitedText) },
                     voice: {
                         languageCode: actualVoiceLang,
                         name: actualVoiceName,
-                        ssmlGender: voiceGender
+                        ssmlGender: actualGender
                     },
                     audioConfig: {
                         audioEncoding: 'MP3',
-                        speakingRate: 1.0,  // Normal speed (più naturale)
+                        speakingRate: 0.95,
                         pitch: 0.0,
-                        volumeGainDb: 2.0,  // Boost volume leggermente
-                        effectsProfileId: ['large-home-entertainment-class-device'],  // Migliore qualità
-                        sampleRateHertz: 24000  // Alta qualità audio
+                        volumeGainDb: 1.0,
+                        sampleRateHertz: 24000
                     }
                 })
             }
