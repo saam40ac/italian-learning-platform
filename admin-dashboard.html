@@ -451,7 +451,7 @@
                                 </tr>
                             </thead>
                             <tbody id="usersTable">
-                                <tr><td colspan="7" style="text-align:center;padding:24px;color:var(--grigio-400)">Caricamento...</td></tr>
+                                <tr><td colspan="8" style="text-align:center;padding:24px;color:var(--grigio-400)">Caricamento...</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -502,7 +502,7 @@
                                 </tr>
                             </thead>
                             <tbody id="materialsTable">
-                                <tr><td colspan="7" style="text-align:center;padding:24px;color:var(--grigio-400)">Caricamento...</td></tr>
+                                <tr><td colspan="8" style="text-align:center;padding:24px;color:var(--grigio-400)">Caricamento...</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -650,6 +650,17 @@
                 <input type="number" class="form-control" id="editUserMinutes" min="0">
             </div>
         </div>
+        <div class="form-row">
+            <div class="form-group-inline" style="flex:1">
+                <label>Pacchetto Abbonamento</label>
+                <select class="form-control" id="editUserPackage">
+                    <option value="basic">🥉 Basic — 30 min/giorno (€9,70/mese)</option>
+                    <option value="advanced">🥈 Advanced — 60 min/giorno (€16,70/mese)</option>
+                    <option value="gold">🥇 Gold — 120 min/giorno (€27,70/mese)</option>
+                    <option value="unlimited">♾️ Unlimited — nessun limite</option>
+                </select>
+            </div>
+        </div>
         <div class="modal-actions">
             <button class="btn btn-outline" onclick="closeModal('modalEditUser')">Annulla</button>
             <button class="btn btn-verde" onclick="saveUser()">Salva Modifiche</button>
@@ -755,6 +766,13 @@ const api = async (path, opts = {}) => {
     return res.json();
 };
 
+function pkgBadge(pkg) {
+    const map = { basic:'🥉 Basic', advanced:'🥈 Advanced', gold:'🥇 Gold', unlimited:'♾️ Unlimited' };
+    const colors = { basic:'#9a9a95', advanced:'#009246', gold:'#d4a017', unlimited:'#3d5af1' };
+    const label = map[pkg] || '—';
+    const color = colors[pkg] || '#9a9a95';
+    return `<span style="background:${color}15;color:${color};border:1px solid ${color}40;border-radius:4px;padding:2px 8px;font-size:.72rem;font-weight:700">${label}</span>`;
+}
 const showToast = (msg, type = '') => {
     const el = document.getElementById('toast');
     el.textContent = msg; el.className = `toast ${type} show`;
@@ -858,14 +876,14 @@ async function loadUsers() {
         state.allUsers = data.users || [];
         renderUsersTable(state.allUsers);
     } catch (err) {
-        document.getElementById('usersTable').innerHTML = `<tr><td colspan="7" style="text-align:center;color:var(--rosso)">Errore: ${err.message}</td></tr>`;
+        document.getElementById('usersTable').innerHTML = `<tr><td colspan="8" style="text-align:center;color:var(--rosso)">Errore: ${err.message}</td></tr>`;
     }
 }
 
 function renderUsersTable(users) {
     const tbody = document.getElementById('usersTable');
     if (!users.length) {
-        tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state"><div class="icon">👥</div><p>Nessun utente trovato.</p></div></td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="8"><div class="empty-state"><div class="icon">👥</div><p>Nessun utente trovato.</p></div></td></tr>`;
         return;
     }
     tbody.innerHTML = users.map(u => `
@@ -875,6 +893,7 @@ function renderUsersTable(users) {
             <td><span class="badge ${u.role==='admin'?'oro':'verde'}">${u.role==='admin'?'Admin':'Studente'}</span></td>
             <td><span class="badge grigio">${u.level || 'A1'}</span></td>
             <td>${u.minutes_limit || 120} min</td>
+            <td>${pkgBadge(u.package)}</td>
             <td>${new Date(u.created_at).toLocaleDateString('it-IT')}</td>
             <td style="display:flex;gap:6px">
                 <button class="btn btn-outline btn-icon" onclick="editUser(${JSON.stringify(u).replace(/"/g,'&quot;')})">✏️</button>
@@ -916,6 +935,7 @@ function editUser(user) {
     document.getElementById('editUserLevel').value  = user.level || 'A1';
     document.getElementById('editUserMinutes').value= user.minutes_limit || 120;
     document.getElementById('editUserPassword').value = '';
+    const pkgSel = document.getElementById('editUserPackage'); if (pkgSel) pkgSel.value = user.package || 'basic';
     openModal('modalEditUser');
 }
 
@@ -926,7 +946,8 @@ async function saveUser() {
         email:         document.getElementById('editUserEmail').value.trim(),
         role:          document.getElementById('editUserRole').value,
         level:         document.getElementById('editUserLevel').value,
-        monthly_limit: parseInt(document.getElementById('editUserMinutes').value) || 120
+        monthly_limit: parseInt(document.getElementById('editUserMinutes').value) || 120,
+        package: document.getElementById('editUserPackage')?.value || 'basic'
     };
     const pwd = document.getElementById('editUserPassword').value;
     if (pwd) payload.password = pwd;
@@ -967,7 +988,7 @@ async function loadMaterials() {
         const mats = data.materials || [];
         const tbody = document.getElementById('materialsTable');
         if (!mats.length) {
-            tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state"><div class="icon">📚</div><p>Nessun materiale trovato.</p></div></td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="8"><div class="empty-state"><div class="icon">📚</div><p>Nessun materiale trovato.</p></div></td></tr>`;
             return;
         }
         tbody.innerHTML = mats.map(m => `
@@ -983,7 +1004,7 @@ async function loadMaterials() {
                 </td>
             </tr>`).join('');
     } catch (err) {
-        document.getElementById('materialsTable').innerHTML = `<tr><td colspan="7" style="text-align:center;color:var(--rosso)">Errore: ${err.message}</td></tr>`;
+        document.getElementById('materialsTable').innerHTML = `<tr><td colspan="8" style="text-align:center;color:var(--rosso)">Errore: ${err.message}</td></tr>`;
     }
 }
 
