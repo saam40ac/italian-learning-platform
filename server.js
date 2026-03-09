@@ -708,153 +708,114 @@ async function trackTTSUsage(client, userId) {
 }
 
 // ============================================
-// MODIFY EXISTING /api/tts ENDPOINT
+// /api/tts — OpenAI TTS (naturale) con fallback Google WaveNet
 // ============================================
-// Sostituisci l'endpoint /api/tts esistente con questa versione aggiornata:
 
 app.post('/api/tts', authenticate, async (req, res) => {
     const client = await pool.connect();
     try {
-        const { text, voiceLang = 'en-US', voiceGender = 'MALE', voiceName } = req.body;
-        const userId = req.user.id;
+        const { text, voiceGender = 'FEMALE' } = req.body;
+        const userId = req.user.userId || req.user.id;  // fix: supporta entrambi
 
-        // 🎤 DEBUG LOGGING
-        console.log('🎤 TTS Request received:', {
-            text: text ? text.substring(0, 50) + '...' : 'empty',
-            voiceLang,
-            voiceGender,
-            voiceName,
-            userId
-        });
-
-        if (!text) {
+        if (!text || !text.trim()) {
             return res.status(400).json({ error: 'Text is required' });
         }
 
-        // Check if user can use premium TTS
-        const today = new Date().toISOString().split('T')[0];
-        
-        // Get daily limit
-        const settingsResult = await client.query(
-            `SELECT config_value FROM api_configs WHERE config_key = 'tts_daily_limit'`
-        );
-        // Limite minimo garantito 200 (ignora valori legacy ≤ 15 nel DB)
-        const rawLimit = settingsResult.rows.length > 0 
-            ? parseInt(settingsResult.rows[0].config_value) 
-            : 200;
-        const dailyLimit = rawLimit <= 15 ? 200 : rawLimit;
+        const limitedText = text.trim().substring(0, 4000);
 
-        // Get today's usage
-        const usageResult = await client.query(
-            `SELECT COUNT(*) as count 
-             FROM tts_usage 
-             WHERE user_id = $1 AND DATE(created_at) = $2`,
-            [userId, today]
-        );
+        // ── Voci OpenAI — più naturali in italiano ──────────────────────
+        // nova/shimmer = femminile morbida, onyx = maschile profondo
+        const isFemale   = voiceGender === 'FEMALE';
+        const openaiVoice = isFemale ? 'nova' : 'onyx';
 
-        const usedToday = parseInt(usageResult.rows[0].count);
+        // ── Voci Google WaveNet — fallback ──────────────────────────────
+        const gVoiceName = isFemale ? 'it-IT-Wavenet-A' : 'it-IT-Wavenet-C';
+        const gGender    = isFemale ? 'FEMALE' : 'MALE';
 
-        // If limit exceeded, return error to trigger browser fallback
-        if (usedToday >= dailyLimit) {
-            return res.status(429).json({ 
-                error: 'Daily premium TTS limit reached',
-                usedToday,
-                dailyLimit,
-                fallbackToLocal: true
-            });
-        }
+        const openaiKey = process.env.OPENAI_API_KEY;
+        const googleKey = process.env.GOOGLE_TTS_API_KEY || process.env.GOOGLE_API_KEY;
 
-        // Limita lunghezza testo (max 5000 caratteri)
-        const limitedText = text.substring(0, 5000);
+        let audioBase64 = null;
+        let usedEngine  = null;
 
-        // ── SELEZIONE VOCE ──────────────────────────────────────────────
-        // Voci disponibili per l'italiano su Google Cloud TTS:
-        //   WaveNet  → migliore qualità, più naturale e espressiva
-        //   Neural2  → fallback se WaveNet non disponibile
-        //   Standard → ultimo fallback
-        const isFemale     = voiceGender === 'FEMALE';
-        // Sofia: Wavenet-A (F), Marco: Wavenet-B (M) — le migliori per l'italiano
-        const waveNetVoice = isFemale ? 'it-IT-Wavenet-A' : 'it-IT-Wavenet-B';
-        const neural2Voice = isFemale ? 'it-IT-Neural2-A' : 'it-IT-Neural2-C';
-        const stdVoice     = isFemale ? 'it-IT-Standard-A': 'it-IT-Standard-D';
-        // Usa voiceName esplicita dal frontend se fornita, altrimenti WaveNet
-        const wantedVoice  = (voiceName && !voiceName.includes('Studio')) ? voiceName : waveNetVoice;
-        const actualGender = isFemale ? 'FEMALE' : 'MALE';
-
-        const apiKey = process.env.GOOGLE_TTS_API_KEY || process.env.GOOGLE_API_KEY;
-        if (!apiKey) throw new Error('Google API Key not configured');
-
-        async function callTTSApi(vName) {
-            return fetch(
-                `https://texttospeech.googleapis.com/v1/text:synthesize?key=${apiKey}`,
-                {
+        // ── 1. Prova OpenAI TTS HD ───────────────────────────────────────
+        if (openaiKey) {
+            try {
+                const resp = await fetch('https://api.openai.com/v1/audio/speech', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: {
+                        'Authorization': `Bearer ${openaiKey}`,
+                        'Content-Type': 'application/json'
+                    },
                     body: JSON.stringify({
-                        input: { text: limitedText },
-                        voice: { languageCode: 'it-IT', name: vName, ssmlGender: actualGender },
-                        audioConfig: {
-                            audioEncoding: 'MP3',
-                            speakingRate: 0.88,   // leggermente più lenta = più chiara
-                            pitch: 0.0,
-                            volumeGainDb: 1.0,
-                            sampleRateHertz: 24000,
-                            effectsProfileId: ['headphone-class-device']
-                        }
+                        model: 'tts-1-hd',
+                        voice: openaiVoice,
+                        input: limitedText,
+                        speed: 0.92,
+                        response_format: 'mp3'
                     })
+                });
+                if (resp.ok) {
+                    const buffer   = await resp.arrayBuffer();
+                    audioBase64    = Buffer.from(buffer).toString('base64');
+                    usedEngine     = `openai-${openaiVoice}`;
+                } else {
+                    const err = await resp.json().catch(()=>({}));
+                    console.warn('⚠️ OpenAI TTS error:', resp.status, err?.error?.message);
                 }
-            );
+            } catch(e) { console.warn('⚠️ OpenAI TTS exception:', e.message); }
         }
 
-        // Catena di fallback: WaveNet → Neural2 → Standard
-        let response  = await callTTSApi(wantedVoice);
-        let usedVoice = wantedVoice;
-        let usedType  = 'WaveNet';
-
-        if (!response.ok && wantedVoice.includes('Wavenet')) {
-            console.warn(`⚠️ WaveNet not available (${response.status}), trying Neural2`);
-            response  = await callTTSApi(neural2Voice);
-            usedVoice = neural2Voice;
-            usedType  = 'Neural2';
+        // ── 2. Fallback Google WaveNet ───────────────────────────────────
+        if (!audioBase64 && googleKey) {
+            try {
+                const resp = await fetch(
+                    `https://texttospeech.googleapis.com/v1/text:synthesize?key=${googleKey}`,
+                    {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            input: { text: limitedText },
+                            voice: { languageCode:'it-IT', name: gVoiceName, ssmlGender: gGender },
+                            audioConfig: { audioEncoding:'MP3', speakingRate:0.88, sampleRateHertz:24000 }
+                        })
+                    }
+                );
+                if (resp.ok) {
+                    const data  = await resp.json();
+                    audioBase64 = data.audioContent;
+                    usedEngine  = `google-${gVoiceName}`;
+                } else {
+                    console.warn('⚠️ Google TTS error:', resp.status);
+                }
+            } catch(e) { console.warn('⚠️ Google TTS exception:', e.message); }
         }
-        if (!response.ok) {
-            console.warn(`⚠️ Neural2 not available (${response.status}), using Standard`);
-            response  = await callTTSApi(stdVoice);
-            usedVoice = stdVoice;
-            usedType  = 'Standard';
+
+        if (!audioBase64) {
+            return res.status(500).json({ error: 'TTS non disponibile', fallbackToLocal: true });
         }
 
-        if (!response.ok) {
-            const errorData = await response.json().catch(() => ({}));
-            console.error('❌ TTS API error:', response.status, errorData);
-            throw new Error(`TTS API error ${response.status}: ${errorData?.error?.message || response.statusText}`);
-        }
+        console.log(`✅ TTS OK | engine: ${usedEngine} | chars: ${limitedText.length} | user: ${userId}`);
 
-        const data = await response.json();
-        console.log(`✅ TTS OK | voice: ${usedVoice} (${usedType}) | chars: ${limitedText.length}`);
-
-        // Track usage
+        // ── Traccia utilizzo ─────────────────────────────────────────────
         await trackTTSUsage(client, userId);
-        const sessionIdTTS = req.body.sessionId || `session-${userId}-${Date.now()}`;
+        const sessionIdTTS = req.body.sessionId || `tts-${userId}-${Date.now()}`;
         await trackApiUsage(pool, userId, 'tts', limitedText.length, req.body.sessionType || 'conversation', sessionIdTTS);
 
         res.json({
-            audioContent: data.audioContent,
-            voiceUsed:    usedVoice,
-            voiceType:    usedType,
-            usedToday:    usedToday + 1,
-            dailyLimit
+            audioContent: audioBase64,
+            voiceUsed:    usedEngine,
+            voiceType:    usedEngine?.startsWith('openai') ? 'OpenAI HD' : 'Google WaveNet'
         });
 
     } catch (error) {
-        console.error('❌ TTS error:', error);
-        res.status(500).json({ 
-            error: 'Text-to-speech failed',
-            fallbackToLocal: true
-        });
+        console.error('❌ TTS error:', error.message);
+        res.status(500).json({ error: 'TTS error', fallbackToLocal: true });
     } finally {
         client.release();
     }
+});
+
 });
 
 
