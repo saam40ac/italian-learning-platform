@@ -7,6 +7,13 @@
     <link rel="icon" type="image/png" href="OminiLOGO_Saam40_ItalianVoice.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
+    <link rel="manifest" href="manifest-costi.json">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="IV Costi">
+    <meta name="theme-color" content="#006f35">
+    <link rel="apple-touch-icon" href="LOGO_Saam40_ItalianVoice.png">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
     <style>
         :root {
@@ -162,6 +169,73 @@
         .toast.show    { transform:translateY(0); opacity:1; }
         .toast.success { background:var(--verde-dark); }
         .toast.error   { background:var(--rosso-dark); }
+
+        /* ══════════════════════════════════════════════
+           COSTI — RESPONSIVE MOBILE
+        ══════════════════════════════════════════════ */
+        @media (max-width: 768px) {
+            /* Login */
+            #loginScreen { padding: 20px 16px; align-items: flex-start; padding-top: 8vh; inset: 0 !important; }
+            .login-card {
+                grid-template-columns: 1fr !important;
+                padding: 26px 22px !important;
+                max-width: 100% !important;
+                gap: 0 !important;
+                border-radius: 18px !important;
+            }
+            .login-logo-col {
+                border-right: none !important;
+                border-bottom: 1px solid #e8e8e5 !important;
+                padding-right: 0 !important;
+                padding-bottom: 16px !important;
+                margin-bottom: 16px !important;
+                grid-row: auto !important;
+            }
+            .login-logo-col img { width: 90px !important; }
+            .login-form-col { grid-column: 1 !important; }
+
+            /* Topbar */
+            .topbar { padding: 0 12px !important; height: 52px !important; }
+            .topbar-brand div p { display: none; }
+            .topbar-brand div h2 { font-size: .85rem !important; }
+            .topbar-right { gap: 6px !important; }
+            .topbar-right .btn-sm { padding: 4px 8px !important; font-size: .72rem !important; }
+
+            /* Period tabs */
+            .topbar-right > div:first-child { gap: 4px !important; }
+            .tab-btn { padding: 5px 10px !important; font-size: .72rem !important; }
+
+            /* Content */
+            .content { padding: 14px !important; }
+
+            /* KPI grid: 2 → 2 columns (phones) */
+            .cost-grid { grid-template-columns: 1fr 1fr !important; gap: 10px !important; }
+            .kpi-card { padding: 14px !important; }
+            .kpi-card .value { font-size: 1.4rem !important; }
+            .kpi-card .label { font-size: .72rem !important; }
+
+            /* Panels row stack */
+            .panels-row { grid-template-columns: 1fr !important; gap: 14px !important; }
+            .panel { padding: 16px !important; }
+            .panel-title { font-size: .92rem !important; }
+
+            /* Chart smaller */
+            .chart-container { height: 200px !important; }
+
+            /* Top students table */
+            .data-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+            table { min-width: 400px; }
+            th, td { font-size: .76rem !important; padding: 8px 10px !important; }
+
+            /* Budget row stack */
+            .budget-row { flex-direction: column !important; align-items: flex-start !important; gap: 10px !important; }
+            .budget-input-wrap { width: 100%; }
+            .budget-input { width: 100% !important; }
+        }
+
+        @media (max-width: 400px) {
+            .cost-grid { grid-template-columns: 1fr !important; }
+        }
     </style>
 </head>
 <body>
@@ -294,7 +368,7 @@
                         <tbody id="breakdownTable">
                             <tr><td colspan="4" style="text-align:center;padding:20px;color:var(--grigio-400)">Caricamento...</td></tr>
                         </tbody>
-                    </table>
+                    </table></div>
                     <div style="margin-top:20px">
                         <p style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--grigio-400);margin-bottom:10px">Quota per Servizio</p>
                         <div id="progressBars"></div>
@@ -363,7 +437,7 @@
                     <tbody id="topStudentsTable">
                         <tr><td colspan="6" style="text-align:center;padding:24px;color:var(--grigio-400)">Caricamento...</td></tr>
                     </tbody>
-                </table>
+                </table></div>
             </div>
         </div>
     </div>
@@ -678,6 +752,21 @@ function logout() {
 }
 
 function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+// ── PWA INSTALL ──
+let deferredPromptCosti;
+window.addEventListener('beforeinstallprompt', e => {
+    e.preventDefault(); deferredPromptCosti = e;
+    setTimeout(() => {
+        if (deferredPromptCosti && !window.matchMedia('(display-mode: standalone)').matches) {
+            const b = document.createElement('div');
+            b.style.cssText = 'position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#fff;border:1.5px solid var(--verde);border-radius:12px;padding:12px 18px;box-shadow:0 8px 24px rgba(0,0,0,.15);z-index:999;display:flex;align-items:center;gap:12px;font-family:Lato,sans-serif;white-space:nowrap';
+            b.innerHTML = `<img src="OminiLOGO_Saam40_ItalianVoice.png" style="width:26px;height:26px;object-fit:contain"><span style="font-size:.82rem;font-weight:700;color:#3d3d3a">Installa Dashboard Costi</span><button onclick="deferredPromptCosti&&deferredPromptCosti.prompt();this.closest('div').remove()" style="background:var(--verde);color:#fff;border:none;border-radius:8px;padding:6px 12px;font-size:.78rem;font-weight:700;cursor:pointer">Installa</button><button onclick="this.closest('div').remove()" style="background:none;border:none;font-size:1.1rem;cursor:pointer;color:#9a9a95">✕</button>`;
+            document.body.appendChild(b);
+        }
+    }, 3000);
+});
+
 </script>
 </body>
 </html>
