@@ -7,7 +7,7 @@ const { Pool } = require('pg');
 const { google } = require('googleapis');
 // Tracking costi API
 const { trackApiUsage, trackConversationSession } = require('./utils/tracking');
-const createCostsRoute = require('./routes/admin-costs');
+// routes/admin-costs rimosso — endpoint costi inline nel server
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -79,8 +79,7 @@ app.use((req, res, next) => {
     console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
     next();
 });
-// Route per costi admin
-app.use(createCostsRoute(pool, authenticate, requireAdmin));
+// (admin-costs route inline — vedi endpoint /api/admin/costs/summary più avanti)
 
 // ============================================
 // AUTH MIDDLEWARE
