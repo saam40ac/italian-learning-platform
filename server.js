@@ -767,83 +767,82 @@ app.post('/api/tts', authenticate, async (req, res) => {
         // Limita lunghezza testo (max 5000 caratteri)
         const limitedText = text.substring(0, 5000);
 
-        // ── SELEZIONE VOCE ───────────────────────────────────────────────
-        // Studio = massima qualità naturale. Fallback automatico a Neural2.
-        const isFemale = voiceGender === 'FEMALE';
-        // Voce Studio italiana (le più naturali disponibili su Google Cloud)
-        const studioVoice = isFemale ? 'it-IT-Studio-C' : 'it-IT-Studio-B';
-        const neural2Voice= isFemale ? 'it-IT-Neural2-A' : 'it-IT-Neural2-C';
-        // Usa nome esplicito dal frontend se fornito, altrimenti Studio
-        const actualVoiceName = voiceName || studioVoice;
-        const actualVoiceLang = 'it-IT';
-        const actualGender    = isFemale ? 'FEMALE' : 'MALE';
-
-        console.log('✅ TTS voice:', actualVoiceName, '| chars:', limitedText.length);
+        // ── SELEZIONE VOCE ──────────────────────────────────────────────
+        // Voci disponibili per l'italiano su Google Cloud TTS:
+        //   WaveNet  → migliore qualità, più naturale e espressiva
+        //   Neural2  → fallback se WaveNet non disponibile
+        //   Standard → ultimo fallback
+        const isFemale     = voiceGender === 'FEMALE';
+        // Sofia: Wavenet-A (F), Marco: Wavenet-B (M) — le migliori per l'italiano
+        const waveNetVoice = isFemale ? 'it-IT-Wavenet-A' : 'it-IT-Wavenet-B';
+        const neural2Voice = isFemale ? 'it-IT-Neural2-A' : 'it-IT-Neural2-C';
+        const stdVoice     = isFemale ? 'it-IT-Standard-A': 'it-IT-Standard-D';
+        // Usa voiceName esplicita dal frontend se fornita, altrimenti WaveNet
+        const wantedVoice  = (voiceName && !voiceName.includes('Studio')) ? voiceName : waveNetVoice;
+        const actualGender = isFemale ? 'FEMALE' : 'MALE';
 
         const apiKey = process.env.GOOGLE_TTS_API_KEY || process.env.GOOGLE_API_KEY;
         if (!apiKey) throw new Error('Google API Key not configured');
 
-        // Chiama Google TTS — prova Studio (v1beta1), fallback Neural2 (v1)
-        async function callTTSApi(vName, useStudio) {
-            const endpoint = useStudio
-                ? `https://texttospeech.googleapis.com/v1beta1/text:synthesize?key=${apiKey}`
-                : `https://texttospeech.googleapis.com/v1/text:synthesize?key=${apiKey}`;
-            return fetch(endpoint, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    input: { text: limitedText },
-                    voice: {
-                        languageCode: actualVoiceLang,
-                        name: vName,
-                        ssmlGender: actualGender
-                    },
-                    audioConfig: {
-                        audioEncoding: 'MP3',
-                        speakingRate: 0.90,
-                        pitch: 0.0,
-                        volumeGainDb: 1.0,
-                        sampleRateHertz: 24000
-                    }
-                })
-            });
+        async function callTTSApi(vName) {
+            return fetch(
+                `https://texttospeech.googleapis.com/v1/text:synthesize?key=${apiKey}`,
+                {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        input: { text: limitedText },
+                        voice: { languageCode: 'it-IT', name: vName, ssmlGender: actualGender },
+                        audioConfig: {
+                            audioEncoding: 'MP3',
+                            speakingRate: 0.88,   // leggermente più lenta = più chiara
+                            pitch: 0.0,
+                            volumeGainDb: 1.0,
+                            sampleRateHertz: 24000,
+                            effectsProfileId: ['headphone-class-device']
+                        }
+                    })
+                }
+            );
         }
 
-        const isStudio = actualVoiceName.includes('Studio');
-        let response = await callTTSApi(actualVoiceName, isStudio);
+        // Catena di fallback: WaveNet → Neural2 → Standard
+        let response  = await callTTSApi(wantedVoice);
+        let usedVoice = wantedVoice;
+        let usedType  = 'WaveNet';
 
-        // Fallback automatico a Neural2 se Studio non disponibile
-        if (!response.ok && isStudio) {
-            console.warn(`Studio voice ${actualVoiceName} not available, falling back to Neural2`);
-            response = await callTTSApi(isFemale ? neural2Voice : neural2Voice, false);
+        if (!response.ok && wantedVoice.includes('Wavenet')) {
+            console.warn(`⚠️ WaveNet not available (${response.status}), trying Neural2`);
+            response  = await callTTSApi(neural2Voice);
+            usedVoice = neural2Voice;
+            usedType  = 'Neural2';
+        }
+        if (!response.ok) {
+            console.warn(`⚠️ Neural2 not available (${response.status}), using Standard`);
+            response  = await callTTSApi(stdVoice);
+            usedVoice = stdVoice;
+            usedType  = 'Standard';
         }
 
         if (!response.ok) {
-            const errorData = await response.json();
-            console.error('❌ TTS API error:', errorData);
-            throw new Error(`TTS API error: ${response.statusText}`);
+            const errorData = await response.json().catch(() => ({}));
+            console.error('❌ TTS API error:', response.status, errorData);
+            throw new Error(`TTS API error ${response.status}: ${errorData?.error?.message || response.statusText}`);
         }
 
         const data = await response.json();
+        console.log(`✅ TTS OK | voice: ${usedVoice} (${usedType}) | chars: ${limitedText.length}`);
 
-        // Track usage (esistente)
+        // Track usage
         await trackTTSUsage(client, userId);
-
-        // Traccia utilizzo Google TTS
         const sessionIdTTS = req.body.sessionId || `session-${userId}-${Date.now()}`;
         await trackApiUsage(pool, userId, 'tts', limitedText.length, req.body.sessionType || 'conversation', sessionIdTTS);
-        console.log(`Tracked TTS - ${limitedText.length} chars`);
-
-        console.log('📤 Sending TTS response:', {
-            voiceUsed: actualVoiceName,
-            usedToday: usedToday + 1,
-            dailyLimit
-        });
 
         res.json({
             audioContent: data.audioContent,
-            voiceUsed: actualVoiceName,
-            usedToday: usedToday + 1,
+            voiceUsed:    usedVoice,
+            voiceType:    usedType,
+            usedToday:    usedToday + 1,
             dailyLimit
         });
 
@@ -1236,6 +1235,41 @@ app.get('/api/admin/stats', authenticate, requireAdmin, async (req, res) => {
     } finally {
         client.release();
     }
+});
+
+
+// ── DIAGNOSTICA VOCI TTS ─────────────────────────────────────────────
+app.get('/api/admin/tts-voices-test', authenticate, requireAdmin, async (req, res) => {
+    const apiKey = process.env.GOOGLE_TTS_API_KEY || process.env.GOOGLE_API_KEY;
+    if (!apiKey) return res.status(500).json({ error: 'API Key non configurata' });
+
+    const testText = 'Ciao, sono Sofia. Benvenuto nella piattaforma.';
+    const voices = [
+        { name: 'it-IT-Studio-C',  gender: 'FEMALE', type: 'Studio'  },
+        { name: 'it-IT-Studio-B',  gender: 'MALE',   type: 'Studio'  },
+        { name: 'it-IT-Neural2-A', gender: 'FEMALE', type: 'Neural2' },
+        { name: 'it-IT-Neural2-C', gender: 'MALE',   type: 'Neural2' },
+    ];
+    const results = [];
+    for (const v of voices) {
+        const version  = v.type === 'Studio' ? 'v1beta1' : 'v1';
+        try {
+            const r = await fetch(
+                `https://texttospeech.googleapis.com/${version}/text:synthesize?key=${apiKey}`,
+                { method:'POST', headers:{'Content-Type':'application/json'},
+                  body: JSON.stringify({
+                      input: { text: testText },
+                      voice: { languageCode:'it-IT', name:v.name, ssmlGender:v.gender },
+                      audioConfig: { audioEncoding:'MP3' }
+                  })
+                }
+            );
+            results.push({ voice: v.name, type: v.type, available: r.ok, status: r.status });
+        } catch(e) {
+            results.push({ voice: v.name, type: v.type, available: false, error: e.message });
+        }
+    }
+    res.json({ results, recommendation: results.find(r => r.available)?.voice || 'nessuna voce disponibile' });
 });
 
 // ============================================
