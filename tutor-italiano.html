@@ -234,6 +234,7 @@
             <div class="usage-badge" id="usageBadge">⏱ Caricamento...</div>
             <div id="packageBadge" style="display:none;background:linear-gradient(135deg,#009246,#006f35);color:#fff;border-radius:20px;padding:4px 12px;font-size:.75rem;font-weight:700;letter-spacing:.04em"></div>
             <span class="user-name" id="userName">—</span>
+            <button onclick="showHistory()" style="background:none;border:1px solid rgba(255,255,255,.4);color:#fff;border-radius:8px;padding:5px 11px;font-size:.78rem;cursor:pointer;margin-right:4px">📚 Storico</button>
             <button class="btn-logout" id="btnLogout">Esci</button>
         </div>
     </div>
@@ -793,21 +794,21 @@ async function sendMessage() {
 }
 
 // ═══════════════════════════════════════════════════════════
-// TTS — Riproduzione sequenziale per testi lunghi
+// TTS — Pre-fetch parallelo + riproduzione senza pause
 // ═══════════════════════════════════════════════════════════
 
-// Spezza il testo in frasi di max 500 chars, rispettando la punteggiatura
-function splitIntoChunks(text, maxLen = 500) {
-    const sentences = text.match(/[^.!?:;\n]+[.!?:;\n]*/g) || [text];
+// Spezza rispettando la punteggiatura, max 900 chars per chunk
+// (OpenAI gestisce bene testi più lunghi → meno chunk = meno gap)
+function splitIntoChunks(text, maxLen = 900) {
+    if (text.length <= maxLen) return [text];
+    const sentences = text.match(/[^.!?\n]+[.!?\n]*/g) || [text];
     const chunks = [];
     let current = '';
     for (const s of sentences) {
         if ((current + s).length > maxLen && current) {
             chunks.push(current.trim());
             current = s;
-        } else {
-            current += s;
-        }
+        } else { current += s; }
     }
     if (current.trim()) chunks.push(current.trim());
     return chunks.filter(c => c.length > 0);
@@ -817,14 +818,10 @@ async function fetchTTSChunk(text) {
     const voiceGender = state.selectedTutor === 'sofia' ? 'FEMALE' : 'MALE';
     const data = await api('/api/tts', {
         method: 'POST',
-        body: JSON.stringify({
-            text,
-            voiceGender,
-            sessionId: state.sessionId,
-            sessionType: state.sessionType
-        })
+        body: JSON.stringify({ text, voiceGender, sessionId: state.sessionId, sessionType: state.sessionType })
     });
-    if (data.voiceType) {
+    if (data.voiceType && !state.voiceTypeShown) {
+        state.voiceTypeShown = true;
         const lbl  = document.getElementById('ttsLabel');
         const icon = data.voiceType === 'OpenAI HD' ? '🎙️ OpenAI HD' : '🔊 WaveNet';
         if (lbl) lbl.textContent = icon + ' · in riproduzione...';
@@ -832,65 +829,95 @@ async function fetchTTSChunk(text) {
     return data;
 }
 
-// Stato riproduzione globale
-state.playQueue   = [];
 state.isPlaying   = false;
 state.stopRequest = false;
+state.currentAudio= null;
+
+// Converte base64 MP3 in AudioBuffer tramite Web Audio API
+async function decodeAudioBase64(base64) {
+    const ctx = state.audioCtx || (state.audioCtx = new (window.AudioContext || window.webkitAudioContext)());
+    const bin = atob(base64);
+    const buf = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) buf[i] = bin.charCodeAt(i);
+    return ctx.decodeAudioData(buf.buffer);
+}
+
+// Riproduce sequenza di AudioBuffer senza nessun gap
+async function playAudioBuffers(buffers, onDone) {
+    const ctx = state.audioCtx;
+    let offset = ctx.currentTime + 0.05; // 50ms di warm-up
+    const sources = [];
+    for (const buf of buffers) {
+        const src = ctx.createBufferSource();
+        src.buffer = buf;
+        src.connect(ctx.destination);
+        src.start(offset);
+        offset += buf.duration;
+        sources.push(src);
+    }
+    state.activeSources = sources;
+    // Fine quando l'ultimo finisce
+    return new Promise(resolve => {
+        sources[sources.length - 1].onended = resolve;
+    });
+}
 
 async function playQueue(chunks, onDone) {
-    state.stopRequest = false;
-    state.isPlaying   = true;
+    state.stopRequest    = false;
+    state.isPlaying      = true;
+    state.voiceTypeShown = false;
     const dot = document.getElementById('ttsDot');
     const lbl = document.getElementById('ttsLabel');
     dot.classList.add('active');
+    lbl.textContent = 'Preparazione audio...';
 
-    for (let i = 0; i < chunks.length; i++) {
-        if (state.stopRequest) break;
-        try {
-            lbl.textContent = chunks.length > 1 ? `Audio ${i+1}/${chunks.length}...` : 'Audio in riproduzione...';
-            const data  = await fetchTTSChunk(chunks[i]);
-            if (state.stopRequest) break;
-            await new Promise((resolve, reject) => {
-                const audio = new Audio(`data:audio/mp3;base64,${data.audioContent}`);
-                state.currentAudio = audio;
-                audio.onended  = resolve;
-                audio.onerror  = reject;
-                audio.play().catch(reject);
-            });
-        } catch { break; }
+    try {
+        // Pre-fetch TUTTI i chunk in parallelo → zero attesa tra frasi
+        const fetches = await Promise.all(chunks.map(c => fetchTTSChunk(c).catch(() => null)));
+        if (state.stopRequest) throw new Error('stop');
+
+        // Decodifica tutti gli MP3 in AudioBuffer
+        const buffers = [];
+        for (const d of fetches) {
+            if (!d?.audioContent) continue;
+            try { buffers.push(await decodeAudioBase64(d.audioContent)); } catch {}
+        }
+        if (!buffers.length || state.stopRequest) throw new Error('stop');
+
+        lbl.textContent = '🎙️ in riproduzione...';
+        await playAudioBuffers(buffers);
+    } catch(e) {
+        // Ferma tutte le sorgenti attive se stop richiesto
+        (state.activeSources || []).forEach(s => { try { s.stop(); } catch {} });
     }
 
-    state.currentAudio = null;
-    state.isPlaying    = false;
+    state.activeSources = [];
+    state.isPlaying     = false;
     dot.classList.remove('active');
-    lbl.textContent = 'Audio pronto';
+    lbl.textContent     = 'Audio pronto';
     if (onDone) onDone();
 }
 
 function stopTTS() {
     state.stopRequest = true;
-    if (state.currentAudio) { state.currentAudio.pause(); state.currentAudio = null; }
+    (state.activeSources || []).forEach(s => { try { s.stop(); } catch {} });
+    state.activeSources = [];
+    state.isPlaying     = false;
 }
 
 async function playTTS(btn, rawText) {
-    if (state.isPlaying) {
-        stopTTS();
-        btn.textContent = '🔊 Ascolta';
-        return;
-    }
+    if (state.isPlaying) { stopTTS(); btn.textContent = '🔊 Ascolta'; return; }
     const text = cleanForTTS(rawText);
     if (!text) return;
-    const chunks = splitIntoChunks(text, 500);
     btn.textContent = '⏹ Ferma';
-    await playQueue(chunks, () => { btn.textContent = '🔊 Ascolta'; });
+    await playQueue(splitIntoChunks(text), () => { btn.textContent = '🔊 Ascolta'; });
 }
 
 async function autoPlayTTS(rawText) {
     const text = cleanForTTS(rawText);
     if (!text) return;
     if (state.isPlaying) stopTTS();
-    const chunks = splitIntoChunks(text, 500);
-    await playQueue(chunks);
+    await playQueue(splitIntoChunks(text));
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -905,6 +932,87 @@ function logout() {
     document.getElementById('loginScreen').style.display = 'flex';
     document.getElementById('loginEmail').value = '';
     document.getElementById('loginPassword').value = '';
+}
+</script>
+
+<!-- ══ STORICO CONVERSAZIONI ══════════════════════════════════════════ -->
+<div id="historyOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;align-items:center;justify-content:center">
+    <div style="background:#fff;border-radius:16px;width:min(720px,95vw);max-height:88vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.25)">
+        <!-- header -->
+        <div style="padding:20px 24px;border-bottom:1px solid var(--grigio-200);display:flex;align-items:center;justify-content:space-between;flex-shrink:0">
+            <h2 style="font-family:'Playfair Display',serif;font-size:1.2rem;color:var(--grigio-700)">📚 Storico Conversazioni</h2>
+            <button onclick="closeHistory()" style="background:none;border:none;font-size:1.4rem;cursor:pointer;color:var(--grigio-400)">✕</button>
+        </div>
+        <!-- body: sessioni a sinistra, messaggi a destra -->
+        <div style="display:flex;flex:1;overflow:hidden">
+            <!-- lista sessioni -->
+            <div id="histSessionList" style="width:220px;border-right:1px solid var(--grigio-200);overflow-y:auto;padding:12px 8px;flex-shrink:0;background:var(--avorio)">
+                <p style="font-size:.75rem;color:var(--grigio-400);padding:4px 8px">Caricamento...</p>
+            </div>
+            <!-- messaggi sessione selezionata -->
+            <div id="histMessages" style="flex:1;overflow-y:auto;padding:20px 24px;display:flex;flex-direction:column;gap:12px">
+                <p style="color:var(--grigio-400);font-size:.9rem;text-align:center;margin-top:40px">← Seleziona una conversazione</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+async function showHistory() {
+    document.getElementById('historyOverlay').style.display = 'flex';
+    const list = document.getElementById('histSessionList');
+    list.innerHTML = '<p style="font-size:.75rem;color:var(--grigio-400);padding:4px 8px">Caricamento...</p>';
+    document.getElementById('histMessages').innerHTML =
+        '<p style="color:var(--grigio-400);font-size:.9rem;text-align:center;margin-top:40px">← Seleziona una conversazione</p>';
+    try {
+        const data = await api('/api/user/sessions');
+        if (!data.sessions.length) {
+            list.innerHTML = '<p style="font-size:.8rem;color:var(--grigio-400);padding:8px">Nessuna conversazione ancora.</p>';
+            return;
+        }
+        list.innerHTML = data.sessions.map(s => {
+            const date = new Date(s.started_at).toLocaleDateString('it-IT',{day:'2-digit',month:'short'});
+            const time = new Date(s.started_at).toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'});
+            const tutorIcon = s.tutor === 'sofia' ? '👩' : '👨';
+            return `<div class="hist-session-item" onclick="loadSession('${s.session_id}')" style="padding:10px 12px;border-radius:8px;cursor:pointer;margin-bottom:4px;border:1px solid transparent;transition:.15s" onmouseover="this.style.background='var(--verde-pale)'" onmouseout="this.style.background='transparent'">
+                <div style="font-weight:700;font-size:.8rem;color:var(--grigio-700)">${tutorIcon} ${s.tutor === 'sofia' ? 'Sofia' : 'Marco'}</div>
+                <div style="font-size:.72rem;color:var(--grigio-400)">${date} ${time}</div>
+                <div style="font-size:.72rem;color:var(--grigio-400)">${s.message_count} messaggi</div>
+            </div>`;
+        }).join('');
+    } catch(e) {
+        list.innerHTML = '<p style="font-size:.8rem;color:var(--rosso);padding:8px">Errore caricamento.</p>';
+    }
+}
+
+async function loadSession(sessionId) {
+    // Highlight selected
+    document.querySelectorAll('.hist-session-item').forEach(el => el.style.background = 'transparent');
+    event?.currentTarget?.style && (event.currentTarget.style.background = 'var(--verde-pale)');
+
+    const box = document.getElementById('histMessages');
+    box.innerHTML = '<p style="color:var(--grigio-400);text-align:center;margin-top:30px">Caricamento...</p>';
+    try {
+        const data = await api(`/api/user/sessions/${sessionId}/messages`);
+        if (!data.messages.length) { box.innerHTML = '<p style="color:var(--grigio-400);text-align:center">Nessun messaggio.</p>'; return; }
+        box.innerHTML = data.messages.map(m => {
+            const isUser = m.role === 'user';
+            const time   = new Date(m.created_at).toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'});
+            return `<div style="display:flex;gap:8px;${isUser ? 'flex-direction:row-reverse' : ''}">
+                <div style="max-width:78%;background:${isUser ? 'var(--verde)' : 'var(--grigio-100)'};color:${isUser ? '#fff' : 'var(--grigio-700)'};padding:10px 14px;border-radius:${isUser ? '14px 14px 4px 14px' : '14px 14px 14px 4px'};font-size:.85rem;line-height:1.5">
+                    ${m.content.replace(/</g,'&lt;')}
+                    <div style="font-size:.68rem;opacity:.6;margin-top:4px;text-align:right">${time}</div>
+                </div>
+            </div>`;
+        }).join('');
+        box.scrollTop = box.scrollHeight;
+    } catch {
+        box.innerHTML = '<p style="color:var(--rosso);text-align:center">Errore caricamento messaggi.</p>';
+    }
+}
+
+function closeHistory() {
+    document.getElementById('historyOverlay').style.display = 'none';
 }
 </script>
 </body>
