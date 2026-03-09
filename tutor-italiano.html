@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Impara Italiano AI — Sofia & Marco</title>
+    <title>Saam 4.0 Italian Voice</title>
+    <link rel="icon" type="image/png" href="OminiLOGO_Saam40_ItalianVoice.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
     <style>
@@ -32,7 +33,7 @@
         html { height: 100%; font-size: 16px; }
         body { font-family: 'Lato', sans-serif; background: var(--avorio); color: var(--grigio-700); height: 100%; overflow: hidden; }
 
-        .flag-strip { height: 4px; background: linear-gradient(to right, var(--verde) 33.33%, var(--bianco) 33.33% 66.66%, var(--rosso) 66.66%); position: fixed; top: 0; left: 0; width: 100%; z-index: 999; }
+        .flag-strip { display:none; }
 
         /* ── LOGIN ── */
         #loginScreen {
@@ -41,13 +42,44 @@
             display: flex; align-items: center; justify-content: center;
             z-index: 100; padding-top: 4px;
         }
-        .login-card { background: var(--bianco); border-radius: 20px; padding: 48px 44px; width: 100%; max-width: 420px; box-shadow: 0 24px 60px rgba(0,0,0,.25); animation: slideUp .5s ease both; }
-        @keyframes slideUp { from { opacity:0; transform:translateY(24px); } to { opacity:1; transform:translateY(0); } }
-        .login-logo { text-align: center; margin-bottom: 32px; }
-        .logo-flag  { display: flex; justify-content: center; gap: 4px; margin-bottom: 12px; }
-        .flag-bar   { width: 10px; height: 36px; border-radius: 3px; }
-        .login-logo h1 { font-family: 'Playfair Display', serif; font-size: 1.75rem; font-weight: 700; color: var(--verde-dark); }
-        .login-logo p  { font-size: .85rem; color: var(--grigio-400); margin-top: 4px; }
+        /* ── LOGIN CARD — stile prototipo ── */
+        #loginScreen {
+            background: linear-gradient(145deg, #0a4a25 0%, #006f35 45%, #009246 100%) !important;
+        }
+        .login-card {
+            background: var(--bianco);
+            border-radius: 24px;
+            padding: 44px 48px;
+            width: 100%;
+            max-width: 680px;
+            box-shadow: 0 32px 80px rgba(0,0,0,.30);
+            animation: slideUp .5s cubic-bezier(.22,1,.36,1) both;
+            display: grid;
+            grid-template-columns: 200px 1fr;
+            gap: 0 36px;
+            align-items: center;
+        }
+        @keyframes slideUp { from { opacity:0; transform:translateY(30px) scale(.97); } to { opacity:1; transform:translateY(0) scale(1); } }
+        .login-logo-col {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border-right: 1px solid var(--grigio-200);
+            padding-right: 36px;
+            grid-row: 1 / span 5;
+        }
+        .login-logo-col img { width: 170px; height: auto; }
+        .login-form-col { grid-column: 2; }
+        .login-headline {
+            margin-bottom: 28px;
+        }
+        .login-headline p { font-family: 'Lato', sans-serif; font-size: 1.05rem; color: #555; line-height: 1.4; margin: 0; }
+        .login-headline strong { color: var(--grigio-700); font-size: 1.25rem; }
+        .login-headline .brand-names { font-weight: 900; color: var(--verde-dark); font-size: 1.15rem; }
+        .login-logo { display:none; }
+        .logo-flag  { display:none; }
+        .flag-bar   { display:none; }
         .form-group { margin-bottom: 18px; }
         .form-group label { display: block; font-size: .8rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--grigio-700); margin-bottom: 7px; }
         .form-group input { width: 100%; border: 1.5px solid var(--grigio-200); border-radius: var(--radius-sm); padding: 11px 14px; font-family: 'Lato', sans-serif; font-size: .95rem; color: var(--nero); background: var(--avorio); outline: none; transition: border-color var(--transition), box-shadow var(--transition); }
@@ -63,9 +95,10 @@
 
         .topbar { background: var(--bianco); border-bottom: 1px solid var(--grigio-200); padding: 0 24px; height: 60px; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; box-shadow: var(--shadow-sm); }
         .topbar-brand { display: flex; align-items: center; gap: 10px; }
-        .mini-flag  { display: flex; gap: 2px; }
-        .mini-flag span { width: 6px; height: 20px; border-radius: 2px; }
-        .topbar-brand h2 { font-family: 'Playfair Display', serif; font-size: 1.1rem; font-weight: 700; color: var(--verde-dark); }
+        .mini-flag  { display: none; }
+        .topbar-logo-img { width: 34px; height: 34px; object-fit: contain; }
+        .topbar-brand h2 { font-family: 'Playfair Display', serif; font-size: 1.0rem; font-weight: 700; color: var(--verde-dark); line-height: 1.15; }
+        .topbar-brand small { font-size: .68rem; color: var(--grigio-400); font-family: 'Lato', sans-serif; font-weight: 400; display:block; }
         .topbar-user { display: flex; align-items: center; gap: 16px; }
         .usage-badge { background: var(--verde-pale); border: 1px solid rgba(0,146,70,.2); border-radius: 20px; padding: 4px 12px; font-size: .78rem; font-weight: 700; color: var(--verde-dark); }
         .usage-badge.warning { background: #fff7e6; border-color: #f5a623; color: #b8720a; }
@@ -197,25 +230,32 @@
 <!-- ══ LOGIN ══ -->
 <div id="loginScreen">
     <div class="login-card">
-        <div class="login-logo">
-            <div class="logo-flag">
-                <div class="flag-bar" style="background:#009246"></div>
-                <div class="flag-bar" style="background:#e0e0d8"></div>
-                <div class="flag-bar" style="background:#CE2B37"></div>
+
+        <!-- ── Colonna sinistra: logo ── -->
+        <div class="login-logo-col">
+            <img src="LOGO_Saam40_ItalianVoice.png" alt="Saam 4.0 Italian Voice">
+        </div>
+
+        <!-- ── Colonna destra: headline + form ── -->
+        <div class="login-form-col">
+            <div class="login-headline">
+                <p>Impara la<br>
+                   <strong>Lingua Italiana</strong><br>
+                   con <span class="brand-names">Sofia &amp; Marco</span>
+                </p>
             </div>
-            <h1>Impara Italiano AI</h1>
-            <p>Piattaforma Tutor Italiano — Sofia & Marco</p>
+            <div class="form-group">
+                <label>Email</label>
+                <input type="email" id="loginEmail" placeholder="tuonome@email.com" autocomplete="email">
+            </div>
+            <div class="form-group">
+                <label>Password</label>
+                <input type="password" id="loginPassword" placeholder="••••••••" autocomplete="current-password">
+            </div>
+            <button class="btn-login" id="btnLogin">Accedi</button>
+            <div class="login-error" id="loginError"></div>
         </div>
-        <div class="form-group">
-            <label>Email</label>
-            <input type="email" id="loginEmail" placeholder="tuonome@email.com" autocomplete="email">
-        </div>
-        <div class="form-group">
-            <label>Password</label>
-            <input type="password" id="loginPassword" placeholder="••••••••" autocomplete="current-password">
-        </div>
-        <button class="btn-login" id="btnLogin">Accedi</button>
-        <div class="login-error" id="loginError"></div>
+
     </div>
 </div>
 
@@ -223,12 +263,8 @@
 <div id="app">
     <div class="topbar">
         <div class="topbar-brand">
-            <div class="mini-flag">
-                <span style="background:#009246"></span>
-                <span style="background:#e0e0d8"></span>
-                <span style="background:#CE2B37"></span>
-            </div>
-            <h2>Impara Italiano AI</h2>
+            <img src="OminiLOGO_Saam40_ItalianVoice.png" class="topbar-logo-img" alt="Logo">
+            <h2>Saam 4.0 Italian Voice<small>Piattaforma Tutor Italiano</small></h2>
         </div>
         <div class="topbar-user">
             <div class="usage-badge" id="usageBadge">⏱ Caricamento...</div>
