@@ -814,12 +814,19 @@ function splitIntoChunks(text, maxLen = 500) {
 }
 
 async function fetchTTSChunk(text) {
-    const voiceName   = state.selectedTutor === 'sofia' ? 'it-IT-Studio-C' : 'it-IT-Studio-B';
+    const voiceName   = state.selectedTutor === 'sofia' ? 'it-IT-Wavenet-A' : 'it-IT-Wavenet-B';
     const voiceGender = state.selectedTutor === 'sofia' ? 'FEMALE' : 'MALE';
-    return api('/api/tts', {
+    const data = await api('/api/tts', {
         method: 'POST',
         body: JSON.stringify({ text, voiceLang: 'it-IT', voiceGender, voiceName, sessionId: state.sessionId, sessionType: state.sessionType })
     });
+    // Mostra quale voce è realmente in uso nello status bar
+    if (data.voiceType) {
+        const lbl = document.getElementById('ttsLabel');
+        const icon = data.voiceType === 'WaveNet' ? '🎙️ WaveNet' : data.voiceType === 'Neural2' ? '🔊 Neural2' : '🔈 Standard';
+        if (lbl) lbl.textContent = icon + ' · in riproduzione...';
+    }
+    return data;
 }
 
 // Stato riproduzione globale
