@@ -5,6 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Saam 4.0 Italian Voice</title>
     <link rel="icon" type="image/png" href="OminiLOGO_Saam40_ItalianVoice.png">
+    <link rel="manifest" href="manifest.json">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Italian Voice">
+    <meta name="theme-color" content="#009246">
+    <link rel="apple-touch-icon" href="LOGO_Saam40_ItalianVoice.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
     <style>
@@ -221,6 +228,115 @@
         .toast.show    { transform: translateY(0); opacity: 1; }
         .toast.success { background: var(--verde-dark); }
         .toast.error   { background: var(--rosso-dark); }
+
+        /* ══════════════════════════════════════════════
+           RESPONSIVE MOBILE
+        ══════════════════════════════════════════════ */
+        .sidebar-overlay {
+            display: none; position: fixed; inset: 0;
+            background: rgba(0,0,0,.45); z-index: 40;
+            backdrop-filter: blur(2px);
+        }
+        .sidebar-overlay.show { display: block; }
+
+        .btn-hamburger {
+            display: none; background: none; border: none;
+            cursor: pointer; padding: 6px 8px;
+            color: var(--grigio-700); font-size: 1.3rem; line-height: 1;
+            border-radius: 6px; transition: background var(--transition);
+        }
+        .btn-hamburger:hover { background: var(--grigio-100); }
+
+        @media (max-width: 768px) {
+            /* ── LOGIN ── */
+            #loginScreen { padding: 20px 16px; align-items: flex-start; padding-top: 10vh; }
+            .login-card {
+                grid-template-columns: 1fr !important;
+                padding: 28px 24px !important;
+                max-width: 100% !important;
+                border-radius: 18px !important;
+                gap: 0 !important;
+            }
+            .login-logo-col {
+                border-right: none !important;
+                border-bottom: 1px solid var(--grigio-200) !important;
+                padding-right: 0 !important;
+                padding-bottom: 18px !important;
+                margin-bottom: 18px !important;
+                grid-row: auto !important;
+            }
+            .login-logo-col img { width: 100px !important; }
+            .login-form-col { grid-column: 1 !important; }
+            .login-headline p { font-size: .95rem !important; }
+
+            /* ── TOPBAR ── */
+            .topbar { padding: 0 12px !important; height: 52px !important; gap: 6px !important; }
+            .topbar-brand small { display: none !important; }
+            .topbar-brand h2 { font-size: .82rem !important; }
+            .topbar-logo-img { width: 26px !important; height: 26px !important; }
+            .topbar-user { gap: 6px !important; }
+            .usage-badge { font-size: .68rem !important; padding: 3px 7px !important; max-width: 130px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+            #packageBadge { display: none !important; }
+            .user-name { display: none !important; }
+            #btnStorico { padding: 5px 7px !important; font-size: .78rem !important; }
+            .btn-hamburger { display: flex !important; align-items: center; justify-content: center; }
+
+            /* ── SIDEBAR DRAWER ── */
+            .sidebar {
+                position: fixed !important;
+                left: -290px !important;
+                top: 0 !important; bottom: 0 !important;
+                z-index: 45 !important;
+                transition: left .28s cubic-bezier(.4,0,.2,1) !important;
+                width: 280px !important;
+                box-shadow: 6px 0 30px rgba(0,0,0,.22) !important;
+            }
+            .sidebar.open { left: 0 !important; }
+
+            /* ── CHAT ── */
+            .main-area { position: relative; }
+            .chat-header { padding: 10px 14px !important; }
+            .active-tutor-avatar { width: 36px !important; height: 36px !important; }
+            .active-tutor-info h3 { font-size: .88rem !important; }
+            .active-tutor-info p  { font-size: .7rem !important; }
+            .tts-status span { display: none; }
+
+            /* ── TIMER BAR ── */
+            #timerBar { padding: 5px 14px !important; font-size: .72rem !important; }
+            #timerMonthLabel { display: none !important; }
+
+            /* ── MESSAGGI ── */
+            .messages { padding: 12px !important; gap: 10px !important; }
+            .msg-bubble { max-width: 84% !important; font-size: .87rem !important; padding: 10px 13px !important; }
+            .msg-avatar { width: 28px !important; height: 28px !important; font-size: .7rem !important; }
+            .welcome-msg { padding: 24px 14px !important; }
+            .welcome-msg .big-emoji { font-size: 2.2rem !important; }
+            .welcome-msg h2 { font-size: 1.2rem !important; }
+
+            /* ── INPUT ── */
+            .input-area { padding: 10px 12px 14px !important; }
+            .btn-mic, .btn-send { width: 44px !important; height: 44px !important; }
+            textarea { font-size: .9rem !important; padding: 10px 12px !important; min-height: 44px !important; }
+            .input-footer { display: none !important; }
+
+            /* ── STORICO MODAL ── */
+            #historyOverlay > div {
+                width: 100% !important; max-height: 100% !important;
+                height: 100% !important; border-radius: 0 !important;
+            }
+            #historyOverlay > div > div:last-child { flex-direction: column !important; }
+            #histSessionList {
+                width: 100% !important; border-right: none !important;
+                border-bottom: 1px solid var(--grigio-200) !important;
+                max-height: 180px !important; flex-shrink: 0 !important;
+            }
+        }
+
+        @media (max-width: 380px) {
+            .login-card { padding: 22px 18px !important; }
+            .topbar-brand h2 { display: none; }
+            #btnStorico { display: none !important; }
+        }
     </style>
 </head>
 <body>
@@ -266,15 +382,17 @@
             <img src="OminiLOGO_Saam40_ItalianVoice.png" class="topbar-logo-img" alt="Logo">
             <h2>Saam 4.0 Italian Voice<small>Piattaforma Tutor Italiano</small></h2>
         </div>
+        <button class="btn-hamburger" id="btnHamburger" aria-label="Menu">☰</button>
         <div class="topbar-user">
             <div class="usage-badge" id="usageBadge">⏱ Caricamento...</div>
             <div id="packageBadge" style="display:none;background:linear-gradient(135deg,#009246,#006f35);color:#fff;border-radius:20px;padding:4px 12px;font-size:.75rem;font-weight:700;letter-spacing:.04em"></div>
             <span class="user-name" id="userName">—</span>
-            <button onclick="showHistory()" class="btn-logout" style="color:var(--grigio-400)">📚 Storico Conversazioni</button>
+            <button onclick="showHistory()" id="btnStorico" class="btn-logout" style="color:var(--grigio-400)">📚 Storico Conversazioni</button>
             <button class="btn-logout" id="btnLogout">Esci</button>
         </div>
     </div>
 
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
     <div class="main-area">
         <div class="sidebar">
 
@@ -1095,6 +1213,61 @@ async function loadSession(sessionId, tutorName) {
 function closeHistory() {
     document.getElementById('historyOverlay').style.display = 'none';
 }
+
+// ── SIDEBAR MOBILE ──
+(function() {
+    const hamburger = document.getElementById('btnHamburger');
+    const sidebar   = document.querySelector('.sidebar');
+    const overlay   = document.getElementById('sidebarOverlay');
+    if (!hamburger || !sidebar || !overlay) return;
+
+    function openSidebar() {
+        sidebar.classList.add('open');
+        overlay.classList.add('show');
+        document.body.style.overflow = 'hidden';
+    }
+    function closeSidebar() {
+        sidebar.classList.remove('open');
+        overlay.classList.remove('show');
+        document.body.style.overflow = '';
+    }
+    hamburger.addEventListener('click', openSidebar);
+    overlay.addEventListener('click', closeSidebar);
+
+    // Chiudi sidebar dopo aver selezionato tutor o sessione su mobile
+    document.querySelectorAll('.tutor-card, .btn-session').forEach(el => {
+        el.addEventListener('click', () => {
+            if (window.innerWidth <= 768) closeSidebar();
+        });
+    });
+})();
+
+// ── PWA INSTALL PROMPT ──
+let deferredPrompt;
+window.addEventListener('beforeinstallprompt', e => {
+    e.preventDefault();
+    deferredPrompt = e;
+    // Mostra banner install dopo 3 secondi se non già installata
+    setTimeout(() => {
+        if (deferredPrompt && !window.matchMedia('(display-mode: standalone)').matches) {
+            const banner = document.createElement('div');
+            banner.id = 'installBanner';
+            banner.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#fff;border:1.5px solid var(--verde);border-radius:12px;padding:12px 18px;box-shadow:0 8px 24px rgba(0,0,0,.15);z-index:999;display:flex;align-items:center;gap:12px;font-family:Lato,sans-serif;white-space:nowrap;animation:slideUp .4s ease';
+            banner.innerHTML = `<img src="OminiLOGO_Saam40_ItalianVoice.png" style="width:28px;height:28px;object-fit:contain"><span style="font-size:.85rem;font-weight:700;color:var(--grigio-700)">Installa Italian Voice</span><button onclick="installPWA()" style="background:var(--verde);color:#fff;border:none;border-radius:8px;padding:6px 14px;font-size:.8rem;font-weight:700;cursor:pointer">Installa</button><button onclick="document.getElementById('installBanner').remove()" style="background:none;border:none;font-size:1.1rem;cursor:pointer;color:var(--grigio-400)">✕</button>`;
+            document.body.appendChild(banner);
+        }
+    }, 3000);
+});
+function installPWA() {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    deferredPrompt.userChoice.then(() => {
+        deferredPrompt = null;
+        const b = document.getElementById('installBanner');
+        if (b) b.remove();
+    });
+}
+
 </script>
 </body>
 </html>
