@@ -1202,32 +1202,31 @@ app.get('/api/admin/stats', authenticate, requireAdmin, async (req, res) => {
 // COSTI REALI — Dashboard Costi
 // ============================================
 
-// Prezzi API (USD per unità)
 const API_PRICES = {
-    claude_input:  0.000003,   // $3  per 1M tokens input
-    claude_output: 0.000015,   // $15 per 1M tokens output
-    tts:           0.000016,   // $16 per 1M caratteri (da api_usage tipo 'tts')
+    claude_input:  0.000003,
+    claude_output: 0.000015,
+    tts:           0.000016,
 };
 
-// Riepilogo costi nel periodo — usa solo api_usage (tts_usage non ha colonna characters)
 app.get('/api/admin/costs/summary', authenticate, requireAdmin, async (req, res) => {
     const client = await pool.connect();
     try {
         const after = req.query.after || new Date(Date.now() - 30 * 86400000).toISOString().split('T')[0];
-        const now   = new Date();
-        const firstThisMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
+        const now            = new Date();
+        const firstThisMonth = new Date(now.getFullYear(), now.getMonth(),     1).toISOString().split('T')[0];
         const firstLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1).toISOString().split('T')[0];
-        const endLastMonth   = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
+        const endLastMonth   = new Date(now.getFullYear(), now.getMonth(),     1).toISOString().split('T')[0];
 
         // 1. Volumi per tipo nel periodo
         const volumeRows = await client.query(
-            `SELECT api_type, COALESCE(SUM(units), 0) as total_units, COUNT(*) as requests
+            `SELECT api_type,
+                    COALESCE(SUM(units), 0) AS total_units,
+                    COUNT(*) AS requests
              FROM api_usage
-             WHERE created_at::date >= $1::date
+             WHERE created_at >= $1
              GROUP BY api_type`,
             [after]
         );
-
         let inputTokens = 0, outputTokens = 0, ttsChars = 0, ttsRequests = 0;
         volumeRows.rows.forEach(r => {
             const u = parseInt(r.total_units) || 0;
@@ -1236,74 +1235,85 @@ app.get('/api/admin/costs/summary', authenticate, requireAdmin, async (req, res)
             if (r.api_type === 'tts')           { ttsChars = u; ttsRequests = parseInt(r.requests) || 0; }
         });
 
-        // 2. Sessioni e studenti unici nel periodo
+        // 2. Sessioni e studenti unici
         const sessionRow = await client.query(
-            `SELECT COUNT(DISTINCT session_id) as sessions, COUNT(DISTINCT user_id) as students
+            `SELECT COUNT(DISTINCT session_id) AS sessions,
+                    COUNT(DISTINCT user_id)   AS students
              FROM api_usage
-             WHERE created_at::date >= $1::date AND session_id IS NOT NULL`,
+             WHERE created_at >= $1`,
             [after]
         );
         const totalSessions = parseInt(sessionRow.rows[0]?.sessions || 0);
         const totalStudents = parseInt(sessionRow.rows[0]?.students || 0);
 
-        // 3. Trend giornaliero (tutti i tipi da api_usage)
+        // 3. Trend giornaliero
         const dailyRows = await client.query(
             `SELECT
-                created_at::date as date,
+                DATE(created_at) AS day,
                 COALESCE(SUM(CASE WHEN api_type='claude_input'  THEN units * ${API_PRICES.claude_input}  ELSE 0 END), 0) +
                 COALESCE(SUM(CASE WHEN api_type='claude_output' THEN units * ${API_PRICES.claude_output} ELSE 0 END), 0) +
-                COALESCE(SUM(CASE WHEN api_type='tts'           THEN units * ${API_PRICES.tts}           ELSE 0 END), 0) as cost
+                COALESCE(SUM(CASE WHEN api_type='tts'           THEN units * ${API_PRICES.tts}           ELSE 0 END), 0) AS cost
              FROM api_usage
-             WHERE created_at::date >= $1::date
-             GROUP BY created_at::date
-             ORDER BY date ASC`,
+             WHERE created_at >= $1
+             GROUP BY DATE(created_at)
+             ORDER BY DATE(created_at) ASC`,
             [after]
         );
         const daily_breakdown = dailyRows.rows.map(r => ({
-            date: r.date instanceof Date ? r.date.toISOString().split('T')[0] : String(r.date),
+            date: r.day instanceof Date ? r.day.toISOString().split('T')[0] : String(r.day),
             cost: parseFloat(parseFloat(r.cost || 0).toFixed(8))
         }));
 
-        // 4. Top studenti
+        // 4. Top studenti — ORDER BY con espressioni complete (no alias)
         const topStudents = await client.query(
-            `SELECT u.name, COALESCE(u.level, 'A1') as level,
-                    COALESCE(SUM(CASE WHEN au.api_type='claude_input'  THEN au.units ELSE 0 END), 0) as input_tokens,
-                    COALESCE(SUM(CASE WHEN au.api_type='claude_output' THEN au.units ELSE 0 END), 0) as output_tokens,
-                    COALESCE(SUM(CASE WHEN au.api_type='tts'           THEN au.units ELSE 0 END), 0) as tts_chars,
-                    COUNT(DISTINCT au.session_id) as session_count
+            `SELECT u.name,
+                    COALESCE(u.level, 'A1') AS level,
+                    COALESCE(SUM(CASE WHEN au.api_type='claude_input'  THEN au.units ELSE 0 END), 0) AS input_tokens,
+                    COALESCE(SUM(CASE WHEN au.api_type='claude_output' THEN au.units ELSE 0 END), 0) AS output_tokens,
+                    COALESCE(SUM(CASE WHEN au.api_type='tts'           THEN au.units ELSE 0 END), 0) AS tts_chars,
+                    COUNT(DISTINCT au.session_id) AS session_count
              FROM api_usage au
              JOIN users u ON au.user_id = u.id
-             WHERE au.created_at::date >= $1::date
+             WHERE au.created_at >= $1
              GROUP BY u.id, u.name, u.level
-             ORDER BY (input_tokens + output_tokens) DESC
+             ORDER BY
+                COALESCE(SUM(CASE WHEN au.api_type='claude_input'  THEN au.units ELSE 0 END), 0) +
+                COALESCE(SUM(CASE WHEN au.api_type='claude_output' THEN au.units ELSE 0 END), 0) DESC
              LIMIT 10`,
             [after]
         );
         const top_students = topStudents.rows.map(s => ({
             name:          s.name,
-            level:         s.level,
+            level:         s.level || 'A1',
             input_tokens:  parseInt(s.input_tokens)  || 0,
             output_tokens: parseInt(s.output_tokens) || 0,
             tts_chars:     parseInt(s.tts_chars)     || 0,
             session_count: parseInt(s.session_count) || 0,
-            cost_usd:      (
+            cost_usd: (
                 (parseInt(s.input_tokens)  || 0) * API_PRICES.claude_input  +
                 (parseInt(s.output_tokens) || 0) * API_PRICES.claude_output +
                 (parseInt(s.tts_chars)     || 0) * API_PRICES.tts
             ).toFixed(6)
         }));
 
-        // 5. Confronto mese corrente vs scorso (solo api_usage)
-        const monthQuery = `
-            SELECT
-                COALESCE(SUM(CASE WHEN api_type='claude_input'  THEN units*${API_PRICES.claude_input}  ELSE 0 END), 0) +
-                COALESCE(SUM(CASE WHEN api_type='claude_output' THEN units*${API_PRICES.claude_output} ELSE 0 END), 0) +
-                COALESCE(SUM(CASE WHEN api_type='tts'           THEN units*${API_PRICES.tts}           ELSE 0 END), 0) as cost
-            FROM api_usage`;
-
+        // 5. Confronto mese corrente vs scorso
+        const costQuery = (dateFrom, dateTo) => {
+            const params = dateTo ? [dateFrom, dateTo] : [dateFrom];
+            const whereClause = dateTo
+                ? `WHERE created_at >= $1 AND created_at < $2`
+                : `WHERE created_at >= $1`;
+            return client.query(
+                `SELECT COALESCE(
+                    SUM(CASE WHEN api_type='claude_input'  THEN units*${API_PRICES.claude_input}  ELSE 0 END) +
+                    SUM(CASE WHEN api_type='claude_output' THEN units*${API_PRICES.claude_output} ELSE 0 END) +
+                    SUM(CASE WHEN api_type='tts'           THEN units*${API_PRICES.tts}           ELSE 0 END),
+                 0) AS cost FROM api_usage ${whereClause}`,
+                params
+            );
+        };
         const [thisMonthRow, lastMonthRow] = await Promise.all([
-            client.query(`${monthQuery} WHERE created_at::date >= $1::date`, [firstThisMonth]),
-            client.query(`${monthQuery} WHERE created_at::date >= $1::date AND created_at::date < $2::date`, [firstLastMonth, endLastMonth])
+            costQuery(firstThisMonth),
+            costQuery(firstLastMonth, endLastMonth)
         ]);
 
         res.json({
@@ -1321,7 +1331,7 @@ app.get('/api/admin/costs/summary', authenticate, requireAdmin, async (req, res)
         });
 
     } catch (err) {
-        console.error('Costs summary error:', err.message);
+        console.error('Costs summary error:', err.message, err.stack);
         res.status(500).json({ error: 'Errore nel calcolo dei costi', detail: err.message });
     } finally {
         client.release();
