@@ -232,6 +232,7 @@
         </div>
         <div class="topbar-user">
             <div class="usage-badge" id="usageBadge">⏱ Caricamento...</div>
+            <div id="packageBadge" style="display:none;background:linear-gradient(135deg,#009246,#006f35);color:#fff;border-radius:20px;padding:4px 12px;font-size:.75rem;font-weight:700;letter-spacing:.04em"></div>
             <span class="user-name" id="userName">—</span>
             <button class="btn-logout" id="btnLogout">Esci</button>
         </div>
@@ -317,6 +318,27 @@
             </div>
 
             <!-- FIX #1: Barra stato microfono -->
+            <!-- Barra tempo rimanente -->
+            <div id="timerBar" style="background:var(--verde-pale);border-bottom:1px solid var(--grigio-200);padding:7px 24px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;font-size:.8rem">
+                <div style="display:flex;align-items:center;gap:10px;flex:1">
+                    <span style="color:var(--grigio-400);font-weight:700;white-space:nowrap" id="timerLabel">Oggi: — min rimanenti</span>
+                    <div style="flex:1;height:6px;background:var(--grigio-200);border-radius:3px;overflow:hidden">
+                        <div id="timerFill" style="height:100%;background:var(--verde);border-radius:3px;transition:width .5s ease;width:0%"></div>
+                    </div>
+                    <span style="color:var(--grigio-400);white-space:nowrap" id="timerMonthLabel">Mese: —</span>
+                </div>
+            </div>
+            <!-- Schermata limite raggiunto -->
+            <div id="limitScreen" style="display:none;flex:1;align-items:center;justify-content:center;background:var(--avorio);flex-direction:column;gap:16px;padding:40px;text-align:center">
+                <div style="font-size:3rem">⏰</div>
+                <h2 style="font-family:'Playfair Display',serif;color:var(--grigio-700)" id="limitTitle">Limite raggiunto</h2>
+                <p style="color:var(--grigio-400);max-width:360px" id="limitMsg">Hai utilizzato tutti i minuti disponibili.</p>
+                <div style="background:var(--bianco);border:1px solid var(--grigio-200);border-radius:12px;padding:20px 28px">
+                    <p style="font-size:.8rem;color:var(--grigio-400);margin-bottom:8px">Vuoi più tempo?</p>
+                    <p style="font-weight:700;color:var(--verde-dark)">✉️ Contatta il tuo insegnante per aggiornare il pacchetto</p>
+                </div>
+            </div>
+
             <div class="mic-bar" id="micBar">
                 🎤 Sto ascoltando... parla ora in italiano! &nbsp;·&nbsp; Clicca ⏹ per fermare
             </div>
@@ -329,7 +351,7 @@
                 </div>
             </div>
 
-            <div class="input-area">
+            <div id="input-area-wrap"><div class="input-area">
                 <div class="input-row">
                     <!-- FIX #1: Bottone microfono -->
                     <button class="btn-mic" id="btnMic" title="Parla in italiano (Chrome consigliato)">🎤</button>
@@ -556,11 +578,50 @@ function initMicrophone() {
 async function refreshUsage() {
     try {
         const u = await api('/api/user/usage');
-        const remaining = u.remaining_minutes;
+
+        // Badge pacchetto
+        const pkgBadge = document.getElementById('packageBadge');
+        if (u.package && u.package !== 'unlimited') {
+            const icons = { basic:'🥉', advanced:'🥈', gold:'🥇' };
+            pkgBadge.textContent = `${icons[u.package]||''} ${u.package_label || u.package}`;
+            pkgBadge.style.display = 'block';
+        }
+
+        // Badge tempo rimanente oggi
+        const remainingToday = u.remaining_today !== undefined ? u.remaining_today : u.remaining_minutes;
+        const dailyLimit     = u.daily_limit  || u.minutes_limit || 30;
+        const monthlyLimit   = u.monthly_limit || u.minutes_limit || 900;
+        const remainingMonth = u.remaining_month !== undefined ? u.remaining_month : u.remaining_minutes;
+
         const badge = document.getElementById('usageBadge');
-        badge.textContent = `⏱ ${Math.round(remaining)} min rimanenti`;
-        const pct = remaining / u.minutes_limit;
-        badge.className = 'usage-badge' + (pct < .1 ? ' danger' : pct < .25 ? ' warning' : '');
+        badge.textContent = `⏱ ${Math.round(remainingToday)} min oggi`;
+        const pctToday = remainingToday / dailyLimit;
+        badge.className = 'usage-badge' + (pctToday < .1 ? ' danger' : pctToday < .25 ? ' warning' : '');
+
+        // Barra timer
+        const usedPct = Math.min(100, ((dailyLimit - remainingToday) / dailyLimit) * 100);
+        document.getElementById('timerFill').style.width = usedPct + '%';
+        document.getElementById('timerFill').style.background =
+            usedPct > 90 ? 'var(--rosso)' : usedPct > 70 ? '#f5a623' : 'var(--verde)';
+        document.getElementById('timerLabel').textContent =
+            `Oggi: ${Math.round(remainingToday)} min rimanenti (${Math.round(dailyLimit)} limite)`;
+        document.getElementById('timerMonthLabel').textContent =
+            `Mese: ${Math.round(remainingMonth)} min`;
+
+        // Blocca se limite raggiunto
+        const limited = remainingToday <= 0 || remainingMonth <= 0;
+        document.getElementById('messages').style.display   = limited ? 'none' : '';
+        document.getElementById('input-area-wrap').style.display = limited ? 'none' : '';
+        document.getElementById('limitScreen').style.display = limited ? 'flex' : 'none';
+        if (limited) {
+            document.getElementById('limitTitle').textContent =
+                remainingToday <= 0 ? 'Limite giornaliero raggiunto' : 'Limite mensile raggiunto';
+            document.getElementById('limitMsg').textContent =
+                remainingToday <= 0
+                    ? `Hai utilizzato tutti i ${Math.round(dailyLimit)} minuti disponibili oggi. Torna domani!`
+                    : `Hai utilizzato tutti i ${Math.round(monthlyLimit)} minuti del mese.`;
+        }
+        return u;
     } catch { document.getElementById('usageBadge').textContent = '⏱ —'; }
 }
 
@@ -719,11 +780,12 @@ async function sendMessage() {
         await refreshUsage();
     } catch (err) {
         removeTyping();
-        if (err.message.includes('Limite mensile'))
-            addMessage('tutor', '⚠️ Hai raggiunto il limite mensile di minuti. Contatta il tuo insegnante.');
-        else
+        if (err.message.includes('Limite') || err.message.includes('429')) {
+            await refreshUsage(); // mostra schermata limite
+        } else {
             addMessage('tutor', `❌ Errore: ${err.message}. Riprova tra un momento.`);
-        showToast('Errore durante la chat', 'error');
+            showToast('Errore durante la chat', 'error');
+        }
     } finally {
         state.isLoading = false;
         document.getElementById('btnSend').disabled = false;
