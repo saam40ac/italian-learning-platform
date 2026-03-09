@@ -816,8 +816,6 @@ app.post('/api/tts', authenticate, async (req, res) => {
     }
 });
 
-});
-
 
 // ============================================
 // MATERIALS ROUTES (Admin only)
