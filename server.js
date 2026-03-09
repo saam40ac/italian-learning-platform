@@ -509,6 +509,9 @@ ${materials.rows.map(m => `- ${m.title}: ${m.description || ''}`).join('\n')}
             });
         }
 
+        // Istruzione brevità — risposte brevi per TTS fluente
+        systemPrompt += '\n\nIMPORTANTE: Rispondi SEMPRE in massimo 3-4 frasi brevi e dirette. Non fare elenchi. Non aggiungere note. Parla come faresti in una conversazione reale, in modo naturale e conciso.';
+
         // Call Anthropic API
         const anthropicResponse = await fetch('https://api.anthropic.com/v1/messages', {
             method: 'POST',
@@ -519,7 +522,7 @@ ${materials.rows.map(m => `- ${m.title}: ${m.description || ''}`).join('\n')}
             },
             body: JSON.stringify({
                 model: 'claude-sonnet-4-20250514',
-                max_tokens: 1000,
+                max_tokens: 400,
                 system: systemPrompt,
                 messages: [
                     ...conversation_history,
@@ -572,8 +575,22 @@ ${materials.rows.map(m => `- ${m.title}: ${m.description || ''}`).join('\n')}
             );
         }
 
+        // Salva messaggi nello storico
+        const msgSessionId = sessionId;
+        await client.query(
+            `INSERT INTO chat_messages (user_id, session_id, tutor, session_type, role, content)
+             VALUES ($1,$2,$3,$4,'user',$5)`,
+            [req.user.userId, msgSessionId, selectedTutor, session_type, message]
+        ).catch(e => console.error('Save user msg error:', e.message));
+        await client.query(
+            `INSERT INTO chat_messages (user_id, session_id, tutor, session_type, role, content)
+             VALUES ($1,$2,$3,$4,'assistant',$5)`,
+            [req.user.userId, msgSessionId, selectedTutor, session_type, assistantMessage]
+        ).catch(e => console.error('Save assistant msg error:', e.message));
+
         res.json({
             response: assistantMessage,
+            session_id: msgSessionId,
             minutes_used: estimatedMinutes,
             level: userLevel,
             materials_used: materials.rows.map(m => m.title)
@@ -1513,6 +1530,69 @@ app.get('/api/admin/users/:userId/tts-usage', authenticate, requireAdmin, async 
 // ============================================
 // START SERVER
 // ============================================
+
+// ============================================
+// STORICO CONVERSAZIONI
+// ============================================
+
+// Sessioni dello studente (lista)
+app.get('/api/user/sessions', authenticate, async (req, res) => {
+    const client = await pool.connect();
+    try {
+        const rows = await client.query(
+            `SELECT session_id,
+                    tutor,
+                    session_type,
+                    MIN(created_at) AS started_at,
+                    MAX(created_at) AS last_message_at,
+                    COUNT(*)        AS message_count
+             FROM chat_messages
+             WHERE user_id = $1
+             GROUP BY session_id, tutor, session_type
+             ORDER BY MAX(created_at) DESC
+             LIMIT 50`,
+            [req.user.userId]
+        );
+        res.json({ sessions: rows.rows });
+    } catch(e) { res.status(500).json({ error: e.message }); }
+    finally { client.release(); }
+});
+
+// Messaggi di una sessione
+app.get('/api/user/sessions/:sessionId/messages', authenticate, async (req, res) => {
+    const client = await pool.connect();
+    try {
+        const rows = await client.query(
+            `SELECT id, role, content, created_at
+             FROM chat_messages
+             WHERE user_id = $1 AND session_id = $2
+             ORDER BY created_at ASC`,
+            [req.user.userId, req.params.sessionId]
+        );
+        res.json({ messages: rows.rows });
+    } catch(e) { res.status(500).json({ error: e.message }); }
+    finally { client.release(); }
+});
+
+// Admin: tutte le sessioni di uno studente
+app.get('/api/admin/users/:userId/sessions', authenticate, requireAdmin, async (req, res) => {
+    const client = await pool.connect();
+    try {
+        const rows = await client.query(
+            `SELECT session_id, tutor, session_type,
+                    MIN(created_at) AS started_at,
+                    COUNT(*)        AS message_count
+             FROM chat_messages
+             WHERE user_id = $1
+             GROUP BY session_id, tutor, session_type
+             ORDER BY MIN(created_at) DESC`,
+            [req.params.userId]
+        );
+        res.json({ sessions: rows.rows });
+    } catch(e) { res.status(500).json({ error: e.message }); }
+    finally { client.release(); }
+});
+
 
 app.listen(PORT, () => {
     console.log(`🚀 Server running on http://localhost:${PORT}`);
