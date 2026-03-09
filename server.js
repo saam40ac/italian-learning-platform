@@ -1207,156 +1207,123 @@ app.get('/api/admin/stats', authenticate, requireAdmin, async (req, res) => {
 const API_PRICES = {
     claude_input:  0.000003,   // $3  per 1M tokens input
     claude_output: 0.000015,   // $15 per 1M tokens output
-    tts:           0.000016,   // $16 per 1M caratteri
+    tts:           0.000016,   // $16 per 1M caratteri (da api_usage tipo 'tts')
 };
 
-// Riepilogo costi nel periodo
+// Riepilogo costi nel periodo — usa solo api_usage (tts_usage non ha colonna characters)
 app.get('/api/admin/costs/summary', authenticate, requireAdmin, async (req, res) => {
     const client = await pool.connect();
     try {
         const after = req.query.after || new Date(Date.now() - 30 * 86400000).toISOString().split('T')[0];
+        const now   = new Date();
+        const firstThisMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
+        const firstLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1).toISOString().split('T')[0];
+        const endLastMonth   = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
 
-        // Token Claude (input + output) e caratteri TTS dal periodo
-        const [apiRows, ttsRows, sessionsRow, studentsRow] = await Promise.all([
-            client.query(
-                `SELECT api_type, COALESCE(SUM(units), 0) as total_units
-                 FROM api_usage
-                 WHERE created_at >= $1
-                 GROUP BY api_type`,
-                [after]
-            ),
-            client.query(
-                `SELECT COALESCE(SUM(characters), 0) as total_chars,
-                        COUNT(*) as total_requests
-                 FROM tts_usage WHERE created_at >= $1`,
-                [after]
-            ),
-            client.query(
-                `SELECT COUNT(DISTINCT session_id) as total
-                 FROM api_usage WHERE created_at >= $1 AND session_id IS NOT NULL`,
-                [after]
-            ),
-            client.query(
-                `SELECT COUNT(DISTINCT user_id) as total
-                 FROM api_usage WHERE created_at >= $1`,
-                [after]
-            )
-        ]);
+        // 1. Volumi per tipo nel periodo
+        const volumeRows = await client.query(
+            `SELECT api_type, COALESCE(SUM(units), 0) as total_units, COUNT(*) as requests
+             FROM api_usage
+             WHERE created_at::date >= $1::date
+             GROUP BY api_type`,
+            [after]
+        );
 
-        // Aggrega token per tipo
-        let inputTokens = 0, outputTokens = 0;
-        apiRows.rows.forEach(r => {
-            if (r.api_type === 'claude_input')  inputTokens  = parseInt(r.total_units);
-            if (r.api_type === 'claude_output') outputTokens = parseInt(r.total_units);
+        let inputTokens = 0, outputTokens = 0, ttsChars = 0, ttsRequests = 0;
+        volumeRows.rows.forEach(r => {
+            const u = parseInt(r.total_units) || 0;
+            if (r.api_type === 'claude_input')  { inputTokens  = u; }
+            if (r.api_type === 'claude_output') { outputTokens = u; }
+            if (r.api_type === 'tts')           { ttsChars = u; ttsRequests = parseInt(r.requests) || 0; }
         });
-        const ttsChars = parseInt(ttsRows.rows[0]?.total_chars || 0);
 
-        // Trend giornaliero (ultimi N giorni)
+        // 2. Sessioni e studenti unici nel periodo
+        const sessionRow = await client.query(
+            `SELECT COUNT(DISTINCT session_id) as sessions, COUNT(DISTINCT user_id) as students
+             FROM api_usage
+             WHERE created_at::date >= $1::date AND session_id IS NOT NULL`,
+            [after]
+        );
+        const totalSessions = parseInt(sessionRow.rows[0]?.sessions || 0);
+        const totalStudents = parseInt(sessionRow.rows[0]?.students || 0);
+
+        // 3. Trend giornaliero (tutti i tipi da api_usage)
         const dailyRows = await client.query(
             `SELECT
-                DATE(created_at) as date,
-                SUM(CASE WHEN api_type = 'claude_input'  THEN units * ${API_PRICES.claude_input}  ELSE 0 END) +
-                SUM(CASE WHEN api_type = 'claude_output' THEN units * ${API_PRICES.claude_output} ELSE 0 END) as cost_api
+                created_at::date as date,
+                COALESCE(SUM(CASE WHEN api_type='claude_input'  THEN units * ${API_PRICES.claude_input}  ELSE 0 END), 0) +
+                COALESCE(SUM(CASE WHEN api_type='claude_output' THEN units * ${API_PRICES.claude_output} ELSE 0 END), 0) +
+                COALESCE(SUM(CASE WHEN api_type='tts'           THEN units * ${API_PRICES.tts}           ELSE 0 END), 0) as cost
              FROM api_usage
-             WHERE created_at >= $1
-             GROUP BY DATE(created_at)
+             WHERE created_at::date >= $1::date
+             GROUP BY created_at::date
              ORDER BY date ASC`,
             [after]
         );
+        const daily_breakdown = dailyRows.rows.map(r => ({
+            date: r.date instanceof Date ? r.date.toISOString().split('T')[0] : String(r.date),
+            cost: parseFloat(parseFloat(r.cost || 0).toFixed(8))
+        }));
 
-        const dailyTTS = await client.query(
-            `SELECT DATE(created_at) as date,
-                    SUM(characters) * ${API_PRICES.tts} as cost_tts
-             FROM tts_usage
-             WHERE created_at >= $1
-             GROUP BY DATE(created_at)
-             ORDER BY date ASC`,
-            [after]
-        );
-
-        // Merge per giorno
-        const dailyMap = {};
-        dailyRows.rows.forEach(r => {
-            const d = r.date.toISOString().split('T')[0];
-            dailyMap[d] = (dailyMap[d] || 0) + parseFloat(r.cost_api || 0);
-        });
-        dailyTTS.rows.forEach(r => {
-            const d = r.date.toISOString().split('T')[0];
-            dailyMap[d] = (dailyMap[d] || 0) + parseFloat(r.cost_tts || 0);
-        });
-        const daily_breakdown = Object.entries(dailyMap)
-            .sort(([a], [b]) => a.localeCompare(b))
-            .map(([date, cost]) => ({ date, cost: parseFloat(cost.toFixed(6)) }));
-
-        // Top studenti per utilizzo
+        // 4. Top studenti
         const topStudents = await client.query(
-            `SELECT u.name, u.level,
-                    SUM(CASE WHEN au.api_type = 'claude_input'  THEN au.units ELSE 0 END) as input_tokens,
-                    SUM(CASE WHEN au.api_type = 'claude_output' THEN au.units ELSE 0 END) as output_tokens,
+            `SELECT u.name, COALESCE(u.level, 'A1') as level,
+                    COALESCE(SUM(CASE WHEN au.api_type='claude_input'  THEN au.units ELSE 0 END), 0) as input_tokens,
+                    COALESCE(SUM(CASE WHEN au.api_type='claude_output' THEN au.units ELSE 0 END), 0) as output_tokens,
+                    COALESCE(SUM(CASE WHEN au.api_type='tts'           THEN au.units ELSE 0 END), 0) as tts_chars,
                     COUNT(DISTINCT au.session_id) as session_count
              FROM api_usage au
              JOIN users u ON au.user_id = u.id
-             WHERE au.created_at >= $1
+             WHERE au.created_at::date >= $1::date
              GROUP BY u.id, u.name, u.level
              ORDER BY (input_tokens + output_tokens) DESC
              LIMIT 10`,
             [after]
         );
-
-        const topStudentsWithCost = topStudents.rows.map(s => ({
+        const top_students = topStudents.rows.map(s => ({
             name:          s.name,
-            level:         s.level || 'A1',
-            input_tokens:  parseInt(s.input_tokens),
-            output_tokens: parseInt(s.output_tokens),
-            session_count: parseInt(s.session_count),
-            cost_usd:      (parseInt(s.input_tokens) * API_PRICES.claude_input +
-                            parseInt(s.output_tokens) * API_PRICES.claude_output).toFixed(6)
+            level:         s.level,
+            input_tokens:  parseInt(s.input_tokens)  || 0,
+            output_tokens: parseInt(s.output_tokens) || 0,
+            tts_chars:     parseInt(s.tts_chars)     || 0,
+            session_count: parseInt(s.session_count) || 0,
+            cost_usd:      (
+                (parseInt(s.input_tokens)  || 0) * API_PRICES.claude_input  +
+                (parseInt(s.output_tokens) || 0) * API_PRICES.claude_output +
+                (parseInt(s.tts_chars)     || 0) * API_PRICES.tts
+            ).toFixed(6)
         }));
 
-        // Mese corrente vs mese scorso
-        const now = new Date();
-        const firstThisMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
-        const firstLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1).toISOString();
-        const endLastMonth   = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+        // 5. Confronto mese corrente vs scorso (solo api_usage)
+        const monthQuery = `
+            SELECT
+                COALESCE(SUM(CASE WHEN api_type='claude_input'  THEN units*${API_PRICES.claude_input}  ELSE 0 END), 0) +
+                COALESCE(SUM(CASE WHEN api_type='claude_output' THEN units*${API_PRICES.claude_output} ELSE 0 END), 0) +
+                COALESCE(SUM(CASE WHEN api_type='tts'           THEN units*${API_PRICES.tts}           ELSE 0 END), 0) as cost
+            FROM api_usage`;
 
-        const [thisMontRow, lastMonthRow, thisTTS, lastTTS] = await Promise.all([
-            client.query(`SELECT
-                SUM(CASE WHEN api_type='claude_input'  THEN units*${API_PRICES.claude_input}  ELSE 0 END) +
-                SUM(CASE WHEN api_type='claude_output' THEN units*${API_PRICES.claude_output} ELSE 0 END) as cost
-                FROM api_usage WHERE created_at >= $1`, [firstThisMonth]),
-            client.query(`SELECT
-                SUM(CASE WHEN api_type='claude_input'  THEN units*${API_PRICES.claude_input}  ELSE 0 END) +
-                SUM(CASE WHEN api_type='claude_output' THEN units*${API_PRICES.claude_output} ELSE 0 END) as cost
-                FROM api_usage WHERE created_at >= $1 AND created_at < $2`, [firstLastMonth, endLastMonth]),
-            client.query(`SELECT SUM(characters)*${API_PRICES.tts} as cost FROM tts_usage WHERE created_at >= $1`, [firstThisMonth]),
-            client.query(`SELECT SUM(characters)*${API_PRICES.tts} as cost FROM tts_usage WHERE created_at >= $1 AND created_at < $2`, [firstLastMonth, endLastMonth])
+        const [thisMonthRow, lastMonthRow] = await Promise.all([
+            client.query(`${monthQuery} WHERE created_at::date >= $1::date`, [firstThisMonth]),
+            client.query(`${monthQuery} WHERE created_at::date >= $1::date AND created_at::date < $2::date`, [firstLastMonth, endLastMonth])
         ]);
 
-        const costThisMonth = parseFloat(thisMontRow.rows[0]?.cost || 0) + parseFloat(thisTTS.rows[0]?.cost || 0);
-        const costLastMonth = parseFloat(lastMonthRow.rows[0]?.cost || 0) + parseFloat(lastTTS.rows[0]?.cost || 0);
-
         res.json({
-            // Volumi
             claude_input_tokens:  inputTokens,
             claude_output_tokens: outputTokens,
             tts_characters:       ttsChars,
-            tts_requests:         parseInt(ttsRows.rows[0]?.total_requests || 0),
-            total_sessions:       parseInt(sessionsRow.rows[0]?.total || 0),
-            total_students:       parseInt(studentsRow.rows[0]?.total || 0),
-            // Trend
+            tts_requests:         ttsRequests,
+            total_sessions:       totalSessions,
+            total_students:       totalStudents,
             daily_breakdown,
-            // Studenti
-            top_students: topStudentsWithCost,
-            // Confronto mesi
-            cost_this_month: parseFloat(costThisMonth.toFixed(6)),
-            cost_last_month: parseFloat(costLastMonth.toFixed(6)),
-            // Periodo richiesto
-            period_start: after
+            top_students,
+            cost_this_month: parseFloat(parseFloat(thisMonthRow.rows[0]?.cost || 0).toFixed(8)),
+            cost_last_month: parseFloat(parseFloat(lastMonthRow.rows[0]?.cost || 0).toFixed(8)),
+            period_start:    after
         });
 
     } catch (err) {
-        console.error('Costs summary error:', err);
-        res.status(500).json({ error: 'Errore nel calcolo dei costi' });
+        console.error('Costs summary error:', err.message);
+        res.status(500).json({ error: 'Errore nel calcolo dei costi', detail: err.message });
     } finally {
         client.release();
     }
