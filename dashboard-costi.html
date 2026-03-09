@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard Costi — Impara Italiano AI</title>
+    <title>Saam 4.0 Italian Voice — Costi</title>
+    <link rel="icon" type="image/png" href="OminiLOGO_Saam40_ItalianVoice.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
@@ -21,14 +22,42 @@
         html, body { height: 100%; font-size: 15px; }
         body { font-family: 'Lato', sans-serif; background: var(--avorio); color: var(--grigio-700); display: flex; flex-direction: column; }
 
-        .flag-strip { height: 4px; background: linear-gradient(to right, var(--verde) 33.33%, var(--bianco) 33.33% 66.66%, var(--rosso) 66.66%); }
+        .flag-strip { display:none; }
 
         /* LOGIN */
-        #loginScreen { position: fixed; inset: 4px 0 0 0; background: linear-gradient(145deg, #0d4a28, #009246); display: flex; align-items: center; justify-content: center; z-index: 100; }
-        .login-card { background: var(--bianco); border-radius: 18px; padding: 44px 40px; width: 100%; max-width: 400px; box-shadow: 0 24px 60px rgba(0,0,0,.25); animation: slideUp .4s ease both; }
+        #loginScreen { position: fixed; inset: 4px 0 0 0; background: linear-gradient(145deg, #0a4a25 0%, #006f35 45%, #009246 100%); display: flex; align-items: center; justify-content: center; z-index: 100; }
+
+        @keyframes slideUpC { from{opacity:0;transform:translateY(24px) scale(.97)}to{opacity:1;transform:translateY(0) scale(1)} }
+        /* ── LOGIN CARD due colonne ── */
+        .login-card {
+            background: var(--bianco);
+            border-radius: 22px;
+            padding: 44px 48px;
+            width: 100%;
+            max-width: 640px;
+            box-shadow: 0 32px 80px rgba(0,0,0,.28);
+            animation: slideUp .5s cubic-bezier(.22,1,.36,1) both;
+            display: grid;
+            grid-template-columns: 210px 1fr;
+            gap: 0 36px;
+            align-items: center;
+        }
+        .login-logo-col {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-right: 1px solid #e8e8e5;
+            padding-right: 36px;
+            grid-row: 1 / span 10;
+        }
+        .login-logo-col img { width: 170px; height: auto; }
+        .login-form-col { grid-column: 2; }
+        .login-headline { margin-bottom: 26px; }
+        .login-headline p  { font-family: 'Lato', sans-serif; font-size: 1rem; color: #555; line-height: 1.45; margin: 0; }
+        .login-headline strong { color: #3d3d3a; font-size: 1.2rem; }
+        .login-headline .brand-role { font-weight: 900; color: var(--verde-dark); font-size: 1.05rem; }
         @keyframes slideUp { from{opacity:0;transform:translateY(20px);}to{opacity:1;transform:translateY(0);} }
-        .login-card h1 { font-family:'Playfair Display',serif; font-size:1.6rem; color:var(--verde-dark); text-align:center; margin-bottom:4px; }
-        .login-card p  { text-align:center; color:var(--grigio-400); font-size:.82rem; margin-bottom:28px; }
+        .login-card h1, .login-card > p { display:none; }
         .fg { margin-bottom:16px; }
         .fg label { display:block; font-size:.75rem; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:var(--grigio-700); margin-bottom:6px; }
         .fg input { width:100%; border:1.5px solid var(--grigio-200); border-radius:var(--radius-sm); padding:10px 13px; font-family:'Lato',sans-serif; font-size:.92rem; color:var(--nero); background:var(--avorio); outline:none; transition:border-color var(--transition); }
@@ -141,21 +170,44 @@
 <!-- LOGIN -->
 <div id="loginScreen">
     <div class="login-card">
-        <h1>💰 Dashboard Costi</h1>
-        <p>Impara Italiano AI — Dati Reali</p>
-        <div class="fg"><label>Email Admin</label><input type="email" id="loginEmail" placeholder="admin@italiano.ai"></div>
-        <div class="fg"><label>Password</label><input type="password" id="loginPassword" placeholder="••••••••"></div>
-        <button class="btn-primary" id="btnLogin">Accedi</button>
-        <div class="login-error" id="loginError"></div>
+
+        <!-- colonna sinistra: logo -->
+        <div class="login-logo-col">
+            <img src="LOGO_Saam40_ItalianVoice.png" alt="Saam 4.0 Italian Voice">
+        </div>
+
+        <!-- colonna destra: testo + form -->
+        <div class="login-form-col">
+            <div class="login-headline">
+                <p>Monitoraggio<br>
+                   <strong>Costi &amp; Utilizzo</strong><br>
+                   <span class="brand-role">💰 Area Amministratori</span>
+                </p>
+            </div>
+            <div class="fg">
+                <label style="display:block;font-size:.78rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#3d3d3a;margin-bottom:6px">Email Admin</label>
+                <input type="email" id="loginEmail" placeholder="admin@italiano.ai" style="width:100%;border:1.5px solid #e8e8e5;border-radius:8px;padding:11px 14px;font-size:.95rem;background:#fafaf7;outline:none">
+            </div>
+            <div class="fg" style="margin-top:14px">
+                <label style="display:block;font-size:.78rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#3d3d3a;margin-bottom:6px">Password</label>
+                <input type="password" id="loginPassword" placeholder="••••••••" style="width:100%;border:1.5px solid #e8e8e5;border-radius:8px;padding:11px 14px;font-size:.95rem;background:#fafaf7;outline:none">
+            </div>
+            <button class="btn-primary" id="btnLogin" style="margin-top:18px">Accedi</button>
+            <div class="login-error" id="loginError"></div>
+        </div>
+
     </div>
 </div>
 
 <!-- APP -->
 <div id="app">
     <div class="topbar">
-        <div class="topbar-brand">
-            <h2>💰 Monitoraggio Costi — Impara Italiano AI</h2>
-            <p>Dati reali da Claude API · Google TTS</p>
+        <div class="topbar-brand" style="display:flex;align-items:center;gap:10px">
+            <img src="OminiLOGO_Saam40_ItalianVoice.png" style="width:30px;height:30px;object-fit:contain" alt="Logo">
+            <div>
+                <h2>Saam 4.0 Italian Voice</h2>
+                <p>💰 Monitoraggio Costi &amp; Utilizzo API</p>
+            </div>
         </div>
         <div class="topbar-right">
             <div style="display:flex;gap:6px">
