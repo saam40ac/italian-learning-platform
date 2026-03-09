@@ -783,38 +783,39 @@ app.post('/api/tts', authenticate, async (req, res) => {
         const apiKey = process.env.GOOGLE_TTS_API_KEY || process.env.GOOGLE_API_KEY;
         if (!apiKey) throw new Error('Google API Key not configured');
 
-        // Tenta prima con voce Studio, fallback a Neural2 se non disponibile
-        async function callTTSApi(vName) {
-            const resp = await fetch(
-                `https://texttospeech.googleapis.com/v1/text:synthesize?key=${apiKey}`,
-                {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        input: { text: limitedText },
-                        voice: {
-                            languageCode: actualVoiceLang,
-                            name: vName,
-                            ssmlGender: actualGender
-                        },
-                        audioConfig: {
-                            audioEncoding: 'MP3',
-                            speakingRate: 0.93,
-                            pitch: 0.0,
-                            volumeGainDb: 1.0,
-                            sampleRateHertz: 24000
-                        }
-                    })
-                }
-            );
-            return resp;
+        // Chiama Google TTS — prova Studio (v1beta1), fallback Neural2 (v1)
+        async function callTTSApi(vName, useStudio) {
+            const endpoint = useStudio
+                ? `https://texttospeech.googleapis.com/v1beta1/text:synthesize?key=${apiKey}`
+                : `https://texttospeech.googleapis.com/v1/text:synthesize?key=${apiKey}`;
+            return fetch(endpoint, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    input: { text: limitedText },
+                    voice: {
+                        languageCode: actualVoiceLang,
+                        name: vName,
+                        ssmlGender: actualGender
+                    },
+                    audioConfig: {
+                        audioEncoding: 'MP3',
+                        speakingRate: 0.90,
+                        pitch: 0.0,
+                        volumeGainDb: 1.0,
+                        sampleRateHertz: 24000
+                    }
+                })
+            });
         }
 
-        let response = await callTTSApi(actualVoiceName);
-        // Se Studio non disponibile, fallback automatico a Neural2
-        if (!response.ok && actualVoiceName.includes('Studio')) {
-            console.warn('Studio voice not available, falling back to Neural2');
-            response = await callTTSApi(isFemale ? neural2Voice : neural2Voice);
+        const isStudio = actualVoiceName.includes('Studio');
+        let response = await callTTSApi(actualVoiceName, isStudio);
+
+        // Fallback automatico a Neural2 se Studio non disponibile
+        if (!response.ok && isStudio) {
+            console.warn(`Studio voice ${actualVoiceName} not available, falling back to Neural2`);
+            response = await callTTSApi(isFemale ? neural2Voice : neural2Voice, false);
         }
 
         if (!response.ok) {
@@ -1148,49 +1149,7 @@ app.get('/api/admin/users', authenticate, requireAdmin, async (req, res) => {
     }
 });
 
-app.put('/api/admin/users/:id', authenticate, requireAdmin, async (req, res) => {
-    const { id } = req.params;
-    const { minutes_limit, role } = req.body;
-
-    const client = await pool.connect();
-    try {
-        const updates = [];
-        const values = [];
-        let paramCount = 1;
-
-        if (typeof minutes_limit === 'number') {
-            updates.push(`minutes_limit = $${paramCount}`);
-            values.push(minutes_limit);
-            paramCount++;
-        }
-
-        if (role && ['admin', 'student'].includes(role)) {
-            updates.push(`role = $${paramCount}`);
-            values.push(role);
-            paramCount++;
-        }
-
-        if (updates.length === 0) {
-            return res.status(400).json({ error: 'Nessun campo da aggiornare' });
-        }
-
-        values.push(id);
-        const query = `UPDATE users SET ${updates.join(', ')} WHERE id = $${paramCount} RETURNING *`;
-
-        const result = await client.query(query, values);
-
-        if (result.rows.length === 0) {
-            return res.status(404).json({ error: 'Utente non trovato' });
-        }
-
-        res.json({ message: 'Utente aggiornato', user: result.rows[0] });
-    } catch (err) {
-        console.error('Update user error:', err);
-        res.status(500).json({ error: 'Errore aggiornamento' });
-    } finally {
-        client.release();
-    }
-});
+// PUT /api/admin/users/:id — gestito dall'endpoint completo /:userId più avanti
 
 app.delete('/api/admin/users/:id', authenticate, requireAdmin, async (req, res) => {
     const { id } = req.params;
@@ -1483,37 +1442,42 @@ app.put('/api/admin/users/:userId', authenticate, requireAdmin, async (req, res)
     const client = await pool.connect();
     try {
         const { userId } = req.params;
-        const { name, email, level, password } = req.body;
+        const { name, email, role, level, monthly_limit, minutes_limit, package: pkg, password } = req.body;
 
-        let query = 'UPDATE users SET name = $1, email = $2, level = $3';
-        let params = [name, email, level];
+        // Usa minutes_limit o monthly_limit (il frontend manda monthly_limit)
+        const limitValue = minutes_limit ?? monthly_limit;
 
-        if (password) {
-            const bcrypt = require('bcrypt');
-            const hashedPassword = await bcrypt.hash(password, 10);
-            query += ', password = $4';
-            params.push(hashedPassword);
+        let query = 'UPDATE users SET name = $1, email = $2';
+        let params = [name, email];
+        let p = 2;
+
+        if (role && ['admin','student'].includes(role)) {
+            query += `, role = $${++p}`; params.push(role);
+        }
+        if (level) {
+            query += `, level = $${++p}`; params.push(level);
+        }
+        if (limitValue !== undefined && limitValue !== null) {
+            query += `, minutes_limit = $${++p}`; params.push(parseInt(limitValue) || 120);
+        }
+        if (pkg && ['basic','advanced','gold','unlimited'].includes(pkg)) {
+            query += `, package = $${++p}`; params.push(pkg);
+        }
+        if (password && password.trim()) {
+            const hashedPassword = await bcrypt.hash(password.trim(), 10);
+            query += `, password_hash = $${++p}`; params.push(hashedPassword);
         }
 
-        query += ', updated_at = NOW() WHERE id = $' + (params.length + 1) + ' RETURNING *';
+        query += `, updated_at = NOW() WHERE id = $${++p} RETURNING id, name, email, role, level, minutes_limit, package, created_at`;
         params.push(userId);
 
         const result = await client.query(query, params);
+        if (result.rows.length === 0) return res.status(404).json({ error: 'Utente non trovato' });
 
-        if (result.rows.length === 0) {
-            return res.status(404).json({ error: 'User not found' });
-        }
-
-        const user = result.rows[0];
-        delete user.password;
-
-        res.json({
-            success: true,
-            user
-        });
+        res.json({ success: true, user: result.rows[0] });
     } catch (err) {
-        console.error('Update user error:', err);
-        res.status(500).json({ error: 'Failed to update user' });
+        console.error('Update user error:', err.message);
+        res.status(500).json({ error: 'Errore aggiornamento: ' + err.message });
     } finally {
         client.release();
     }
@@ -1552,65 +1516,6 @@ app.get('/api/admin/users/:userId/tts-usage', authenticate, requireAdmin, async 
 });
 
 // Update user (Admin only)
-app.put('/api/admin/users/:userId', authenticate, requireAdmin, async (req, res) => {
-    const client = await pool.connect();
-    try {
-        const { userId } = req.params;
-        const { name, email, role, level, monthly_limit, package: pkg, password } = req.body;
-
-        let query = 'UPDATE users SET name = $1, email = $2, role = $3';
-        let params = [name, email, role];
-        let paramCount = 3;
-
-        if (level) {
-            paramCount++;
-            query += `, level = $${paramCount}`;
-            params.push(level);
-        }
-
-        if (monthly_limit !== undefined) {
-            paramCount++;
-            query += `, monthly_limit = $${paramCount}`;
-            params.push(monthly_limit);
-        }
-
-        if (pkg && ['basic','advanced','gold','unlimited'].includes(pkg)) {
-            paramCount++;
-            query += `, package = $${paramCount}`;
-            params.push(pkg);
-        }
-
-        if (password) {
-            const hashedPassword = await bcrypt.hash(password, 10);
-            paramCount++;
-            query += `, password = $${paramCount}`;
-            params.push(hashedPassword);
-        }
-
-        paramCount++;
-        query += `, updated_at = NOW() WHERE id = $${paramCount} RETURNING *`;
-        params.push(userId);
-
-        const result = await client.query(query, params);
-
-        if (result.rows.length === 0) {
-            return res.status(404).json({ error: 'User not found' });
-        }
-
-        const user = result.rows[0];
-        delete user.password;
-
-        res.json({
-            success: true,
-            user
-        });
-    } catch (err) {
-        console.error('Update user error:', err);
-        res.status(500).json({ error: 'Failed to update user' });
-    } finally {
-        client.release();
-    }
-});
 
 // ============================================
 // START SERVER
