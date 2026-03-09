@@ -22,6 +22,18 @@ async function trackApiUsage(pool, userId, apiType, units, sessionType, sessionI
     }
 }
 async function trackConversationSession() {} // placeholder compatibilità
+// ============================================
+// PACCHETTI ABBONAMENTO
+// ============================================
+const PACKAGES = {
+    basic:    { daily_minutes: 30,  monthly_minutes: 900,  label: 'Basic'    },
+    advanced: { daily_minutes: 60,  monthly_minutes: 1800, label: 'Advanced' },
+    gold:     { daily_minutes: 120, monthly_minutes: 3600, label: 'Gold'     },
+    unlimited:{ daily_minutes: 9999,monthly_minutes: 99999,label: 'Unlimited'},
+};
+function getPackageLimits(pkg) {
+    return PACKAGES[pkg] || PACKAGES.basic;
+}
 // routes/admin-costs rimosso — endpoint costi inline nel server
 
 const app = express();
@@ -292,20 +304,30 @@ app.get('/api/user/usage', authenticate, async (req, res) => {
                 [req.user.userId, firstDayOfMonth]
             ),
             client.query(
-                'SELECT minutes_limit FROM users WHERE id = $1',
+                "SELECT minutes_limit, COALESCE(package,'basic') as package FROM users WHERE id = $1",
                 [req.user.userId]
             )
         ]);
 
-        const minutesLimit = userLimits.rows[0]?.minutes_limit || 120;
-        const dailyMinutes = parseFloat(dailyUsage.rows[0].total);
+        const userPackage    = userLimits.rows[0]?.package || 'basic';
+        const pkgLimits      = getPackageLimits(userPackage);
+        const dailyMinutes   = parseFloat(dailyUsage.rows[0].total);
         const monthlyMinutes = parseFloat(monthlyUsage.rows[0].total);
+        const dailyLimit     = pkgLimits.daily_minutes;
+        const monthlyLimit   = pkgLimits.monthly_minutes;
 
         res.json({
-            daily_minutes: Math.round(dailyMinutes * 100) / 100,
-            monthly_minutes: Math.round(monthlyMinutes * 100) / 100,
-            minutes_limit: minutesLimit,
-            remaining_minutes: Math.max(0, Math.round((minutesLimit - monthlyMinutes) * 100) / 100)
+            daily_minutes:           Math.round(dailyMinutes   * 100) / 100,
+            monthly_minutes:         Math.round(monthlyMinutes * 100) / 100,
+            daily_limit:             dailyLimit,
+            monthly_limit:           monthlyLimit,
+            remaining_today:         Math.max(0, Math.round((dailyLimit   - dailyMinutes)   * 100) / 100),
+            remaining_month:         Math.max(0, Math.round((monthlyLimit - monthlyMinutes) * 100) / 100),
+            // legacy fields kept for compatibility
+            minutes_limit:           monthlyLimit,
+            remaining_minutes:       Math.max(0, Math.round((monthlyLimit - monthlyMinutes) * 100) / 100),
+            package:                 userPackage,
+            package_label:           pkgLimits.label,
         });
     } catch (err) {
         console.error('Get usage error:', err);
@@ -365,18 +387,22 @@ app.post('/api/chat', authenticate, async (req, res) => {
 
     const client = await pool.connect();
     try {
-        // Check usage limits
+        // Check usage limits — pacchetto + giornaliero + mensile
         const today = new Date().toISOString().split('T')[0];
         const firstDayOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1)
             .toISOString().split('T')[0];
 
-        const [monthlyUsage, userLimits, studentLevel] = await Promise.all([
+        const [dailyUsageRow, monthlyUsageRow, userRow, studentLevel] = await Promise.all([
+            client.query(
+                'SELECT COALESCE(SUM(minutes_used), 0) as total FROM usage WHERE user_id = $1 AND date = $2',
+                [req.user.userId, today]
+            ),
             client.query(
                 'SELECT COALESCE(SUM(minutes_used), 0) as total FROM usage WHERE user_id = $1 AND date >= $2',
                 [req.user.userId, firstDayOfMonth]
             ),
             client.query(
-                'SELECT minutes_limit FROM users WHERE id = $1',
+                "SELECT minutes_limit, COALESCE(package, 'basic') as package FROM users WHERE id = $1",
                 [req.user.userId]
             ),
             client.query(
@@ -385,14 +411,31 @@ app.post('/api/chat', authenticate, async (req, res) => {
             )
         ]);
 
-        const minutesLimit = userLimits.rows[0]?.minutes_limit || 120;
-        const monthlyMinutes = parseFloat(monthlyUsage.rows[0].total);
+        const userPackage   = userRow.rows[0]?.package || 'basic';
+        const pkgLimits     = getPackageLimits(userPackage);
+        const dailyMinutes  = parseFloat(dailyUsageRow.rows[0].total);
+        const monthlyMinutes= parseFloat(monthlyUsageRow.rows[0].total);
+        const dailyLimit    = pkgLimits.daily_minutes;
+        const monthlyLimit  = pkgLimits.monthly_minutes;
 
-        if (monthlyMinutes >= minutesLimit) {
-            return res.status(429).json({ 
+        if (dailyMinutes >= dailyLimit) {
+            return res.status(429).json({
+                error: 'Limite giornaliero raggiunto',
+                error_type: 'daily_limit',
+                minutes_used_today: dailyMinutes,
+                daily_limit: dailyLimit,
+                package: userPackage,
+                package_label: pkgLimits.label
+            });
+        }
+        if (monthlyMinutes >= monthlyLimit) {
+            return res.status(429).json({
                 error: 'Limite mensile raggiunto',
-                minutes_used: monthlyMinutes,
-                minutes_limit: minutesLimit
+                error_type: 'monthly_limit',
+                minutes_used_month: monthlyMinutes,
+                monthly_limit: monthlyLimit,
+                package: userPackage,
+                package_label: pkgLimits.label
             });
         }
 
@@ -724,49 +767,55 @@ app.post('/api/tts', authenticate, async (req, res) => {
         // Limita lunghezza testo (max 5000 caratteri)
         const limitedText = text.substring(0, 5000);
 
-        // Voce: priorità al nome esplicito dal frontend, fallback su genere
-        const actualVoiceName = voiceName || (voiceGender === 'FEMALE' ? 'it-IT-Neural2-A' : 'it-IT-Neural2-C');
+        // ── SELEZIONE VOCE ───────────────────────────────────────────────
+        // Studio = massima qualità naturale. Fallback automatico a Neural2.
+        const isFemale = voiceGender === 'FEMALE';
+        // Voce Studio italiana (le più naturali disponibili su Google Cloud)
+        const studioVoice = isFemale ? 'it-IT-Studio-C' : 'it-IT-Studio-B';
+        const neural2Voice= isFemale ? 'it-IT-Neural2-A' : 'it-IT-Neural2-C';
+        // Usa nome esplicito dal frontend se fornito, altrimenti Studio
+        const actualVoiceName = voiceName || studioVoice;
         const actualVoiceLang = 'it-IT';
-        const actualGender    = voiceGender === 'FEMALE' ? 'FEMALE' : 'MALE';
+        const actualGender    = isFemale ? 'FEMALE' : 'MALE';
 
         console.log('✅ TTS voice:', actualVoiceName, '| chars:', limitedText.length);
 
         const apiKey = process.env.GOOGLE_TTS_API_KEY || process.env.GOOGLE_API_KEY;
         if (!apiKey) throw new Error('Google API Key not configured');
 
-        // Converti testo in SSML per punteggiatura e pause naturali
-        function toSSML(txt) {
-            const escaped = txt
-                .replace(/&/g, '&amp;')
-                .replace(/</g, '&lt;')
-                .replace(/>/g, '&gt;')
-                .replace(/"/g, '&quot;');
-            return `<speak>${escaped}</speak>`;
+        // Tenta prima con voce Studio, fallback a Neural2 se non disponibile
+        async function callTTSApi(vName) {
+            const resp = await fetch(
+                `https://texttospeech.googleapis.com/v1/text:synthesize?key=${apiKey}`,
+                {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        input: { text: limitedText },
+                        voice: {
+                            languageCode: actualVoiceLang,
+                            name: vName,
+                            ssmlGender: actualGender
+                        },
+                        audioConfig: {
+                            audioEncoding: 'MP3',
+                            speakingRate: 0.93,
+                            pitch: 0.0,
+                            volumeGainDb: 1.0,
+                            sampleRateHertz: 24000
+                        }
+                    })
+                }
+            );
+            return resp;
         }
 
-        // Call Google Cloud TTS con SSML per lettura naturale
-        const response = await fetch(
-            `https://texttospeech.googleapis.com/v1/text:synthesize?key=${apiKey}`,
-            {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    input: { ssml: toSSML(limitedText) },
-                    voice: {
-                        languageCode: actualVoiceLang,
-                        name: actualVoiceName,
-                        ssmlGender: actualGender
-                    },
-                    audioConfig: {
-                        audioEncoding: 'MP3',
-                        speakingRate: 0.95,
-                        pitch: 0.0,
-                        volumeGainDb: 1.0,
-                        sampleRateHertz: 24000
-                    }
-                })
-            }
-        );
+        let response = await callTTSApi(actualVoiceName);
+        // Se Studio non disponibile, fallback automatico a Neural2
+        if (!response.ok && actualVoiceName.includes('Studio')) {
+            console.warn('Studio voice not available, falling back to Neural2');
+            response = await callTTSApi(isFemale ? neural2Voice : neural2Voice);
+        }
 
         if (!response.ok) {
             const errorData = await response.json();
@@ -1080,7 +1129,7 @@ app.get('/api/admin/users', authenticate, requireAdmin, async (req, res) => {
     try {
         const result = await client.query(`
             SELECT 
-                u.id, u.email, u.name, u.role, u.minutes_limit, u.created_at, u.last_login,
+                u.id, u.email, u.name, u.role, u.minutes_limit, COALESCE(u.package,'basic') as package, u.created_at, u.last_login,
                 COALESCE(SUM(us.minutes_used), 0) as total_minutes_used,
                 sl.level, sl.topics
             FROM users u
@@ -1171,6 +1220,33 @@ app.delete('/api/admin/users/:id', authenticate, requireAdmin, async (req, res) 
     } finally {
         client.release();
     }
+});
+
+// Assegna pacchetto a uno studente
+app.put('/api/admin/users/:id/package', authenticate, requireAdmin, async (req, res) => {
+    const { id } = req.params;
+    const { package: pkg } = req.body;
+    if (!PACKAGES[pkg]) return res.status(400).json({ error: 'Pacchetto non valido' });
+    const client = await pool.connect();
+    try {
+        await client.query(
+            'UPDATE users SET package = $1 WHERE id = $2',
+            [pkg, id]
+        );
+        res.json({ success: true, package: pkg, label: PACKAGES[pkg].label });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Errore server' });
+    } finally { client.release(); }
+});
+
+// Riepilogo pacchetti disponibili
+app.get('/api/admin/packages', authenticate, requireAdmin, (req, res) => {
+    const list = Object.entries(PACKAGES).map(([key, val]) => ({
+        key, ...val,
+        prices: { basic: 9.70, advanced: 16.70, gold: 27.70, unlimited: 0 }[key] || 0
+    }));
+    res.json({ packages: list });
 });
 
 app.get('/api/admin/stats', authenticate, requireAdmin, async (req, res) => {
@@ -1480,7 +1556,7 @@ app.put('/api/admin/users/:userId', authenticate, requireAdmin, async (req, res)
     const client = await pool.connect();
     try {
         const { userId } = req.params;
-        const { name, email, role, level, monthly_limit, password } = req.body;
+        const { name, email, role, level, monthly_limit, package: pkg, password } = req.body;
 
         let query = 'UPDATE users SET name = $1, email = $2, role = $3';
         let params = [name, email, role];
@@ -1496,6 +1572,12 @@ app.put('/api/admin/users/:userId', authenticate, requireAdmin, async (req, res)
             paramCount++;
             query += `, monthly_limit = $${paramCount}`;
             params.push(monthly_limit);
+        }
+
+        if (pkg && ['basic','advanced','gold','unlimited'].includes(pkg)) {
+            paramCount++;
+            query += `, package = $${paramCount}`;
+            params.push(pkg);
         }
 
         if (password) {
