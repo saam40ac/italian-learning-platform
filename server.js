@@ -100,6 +100,11 @@ if (process.env.GOOGLE_API_KEY) {
 // ============================================
 
 app.use(cors());
+
+// ── WEBHOOK STRIPE (raw body — deve stare PRIMA di express.json) ──
+const { stripeWebhook } = require('./server-affiliazioni');
+app.post('/api/stripe/webhook', express.raw({ type: 'application/json' }), stripeWebhook);
+
 app.use(express.json());
 
 app.use((req, res, next) => {
@@ -1593,6 +1598,9 @@ app.get('/api/admin/users/:userId/sessions', authenticate, requireAdmin, async (
     finally { client.release(); }
 });
 
+// ── ROUTES AFFILIAZIONI + STRIPE ──
+const affiliazioniRoutes = require('./server-affiliazioni');
+app.use('/api', affiliazioniRoutes);
 
 app.listen(PORT, () => {
     console.log(`🚀 Server running on http://localhost:${PORT}`);
