@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registrati — Saam 4.0 Italian Voice</title>
+    <link rel="icon" type="image/png" href="OminiLOGO_Saam40_ItalianVoice.png">
+    <link rel="manifest" href="manifest.json">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#009246">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;1,600&family=Lato:wght@300;400;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --verde:      #009246;
+            --verde-dark: #006f35;
+            --verde-pale: #e8f5ee;
+            --rosso:      #CE2B37;
+            --oro:        #d4a017;
+            --grigio-100: #f4f4f2;
+            --grigio-200: #e8e8e5;
+            --grigio-400: #9a9a95;
+            --grigio-700: #3d3d3a;
+            --nero:       #1a1a17;
+            --bianco:     #FFFFFF;
+            --avorio:     #fafaf7;
+            --shadow-lg:  0 20px 60px rgba(0,0,0,.18);
+        }
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        html { scroll-behavior: smooth; }
+        body { font-family: 'Lato', sans-serif; background: var(--avorio); color: var(--grigio-700); min-height: 100vh; }
+
+        /* ── HERO HEADER ── */
+        .hero {
+            background: linear-gradient(145deg, #0a4a25 0%, #006f35 50%, #009246 100%);
+            padding: 32px 24px 40px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        .hero::before {
+            content: '';
+            position: absolute; inset: 0;
+            background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.04'%3E%3Ccircle cx='30' cy='30' r='20'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+        }
+        .hero-inner { position: relative; max-width: 680px; margin: 0 auto; }
+        .hero-logo { width: 80px; height: 80px; object-fit: contain; margin-bottom: 14px; }
+        .hero h1 { font-family: 'Playfair Display', serif; color: #fff; font-size: clamp(1.5rem, 4vw, 2.2rem); font-weight: 700; line-height: 1.2; margin-bottom: 8px; }
+        .hero h1 em { font-style: italic; color: #7de3a8; }
+        .hero p { color: rgba(255,255,255,.75); font-size: .95rem; max-width: 500px; margin: 0 auto; }
+        .hero-badges { display: flex; justify-content: center; gap: 10px; margin-top: 16px; flex-wrap: wrap; }
+        .hero-badge { background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.2); border-radius: 20px; padding: 4px 12px; font-size: .78rem; color: rgba(255,255,255,.85); font-weight: 700; }
+
+        /* ── CODICE AFFILIATO BANNER ── */
+        #affiliateBanner {
+            display: none; background: #fff3cd; border-bottom: 2px solid var(--oro);
+            padding: 12px 24px; text-align: center;
+            font-size: .9rem; color: #856404; font-weight: 700;
+        }
+
+        /* ── CONTAINER ── */
+        .container { max-width: 900px; margin: 0 auto; padding: 40px 20px 60px; }
+
+        /* ── STEP INDICATOR ── */
+        .steps { display: flex; align-items: center; justify-content: center; gap: 0; margin-bottom: 40px; }
+        .step { display: flex; align-items: center; gap: 8px; }
+        .step-num {
+            width: 32px; height: 32px; border-radius: 50%;
+            background: var(--grigio-200); color: var(--grigio-400);
+            display: flex; align-items: center; justify-content: center;
+            font-size: .82rem; font-weight: 900; transition: all .3s;
+        }
+        .step-num.active { background: var(--verde); color: #fff; box-shadow: 0 0 0 4px rgba(0,146,70,.2); }
+        .step-num.done   { background: var(--verde-dark); color: #fff; }
+        .step-label { font-size: .8rem; font-weight: 700; color: var(--grigio-400); }
+        .step-label.active { color: var(--verde-dark); }
+        .step-line { width: 40px; height: 2px; background: var(--grigio-200); margin: 0 6px; }
+        .step-line.done { background: var(--verde); }
+
+        /* ── PACCHETTI ── */
+        #stepPackages { animation: fadeUp .4s ease both; }
+        #stepForm     { display: none; animation: fadeUp .4s ease both; }
+        #stepSuccess  { display: none; animation: fadeUp .4s ease both; }
+        @keyframes fadeUp { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:translateY(0); } }
+
+        .packages-title { font-family: 'Playfair Display', serif; font-size: 1.6rem; color: var(--grigio-700); text-align: center; margin-bottom: 8px; }
+        .packages-sub   { text-align: center; color: var(--grigio-400); margin-bottom: 32px; font-size: .92rem; }
+
+        .packages-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 32px; }
+
+        .pkg-card {
+            background: var(--bianco);
+            border: 2px solid var(--grigio-200);
+            border-radius: 18px;
+            padding: 28px 22px;
+            cursor: pointer;
+            transition: all .25s cubic-bezier(.4,0,.2,1);
+            position: relative;
+            text-align: center;
+        }
+        .pkg-card:hover { border-color: var(--verde); transform: translateY(-4px); box-shadow: 0 12px 32px rgba(0,146,70,.15); }
+        .pkg-card.selected { border-color: var(--verde); box-shadow: 0 0 0 4px rgba(0,146,70,.15), 0 12px 32px rgba(0,146,70,.2); }
+        .pkg-card.popular { border-color: var(--verde); }
+
+        .pkg-popular {
+            position: absolute; top: -12px; left: 50%; transform: translateX(-50%);
+            background: var(--verde); color: #fff; border-radius: 20px;
+            padding: 3px 14px; font-size: .72rem; font-weight: 900;
+            text-transform: uppercase; letter-spacing: .08em; white-space: nowrap;
+        }
+        .pkg-icon  { font-size: 2rem; margin-bottom: 10px; }
+        .pkg-name  { font-family: 'Playfair Display', serif; font-size: 1.25rem; font-weight: 700; color: var(--grigio-700); margin-bottom: 6px; }
+        .pkg-price { font-size: 2rem; font-weight: 900; color: var(--verde-dark); line-height: 1; }
+        .pkg-price span { font-size: .9rem; color: var(--grigio-400); font-weight: 400; }
+        .pkg-mins  { font-size: .85rem; color: var(--grigio-400); margin: 10px 0; }
+        .pkg-features { list-style: none; text-align: left; margin-top: 14px; }
+        .pkg-features li { font-size: .82rem; color: var(--grigio-700); padding: 4px 0; display: flex; align-items: flex-start; gap: 7px; }
+        .pkg-features li::before { content: '✓'; color: var(--verde); font-weight: 900; flex-shrink: 0; margin-top: 1px; }
+        .pkg-select-btn {
+            width: 100%; margin-top: 18px;
+            background: var(--grigio-100); color: var(--grigio-700);
+            border: 2px solid var(--grigio-200); border-radius: 10px;
+            padding: 10px; font-family: 'Lato', sans-serif;
+            font-size: .88rem; font-weight: 700; cursor: pointer;
+            transition: all .2s;
+        }
+        .pkg-card.selected .pkg-select-btn,
+        .pkg-card:hover .pkg-select-btn {
+            background: var(--verde); color: #fff; border-color: var(--verde);
+        }
+
+        /* ── FORM DATI ── */
+        .form-card {
+            background: var(--bianco); border-radius: 20px;
+            box-shadow: var(--shadow-lg); overflow: hidden;
+        }
+        .form-header {
+            background: linear-gradient(135deg, var(--verde-dark), var(--verde));
+            padding: 22px 32px; color: #fff;
+            display: flex; align-items: center; gap: 14px;
+        }
+        .form-header img { width: 42px; height: 42px; object-fit: contain; }
+        .form-header h2 { font-family: 'Playfair Display', serif; font-size: 1.2rem; }
+        .form-header p  { font-size: .82rem; opacity: .8; margin-top: 2px; }
+        .selected-pkg-badge {
+            margin-left: auto; background: rgba(255,255,255,.15);
+            border: 1px solid rgba(255,255,255,.3); border-radius: 12px;
+            padding: 8px 16px; text-align: center; flex-shrink: 0;
+        }
+        .selected-pkg-badge .spb-name  { font-weight: 900; font-size: .9rem; }
+        .selected-pkg-badge .spb-price { font-size: .78rem; opacity: .8; }
+
+        .form-body { padding: 32px; }
+        .form-row  { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-bottom: 18px; }
+        .fg { margin-bottom: 0; }
+        .fg label { display: block; font-size: .75rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--grigio-700); margin-bottom: 7px; }
+        .fg input  {
+            width: 100%; border: 1.5px solid var(--grigio-200); border-radius: 10px;
+            padding: 12px 14px; font-family: 'Lato', sans-serif; font-size: .95rem;
+            color: var(--nero); background: var(--avorio); outline: none;
+            transition: border-color .2s, box-shadow .2s;
+        }
+        .fg input:focus { border-color: var(--verde); box-shadow: 0 0 0 3px rgba(0,146,70,.12); background: #fff; }
+        .fg input.error { border-color: var(--rosso); }
+
+        .referral-wrap { margin-top: 4px; }
+        .referral-msg  { font-size: .78rem; color: var(--verde-dark); font-weight: 700; margin-top: 5px; display: none; }
+        .referral-msg.err { color: var(--rosso); }
+
+        .password-hint { font-size: .75rem; color: var(--grigio-400); margin-top: 4px; }
+
+        .terms { display: flex; align-items: flex-start; gap: 10px; margin: 20px 0; }
+        .terms input[type=checkbox] { margin-top: 2px; width: 16px; height: 16px; accent-color: var(--verde); flex-shrink: 0; }
+        .terms label { font-size: .82rem; color: var(--grigio-400); line-height: 1.4; }
+        .terms a { color: var(--verde-dark); }
+
+        .btn-cta {
+            width: 100%; background: var(--verde); color: #fff;
+            border: none; border-radius: 12px; padding: 16px;
+            font-family: 'Lato', sans-serif; font-size: 1.05rem; font-weight: 900;
+            cursor: pointer; transition: all .2s;
+            display: flex; align-items: center; justify-content: center; gap: 10px;
+        }
+        .btn-cta:hover { background: var(--verde-dark); transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,146,70,.35); }
+        .btn-cta:disabled { opacity: .6; cursor: not-allowed; transform: none; }
+        .btn-cta .stripe-logo { font-size: .78rem; opacity: .8; font-weight: 400; }
+
+        .form-error { background: #fff0f0; border: 1px solid #ffc7c7; color: #a52029; border-radius: 10px; padding: 12px 16px; font-size: .88rem; margin-top: 14px; display: none; }
+
+        .back-btn { background: none; border: none; color: var(--grigio-400); font-size: .88rem; cursor: pointer; padding: 0; display: flex; align-items: center; gap: 5px; margin-bottom: 20px; }
+        .back-btn:hover { color: var(--grigio-700); }
+
+        /* ── SUCCESS ── */
+        .success-card {
+            background: var(--bianco); border-radius: 20px;
+            box-shadow: var(--shadow-lg); padding: 60px 40px;
+            text-align: center; max-width: 520px; margin: 0 auto;
+        }
+        .success-icon { font-size: 4rem; margin-bottom: 16px; animation: bounce .6s ease; }
+        @keyframes bounce { 0%,100%{transform:scale(1)} 50%{transform:scale(1.2)} }
+        .success-card h2 { font-family: 'Playfair Display', serif; font-size: 1.8rem; color: var(--verde-dark); margin-bottom: 10px; }
+        .success-card p  { color: var(--grigio-400); font-size: .95rem; line-height: 1.6; margin-bottom: 24px; }
+        .btn-go {
+            display: inline-block; background: var(--verde); color: #fff;
+            border-radius: 12px; padding: 14px 32px;
+            font-family: 'Lato', sans-serif; font-weight: 900; font-size: 1rem;
+            text-decoration: none; transition: all .2s;
+        }
+        .btn-go:hover { background: var(--verde-dark); transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,146,70,.35); }
+
+        /* ── MOBILE ── */
+        @media (max-width: 720px) {
+            .packages-grid { grid-template-columns: 1fr; gap: 14px; }
+            .form-row { grid-template-columns: 1fr; }
+            .form-body { padding: 22px 18px; }
+            .form-header { flex-wrap: wrap; padding: 18px 22px; }
+            .selected-pkg-badge { margin-left: 0; width: 100%; }
+            .steps { gap: 0; }
+            .step-line { width: 24px; }
+            .pkg-card { padding: 22px 16px; }
+        }
+        @media (max-width: 420px) {
+            .hero { padding: 24px 16px 32px; }
+            .container { padding: 24px 14px 48px; }
+            .success-card { padding: 36px 22px; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- HERO -->
+<div class="hero">
+    <div class="hero-inner">
+        <img src="LOGO_Saam40_ItalianVoice.png" class="hero-logo" alt="Saam 4.0 Italian Voice">
+        <h1>Inizia a imparare<br>l'<em>Italiano</em> oggi stesso</h1>
+        <p>Scegli il tuo piano, crea il tuo account e accedi subito a Sofia & Marco — i tuoi tutor AI personali.</p>
+        <div class="hero-badges">
+            <span class="hero-badge">🔒 Pagamento sicuro Stripe</span>
+            <span class="hero-badge">🔄 Abbonamento mensile</span>
+            <span class="hero-badge">❌ Cancellabile in qualsiasi momento</span>
+        </div>
+    </div>
+</div>
+
+<!-- BANNER AFFILIATO -->
+<div id="affiliateBanner">
+    🏢 Stai accedendo tramite <span id="affiliateOrgName">un centro accreditato</span>.
+    Il tuo abbonamento sarà associato al loro programma di supporto.
+</div>
+
+<div class="container">
+
+    <!-- STEP INDICATOR -->
+    <div class="steps">
+        <div class="step">
+            <div class="step-num active" id="sn1">1</div>
+            <div class="step-label active" id="sl1">Scegli piano</div>
+        </div>
+        <div class="step-line" id="line1"></div>
+        <div class="step">
+            <div class="step-num" id="sn2">2</div>
+            <div class="step-label" id="sl2">I tuoi dati</div>
+        </div>
+        <div class="step-line" id="line2"></div>
+        <div class="step">
+            <div class="step-num" id="sn3">3</div>
+            <div class="step-label" id="sl3">Pagamento</div>
+        </div>
+    </div>
+
+    <!-- STEP 1: SCEGLI PACCHETTO -->
+    <div id="stepPackages">
+        <h2 class="packages-title">Scegli il tuo piano</h2>
+        <p class="packages-sub">Tutti i piani includono accesso completo a Sofia & Marco. Puoi cambiare o cancellare quando vuoi.</p>
+
+        <div class="packages-grid">
+
+            <div class="pkg-card" data-pkg="basic" onclick="selectPackage('basic')">
+                <div class="pkg-icon">📗</div>
+                <div class="pkg-name">Basic</div>
+                <div class="pkg-price">€9,70 <span>/ mese</span></div>
+                <div class="pkg-mins">30 min/giorno · 900 min/mese</div>
+                <ul class="pkg-features">
+                    <li>Tutor Sofia (Conversazione)</li>
+                    <li>Tutor Marco (Grammatica)</li>
+                    <li>Tutti i livelli A1–C2</li>
+                    <li>Audio HD naturale</li>
+                    <li>Storico conversazioni</li>
+                </ul>
+                <button class="pkg-select-btn">Scegli Basic</button>
+            </div>
+
+            <div class="pkg-card popular" data-pkg="advanced" onclick="selectPackage('advanced')">
+                <div class="pkg-popular">⭐ Più Scelto</div>
+                <div class="pkg-icon">📘</div>
+                <div class="pkg-name">Advanced</div>
+                <div class="pkg-price">€16,70 <span>/ mese</span></div>
+                <div class="pkg-mins">60 min/giorno · 1.800 min/mese</div>
+                <ul class="pkg-features">
+                    <li>Tutto del piano Basic</li>
+                    <li>Doppio tempo giornaliero</li>
+                    <li>Materiali didattici avanzati</li>
+                    <li>Sessioni illimitate al giorno</li>
+                    <li>Priorità nei tempi di risposta</li>
+                </ul>
+                <button class="pkg-select-btn">Scegli Advanced</button>
+            </div>
+
+            <div class="pkg-card" data-pkg="gold" onclick="selectPackage('gold')">
+                <div class="pkg-icon">🥇</div>
+                <div class="pkg-name">Gold</div>
+                <div class="pkg-price">€27,70 <span>/ mese</span></div>
+                <div class="pkg-mins">120 min/giorno · 3.600 min/mese</div>
+                <ul class="pkg-features">
+                    <li>Tutto del piano Advanced</li>
+                    <li>Massima priorità</li>
+                    <li>Accesso anticipato a nuove funzioni</li>
+                    <li>Report progressi mensili</li>
+                    <li>Supporto dedicato</li>
+                </ul>
+                <button class="pkg-select-btn">Scegli Gold</button>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- STEP 2: DATI PERSONALI -->
+    <div id="stepForm">
+        <button class="back-btn" onclick="goBack()">← Torna ai piani</button>
+        <div class="form-card">
+            <div class="form-header">
+                <img src="OminiLOGO_Saam40_ItalianVoice.png" alt="Logo">
+                <div>
+                    <h2>I tuoi dati di accesso</h2>
+                    <p>Compila tutti i campi per creare il tuo account</p>
+                </div>
+                <div class="selected-pkg-badge" id="selectedPkgBadge">
+                    <div class="spb-name">—</div>
+                    <div class="spb-price">—</div>
+                </div>
+            </div>
+            <div class="form-body">
+                <div class="form-row">
+                    <div class="fg">
+                        <label>Nome completo *</label>
+                        <input type="text" id="fName" placeholder="Mario Rossi">
+                    </div>
+                    <div class="fg">
+                        <label>Telefono</label>
+                        <input type="tel" id="fPhone" placeholder="+39 333 1234567">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="fg">
+                        <label>Email *</label>
+                        <input type="email" id="fEmail" placeholder="mario@esempio.com">
+                    </div>
+                    <div class="fg">
+                        <label>Conferma Email *</label>
+                        <input type="email" id="fEmail2" placeholder="mario@esempio.com">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="fg">
+                        <label>Password *</label>
+                        <input type="password" id="fPassword" placeholder="Minimo 8 caratteri">
+                        <div class="password-hint">Usa lettere, numeri e simboli</div>
+                    </div>
+                    <div class="fg">
+                        <label>Conferma Password *</label>
+                        <input type="password" id="fPassword2" placeholder="Ripeti la password">
+                    </div>
+                </div>
+                <div class="fg referral-wrap">
+                    <label>Codice Centro Accreditato <span style="font-weight:400;text-transform:none;letter-spacing:0">(opzionale)</span></label>
+                    <input type="text" id="fReferral" placeholder="es. SAAM-ABC1F3" style="text-transform:uppercase" oninput="checkReferral(this.value)">
+                    <div class="referral-msg" id="referralMsg"></div>
+                </div>
+                <div class="terms">
+                    <input type="checkbox" id="fTerms">
+                    <label for="fTerms">Accetto i <a href="#" target="_blank">Termini di Servizio</a> e la <a href="#" target="_blank">Privacy Policy</a>. Consento il trattamento dei miei dati per la fornitura del servizio.</label>
+                </div>
+                <button class="btn-cta" id="btnPay" onclick="doSubscribe()">
+                    🔒 Procedi al Pagamento Sicuro
+                    <span class="stripe-logo">powered by Stripe</span>
+                </button>
+                <div class="form-error" id="formError"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- STEP 3: SUCCESS -->
+    <div id="stepSuccess">
+        <div class="success-card">
+            <div class="success-icon">🎉</div>
+            <h2>Pagamento completato!</h2>
+            <p>Il tuo account è attivo. Puoi accedere subito alla piattaforma con le credenziali che hai scelto.</p>
+            <a href="tutor-italiano.html" class="btn-go">🇮🇹 Accedi alla Piattaforma</a>
+        </div>
+    </div>
+
+</div>
+
+<script>
+const API = 'https://italian-learning-platform.onrender.com';
+const PKGS = {
+    basic:    { name: 'Basic',    price: '€9,70/mese' },
+    advanced: { name: 'Advanced', price: '€16,70/mese' },
+    gold:     { name: 'Gold',     price: '€27,70/mese' },
+};
+let selectedPkg = null;
+let affiliateId = null;
+let referralTimer = null;
+
+// ── Auto-detect referral code from URL ──
+const urlParams = new URLSearchParams(window.location.search);
+const urlCode = urlParams.get('ref');
+if (urlCode) {
+    document.getElementById('fReferral').value = urlCode.toUpperCase();
+    checkReferral(urlCode);
+}
+// Check success/cancel from Stripe redirect
+if (urlParams.get('success') === '1') {
+    const sessionId = urlParams.get('session_id');
+    verifyPayment(sessionId);
+}
+if (urlParams.get('canceled') === '1') {
+    showError('Il pagamento è stato annullato. Puoi riprovare in qualsiasi momento.');
+}
+
+function selectPackage(pkg) {
+    selectedPkg = pkg;
+    document.querySelectorAll('.pkg-card').forEach(c => c.classList.remove('selected'));
+    document.querySelector(`[data-pkg="${pkg}"]`).classList.add('selected');
+
+    // Aggiorna badge
+    const { name, price } = PKGS[pkg];
+    const badge = document.getElementById('selectedPkgBadge');
+    badge.querySelector('.spb-name').textContent  = name;
+    badge.querySelector('.spb-price').textContent = price;
+
+    // Vai a step 2
+    setTimeout(() => {
+        document.getElementById('stepPackages').style.display = 'none';
+        document.getElementById('stepForm').style.display = 'block';
+        document.getElementById('stepForm').style.animation = 'fadeUp .4s ease both';
+        // Update steps
+        document.getElementById('sn1').classList.remove('active'); document.getElementById('sn1').classList.add('done');
+        document.getElementById('sl1').classList.remove('active');
+        document.getElementById('line1').classList.add('done');
+        document.getElementById('sn2').classList.add('active');
+        document.getElementById('sl2').classList.add('active');
+    }, 150);
+}
+
+function goBack() {
+    document.getElementById('stepForm').style.display = 'none';
+    document.getElementById('stepPackages').style.display = 'block';
+    document.getElementById('sn1').classList.add('active'); document.getElementById('sn1').classList.remove('done');
+    document.getElementById('sl1').classList.add('active');
+    document.getElementById('line1').classList.remove('done');
+    document.getElementById('sn2').classList.remove('active');
+    document.getElementById('sl2').classList.remove('active');
+}
+
+function checkReferral(val) {
+    clearTimeout(referralTimer);
+    const msg = document.getElementById('referralMsg');
+    if (val.length < 8) { msg.style.display = 'none'; affiliateId = null; return; }
+    referralTimer = setTimeout(async () => {
+        try {
+            const r = await fetch(`${API}/api/public/referral/${val.trim()}`);
+            const d = await r.json();
+            if (d.valid) {
+                msg.textContent = `✓ Centro riconosciuto: ${d.affiliate.organization_name}`;
+                msg.className = 'referral-msg'; msg.style.display = 'block';
+                affiliateId = d.affiliate.id;
+                document.getElementById('affiliateBanner').style.display = 'block';
+                document.getElementById('affiliateOrgName').textContent = d.affiliate.organization_name;
+            } else {
+                msg.textContent = '✗ Codice non valido';
+                msg.className = 'referral-msg err'; msg.style.display = 'block';
+                affiliateId = null;
+            }
+        } catch { affiliateId = null; }
+    }, 600);
+}
+
+async function doSubscribe() {
+    const name     = document.getElementById('fName').value.trim();
+    const email    = document.getElementById('fEmail').value.trim();
+    const email2   = document.getElementById('fEmail2').value.trim();
+    const password = document.getElementById('fPassword').value;
+    const pass2    = document.getElementById('fPassword2').value;
+    const referral = document.getElementById('fReferral').value.trim().toUpperCase();
+    const terms    = document.getElementById('fTerms').checked;
+    const errEl    = document.getElementById('formError');
+
+    const showErr = msg => { errEl.textContent = msg; errEl.style.display = 'block'; };
+    errEl.style.display = 'none';
+
+    if (!name)              return showErr('Inserisci il tuo nome completo.');
+    if (!email)             return showErr('Inserisci la tua email.');
+    if (email !== email2)   return showErr('Le email non coincidono.');
+    if (password.length < 8) return showErr('La password deve essere di almeno 8 caratteri.');
+    if (password !== pass2) return showErr('Le password non coincidono.');
+    if (!terms)             return showErr('Devi accettare i Termini di Servizio per procedere.');
+    if (!selectedPkg)       return showErr('Seleziona un piano.');
+
+    const btn = document.getElementById('btnPay');
+    btn.disabled = true;
+    btn.textContent = '⏳ Preparazione pagamento...';
+
+    try {
+        const r = await fetch(`${API}/api/public/subscribe`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name, email, password, package: selectedPkg, referral_code: referral || null }),
+        });
+        const d = await r.json();
+        if (!r.ok) { showErr(d.error || 'Errore nella registrazione.'); btn.disabled=false; btn.innerHTML='🔒 Procedi al Pagamento Sicuro <span class="stripe-logo">powered by Stripe</span>'; return; }
+
+        // Redirect a Stripe Checkout
+        window.location.href = d.checkout_url;
+    } catch (err) {
+        showErr('Errore di connessione. Riprova tra poco.');
+        btn.disabled = false;
+        btn.innerHTML = '🔒 Procedi al Pagamento Sicuro <span class="stripe-logo">powered by Stripe</span>';
+    }
+}
+
+async function verifyPayment(sessionId) {
+    if (!sessionId) return;
+    try {
+        const r = await fetch(`${API}/api/public/subscribe/verify/${sessionId}`);
+        const d = await r.json();
+        if (d.success) {
+            // Salva token e mostra successo
+            localStorage.setItem('saam_token', d.token);
+            localStorage.setItem('saam_user', JSON.stringify(d.user));
+            showSuccess();
+        }
+    } catch { /* silent */ }
+}
+
+function showSuccess() {
+    document.getElementById('stepPackages').style.display = 'none';
+    document.getElementById('stepForm').style.display = 'none';
+    document.getElementById('stepSuccess').style.display = 'block';
+    ['sn1','sn2','sn3'].forEach(id => {
+        document.getElementById(id).classList.remove('active');
+        document.getElementById(id).classList.add('done');
+    });
+    ['line1','line2'].forEach(id => document.getElementById(id).classList.add('done'));
+    document.getElementById('sn3').className = 'step-num done';
+}
+
+function showError(msg) {
+    document.getElementById('formError').textContent = msg;
+    document.getElementById('formError').style.display = 'block';
+}
+</script>
+</body>
+</html>

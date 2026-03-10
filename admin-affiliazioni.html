@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Super-Admin Affiliazioni — Saam 4.0 Italian Voice</title>
+    <link rel="icon" type="image/png" href="OminiLOGO_Saam40_ItalianVoice.png">
+    <meta name="theme-color" content="#1a1a17">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Lato:wght@300;400;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --verde: #009246; --verde-dark: #006f35; --verde-pale: #e8f5ee;
+            --oro: #d4a017; --oro-pale: #fef9e7;
+            --rosso: #CE2B37; --rosso-pale: #fdf0f1; --rosso-dark: #a52029;
+            --blu: #3d5af1; --blu-pale: #e8eeff;
+            --bianco: #fff; --avorio: #fafaf7;
+            --grigio-100: #f4f4f2; --grigio-200: #e8e8e5; --grigio-400: #9a9a95; --grigio-700: #3d3d3a; --nero: #1a1a17;
+            --shadow-sm: 0 1px 4px rgba(0,0,0,.08); --shadow-md: 0 4px 16px rgba(0,0,0,.10);
+        }
+        *,*::before,*::after { box-sizing:border-box; margin:0; padding:0; }
+        html,body { height:100%; font-size:15px; }
+        body { font-family:'Lato',sans-serif; background:var(--avorio); color:var(--grigio-700); display:flex; flex-direction:column; }
+
+        /* ── LOGIN ── */
+        #loginScreen { position:fixed; inset:0; background:linear-gradient(145deg,#0a4a25,#009246); display:flex; align-items:center; justify-content:center; z-index:100; padding:20px; }
+        @keyframes su { from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:translateY(0)} }
+        .login-card { background:var(--bianco); border-radius:22px; padding:44px 48px; width:100%; max-width:640px; box-shadow:0 32px 80px rgba(0,0,0,.28); animation:su .5s cubic-bezier(.22,1,.36,1) both; display:grid; grid-template-columns:200px 1fr; gap:0 36px; align-items:center; }
+        .login-logo-col { display:flex; align-items:center; justify-content:center; border-right:1px solid var(--grigio-200); padding-right:36px; grid-row:1/span 10; }
+        .login-logo-col img { width:160px; height:auto; }
+        .login-form-col { grid-column:2; }
+        .login-headline { margin-bottom:22px; }
+        .login-headline p  { font-size:1rem; color:#555; line-height:1.45; }
+        .login-headline strong { color:var(--grigio-700); font-size:1.18rem; }
+        .login-headline .role { font-weight:900; color:var(--verde-dark); }
+        .fg label { display:block; font-size:.75rem; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--grigio-700); margin-bottom:7px; }
+        .fg input { width:100%; border:1.5px solid var(--grigio-200); border-radius:10px; padding:11px 14px; font-family:'Lato',sans-serif; font-size:.92rem; background:var(--avorio); outline:none; transition:border-color .2s,box-shadow .2s; margin-bottom:14px; }
+        .fg input:focus { border-color:var(--verde); box-shadow:0 0 0 3px rgba(0,146,70,.12); background:#fff; }
+        .btn-login { width:100%; background:var(--verde); color:#fff; border:none; border-radius:10px; padding:13px; font-family:'Lato',sans-serif; font-size:1rem; font-weight:700; cursor:pointer; }
+        .btn-login:hover { background:var(--verde-dark); }
+        .login-error { background:#fff0f0; border:1px solid #ffc7c7; color:#a52029; border-radius:8px; padding:10px; font-size:.85rem; margin-top:10px; display:none; }
+
+        /* ── APP ── */
+        #app { display:none; flex:1; flex-direction:column; height:100vh; }
+        #app.visible { display:flex; }
+
+        .topbar { background:var(--nero); color:#fff; padding:0 24px; height:56px; display:flex; align-items:center; justify-content:space-between; flex-shrink:0; }
+        .topbar-brand { display:flex; align-items:center; gap:10px; }
+        .topbar-brand img { width:30px; height:30px; object-fit:contain; }
+        .topbar-brand h2 { font-family:'Playfair Display',serif; font-size:.95rem; }
+        .topbar-brand p { font-size:.7rem; opacity:.5; }
+        .sa-badge { background:var(--oro); color:var(--nero); border-radius:8px; padding:3px 10px; font-size:.78rem; font-weight:900; }
+        .topbar-right { display:flex; align-items:center; gap:10px; }
+        .btn-sm { background:rgba(255,255,255,.1); color:#fff; border:1px solid rgba(255,255,255,.2); border-radius:8px; padding:5px 12px; font-size:.78rem; font-weight:700; cursor:pointer; }
+        .btn-sm:hover { background:rgba(255,255,255,.2); }
+
+        /* ── LAYOUT ── */
+        .main-layout { display:flex; flex:1; overflow:hidden; }
+        .nav-sidebar { width:220px; flex-shrink:0; background:#111; display:flex; flex-direction:column; padding:16px 0; overflow-y:auto; }
+        .nav-item { display:flex; align-items:center; gap:10px; padding:11px 20px; color:rgba(255,255,255,.55); cursor:pointer; transition:all .2s; font-size:.88rem; font-weight:700; border-left:3px solid transparent; }
+        .nav-item:hover { color:#fff; background:rgba(255,255,255,.06); }
+        .nav-item.active { color:#fff; background:rgba(0,146,70,.18); border-left-color:var(--verde); }
+        .nav-item .icon { font-size:1.1rem; width:22px; text-align:center; }
+        .nav-divider { height:1px; background:rgba(255,255,255,.08); margin:8px 14px; }
+
+        .content { flex:1; overflow-y:auto; padding:28px; }
+        .page { display:none; }
+        .page.active { display:block; }
+        .page-title { font-family:'Playfair Display',serif; font-size:1.4rem; color:var(--grigio-700); margin-bottom:22px; }
+
+        /* ── KPI ── */
+        .kpi-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:16px; margin-bottom:28px; }
+        .kpi-card { background:var(--bianco); border-radius:14px; padding:20px 22px; box-shadow:var(--shadow-sm); border-left:4px solid transparent; }
+        .kpi-card.verde { border-left-color:var(--verde); }
+        .kpi-card.oro   { border-left-color:var(--oro); }
+        .kpi-card.blu   { border-left-color:var(--blu); }
+        .kpi-card.rosso { border-left-color:var(--rosso); }
+        .kpi-icon { font-size:1.4rem; margin-bottom:8px; }
+        .kpi-val  { font-size:1.8rem; font-weight:900; color:var(--grigio-700); line-height:1; }
+        .kpi-lbl  { font-size:.75rem; color:var(--grigio-400); margin-top:4px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; }
+
+        /* ── PANEL / TABLE ── */
+        .panel { background:var(--bianco); border-radius:14px; box-shadow:var(--shadow-sm); overflow:hidden; margin-bottom:24px; }
+        .panel-header { padding:16px 22px; border-bottom:1px solid var(--grigio-200); display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+        .panel-title { font-family:'Playfair Display',serif; font-size:1.05rem; }
+        table { width:100%; border-collapse:collapse; }
+        th { background:var(--grigio-100); font-size:.72rem; font-weight:900; letter-spacing:.06em; text-transform:uppercase; color:var(--grigio-400); padding:10px 14px; text-align:left; white-space:nowrap; }
+        td { padding:11px 14px; font-size:.84rem; border-bottom:1px solid var(--grigio-100); vertical-align:middle; }
+        tr:last-child td { border-bottom:none; }
+        tr:hover td { background:var(--avorio); }
+
+        .badge { display:inline-block; border-radius:6px; padding:2px 8px; font-size:.7rem; font-weight:900; text-transform:uppercase; letter-spacing:.04em; }
+        .badge.active   { background:var(--verde-pale); color:var(--verde-dark); }
+        .badge.pending  { background:var(--oro-pale); color:#856404; }
+        .badge.suspend  { background:var(--rosso-pale); color:var(--rosso-dark); }
+        .badge.paid     { background:var(--verde-pale); color:var(--verde-dark); }
+
+        /* ── BUTTONS ── */
+        .btn-action { border:none; border-radius:6px; padding:5px 10px; font-family:'Lato',sans-serif; font-size:.75rem; font-weight:700; cursor:pointer; transition:all .2s; }
+        .btn-verde  { background:var(--verde-pale); color:var(--verde-dark); }
+        .btn-verde:hover { background:var(--verde); color:#fff; }
+        .btn-rosso  { background:var(--rosso-pale); color:var(--rosso-dark); }
+        .btn-rosso:hover { background:var(--rosso); color:#fff; }
+        .btn-oro    { background:var(--oro-pale); color:#856404; }
+        .btn-oro:hover { background:var(--oro); color:var(--nero); }
+        .btn-primary { background:var(--verde); color:#fff; border:none; border-radius:10px; padding:10px 20px; font-family:'Lato',sans-serif; font-size:.88rem; font-weight:700; cursor:pointer; }
+        .btn-primary:hover { background:var(--verde-dark); }
+
+        /* ── OVERLAY MODALE ── */
+        .overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:200; align-items:center; justify-content:center; padding:16px; }
+        .overlay.show { display:flex; }
+        .modal { background:var(--bianco); border-radius:18px; padding:36px; width:100%; max-width:480px; box-shadow:0 32px 80px rgba(0,0,0,.3); max-height:90vh; overflow-y:auto; }
+        .modal h3 { font-family:'Playfair Display',serif; font-size:1.2rem; margin-bottom:4px; }
+        .modal .sub { font-size:.85rem; color:var(--grigio-400); margin-bottom:22px; }
+        .modal .fg { margin-bottom:14px; }
+        .modal .fg label { display:block; font-size:.75rem; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--grigio-700); margin-bottom:6px; }
+        .modal .fg input, .modal .fg select { width:100%; border:1.5px solid var(--grigio-200); border-radius:10px; padding:10px 13px; font-family:'Lato',sans-serif; font-size:.9rem; background:var(--avorio); outline:none; }
+        .modal .fg input:focus, .modal .fg select:focus { border-color:var(--verde); box-shadow:0 0 0 3px rgba(0,146,70,.1); }
+        .modal-btns { display:flex; gap:10px; margin-top:22px; }
+        .btn-cancel-m { flex:1; background:var(--grigio-100); color:var(--grigio-700); border:none; border-radius:10px; padding:12px; font-family:'Lato',sans-serif; font-weight:700; cursor:pointer; }
+        .btn-ok { flex:2; background:var(--verde); color:#fff; border:none; border-radius:10px; padding:12px; font-family:'Lato',sans-serif; font-weight:700; cursor:pointer; }
+        .btn-ok:hover { background:var(--verde-dark); }
+        .modal-error { background:#fff0f0; border:1px solid #ffc7c7; color:var(--rosso-dark); border-radius:8px; padding:10px; font-size:.85rem; margin-top:10px; display:none; }
+
+        /* ── MOBILE ── */
+        @media(max-width:768px) {
+            .login-card { grid-template-columns:1fr !important; padding:26px 22px !important; }
+            .login-logo-col { border-right:none !important; border-bottom:1px solid var(--grigio-200) !important; padding-right:0 !important; padding-bottom:14px !important; margin-bottom:14px !important; grid-row:auto !important; }
+            .login-logo-col img { width:80px !important; }
+            .login-form-col { grid-column:1 !important; }
+            .nav-sidebar { display:none; }
+            .content { padding:14px; }
+            .kpi-grid { grid-template-columns:1fr 1fr; }
+            table { min-width:500px; }
+            .panel > div:last-child { overflow-x:auto; }
+            .topbar { padding:0 12px; height:50px; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="loginScreen">
+    <div class="login-card">
+        <div class="login-logo-col"><img src="LOGO_Saam40_ItalianVoice.png" alt="Saam 4.0"></div>
+        <div class="login-form-col">
+            <div class="login-headline">
+                <p>Gestione<br><strong>Affiliazioni</strong><br><span class="role">🔑 Super-Administrator</span></p>
+            </div>
+            <div class="fg">
+                <label>Email Admin</label>
+                <input type="email" id="loginEmail" placeholder="admin@saam40.it">
+                <label>Password</label>
+                <input type="password" id="loginPassword" placeholder="••••••••">
+            </div>
+            <button class="btn-login" id="btnLogin" onclick="doLogin()">Accedi</button>
+            <div class="login-error" id="loginError"></div>
+        </div>
+    </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+    <div class="topbar">
+        <div class="topbar-brand">
+            <img src="OminiLOGO_Saam40_ItalianVoice.png" alt="">
+            <div><h2>Saam 4.0 Italian Voice</h2><p>Gestione Affiliazioni</p></div>
+        </div>
+        <div class="topbar-right">
+            <span class="sa-badge">⭐ SUPER-ADMIN</span>
+            <button class="btn-sm" onclick="window.open('admin-dashboard.html','_blank')">↗ Dashboard Admin</button>
+            <button class="btn-sm" id="btnLogout">Esci</button>
+        </div>
+    </div>
+
+    <div class="main-layout">
+        <div class="nav-sidebar">
+            <div class="nav-item active" data-page="overview"><span class="icon">📊</span>Panoramica</div>
+            <div class="nav-item" data-page="affiliates"><span class="icon">🏢</span>Centri Affiliati</div>
+            <div class="nav-item" data-page="pending"><span class="icon">⏳</span>In Attesa</div>
+            <div class="nav-item" data-page="commissions"><span class="icon">💰</span>Pagamenti</div>
+            <div class="nav-divider"></div>
+            <div class="nav-item" style="font-size:.78rem;opacity:.5;cursor:default;padding:8px 20px;border:none">TOOLS</div>
+            <div class="nav-item" data-page="calc"><span class="icon">🧮</span>Calcola Provvigioni</div>
+        </div>
+
+        <div class="content">
+
+            <!-- OVERVIEW -->
+            <div class="page active" id="page-overview">
+                <div class="page-title">Panoramica Affiliazioni</div>
+                <div class="kpi-grid">
+                    <div class="kpi-card verde"><div class="kpi-icon">🏢</div><div class="kpi-val" id="ovAff">—</div><div class="kpi-lbl">Centri attivi</div></div>
+                    <div class="kpi-card blu"><div class="kpi-icon">👥</div><div class="kpi-val" id="ovStu">—</div><div class="kpi-lbl">Studenti totali</div></div>
+                    <div class="kpi-card oro"><div class="kpi-icon">💶</div><div class="kpi-val" id="ovMrr">—</div><div class="kpi-lbl">MRR affiliati</div></div>
+                    <div class="kpi-card rosso"><div class="kpi-icon">🏦</div><div class="kpi-val" id="ovPend">—</div><div class="kpi-lbl">Da pagare</div></div>
+                </div>
+                <div class="panel">
+                    <div class="panel-header"><span class="panel-title">Top 10 Centri Affiliati</span></div>
+                    <div style="overflow-x:auto"><table>
+                        <thead><tr><th>Centro</th><th>Codice</th><th>Abbonati attivi</th><th>MRR generato</th><th>Commissione</th><th>Azioni</th></tr></thead>
+                        <tbody id="topAffTable"></tbody>
+                    </table></div>
+                </div>
+            </div>
+
+            <!-- TUTTI GLI AFFILIATI -->
+            <div class="page" id="page-affiliates">
+                <div class="page-title">Tutti i Centri Accreditati</div>
+                <div class="panel">
+                    <div class="panel-header">
+                        <span class="panel-title">Centri attivi</span>
+                        <button class="btn-primary" onclick="exportAffiliates()">⬇ Esporta CSV</button>
+                    </div>
+                    <div style="overflow-x:auto"><table>
+                        <thead><tr><th>Centro</th><th>Referente</th><th>Email</th><th>Codice</th><th>Comm.%</th><th>Studenti</th><th>MRR</th><th>Stato</th><th>Azioni</th></tr></thead>
+                        <tbody id="allAffTable"></tbody>
+                    </table></div>
+                </div>
+            </div>
+
+            <!-- IN ATTESA DI APPROVAZIONE -->
+            <div class="page" id="page-pending">
+                <div class="page-title">Richieste in Attesa</div>
+                <div class="panel">
+                    <div class="panel-header"><span class="panel-title">Nuove richieste accreditamento</span><span id="pendingCount" style="font-size:.8rem;color:var(--grigio-400)"></span></div>
+                    <div style="overflow-x:auto"><table>
+                        <thead><tr><th>Centro</th><th>Referente</th><th>Email</th><th>Città</th><th>Richiesta il</th><th>Azioni</th></tr></thead>
+                        <tbody id="pendingTable"></tbody>
+                    </table></div>
+                </div>
+            </div>
+
+            <!-- PAGAMENTI PROVVIGIONI -->
+            <div class="page" id="page-commissions">
+                <div class="page-title">Gestione Pagamenti Provvigioni</div>
+                <div class="panel" style="margin-bottom:20px">
+                    <div class="panel-header">
+                        <span class="panel-title">Provvigioni in attesa di pagamento</span>
+                        <button class="btn-primary" onclick="markSelectedPaid()">✓ Segna Selezionate come Pagate</button>
+                    </div>
+                    <div style="overflow-x:auto"><table>
+                        <thead><tr><th><input type="checkbox" id="checkAll" onchange="toggleAll(this)"></th><th>Centro</th><th>Mese</th><th>Lordo</th><th>Provvigione</th><th>IBAN</th><th>Stato</th></tr></thead>
+                        <tbody id="commTable"></tbody>
+                    </table></div>
+                </div>
+                <div class="panel">
+                    <div class="panel-header"><span class="panel-title">Riferimento Pagamento</span></div>
+                    <div style="padding:20px">
+                        <label style="display:block;font-size:.78rem;font-weight:700;text-transform:uppercase;color:var(--grigio-700);margin-bottom:8px">Descrizione bonifico / Transfer ID Stripe</label>
+                        <div style="display:flex;gap:10px">
+                            <input type="text" id="paymentRef" placeholder="SAAM-PAY-2025-03" style="flex:1;border:1.5px solid var(--grigio-200);border-radius:10px;padding:10px 14px;font-family:Lato,sans-serif;font-size:.9rem;background:var(--avorio);outline:none">
+                            <button class="btn-primary" onclick="markSelectedPaid()">Conferma Pagamento</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CALCOLA PROVVIGIONI -->
+            <div class="page" id="page-calc">
+                <div class="page-title">Calcola Provvigioni Mensili</div>
+                <div class="panel">
+                    <div class="panel-header"><span class="panel-title">Genera report provvigioni per mese</span></div>
+                    <div style="padding:28px">
+                        <p style="color:var(--grigio-400);font-size:.88rem;margin-bottom:20px;line-height:1.7">
+                            Seleziona il mese per cui calcolare le provvigioni. Il sistema analizza tutti gli abbonamenti attivi durante quel periodo e genera le righe di pagamento per ogni centro affiliato.
+                        </p>
+                        <div style="display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap">
+                            <div>
+                                <label style="display:block;font-size:.75rem;font-weight:700;text-transform:uppercase;color:var(--grigio-700);margin-bottom:7px">Mese (YYYY-MM)</label>
+                                <input type="month" id="calcMonth" style="border:1.5px solid var(--grigio-200);border-radius:10px;padding:10px 14px;font-family:Lato,sans-serif;font-size:.9rem;background:var(--avorio);outline:none">
+                            </div>
+                            <button class="btn-primary" onclick="calcCommissions()">🧮 Calcola Provvigioni</button>
+                        </div>
+                        <div id="calcResult" style="margin-top:20px;display:none;background:var(--verde-pale);border:1px solid rgba(0,146,70,.2);border-radius:10px;padding:16px;font-size:.9rem;color:var(--verde-dark)"></div>
+                    </div>
+                </div>
+            </div>
+
+        </div><!-- /content -->
+    </div><!-- /main-layout -->
+</div><!-- /app -->
+
+<!-- MODAL APPROVAZIONE -->
+<div class="overlay" id="approveOverlay">
+    <div class="modal">
+        <h3>✅ Approva Centro Accreditato</h3>
+        <div class="sub" id="approveOrgName">—</div>
+        <div class="fg"><label>Percentuale Commissione (%)</label><input type="number" id="approveComm" value="20" min="1" max="50" step="0.5"></div>
+        <div class="fg"><label>Password temporanea per la Dashboard Partner</label><input type="password" id="approvePass" placeholder="Almeno 8 caratteri"></div>
+        <div class="fg"><label>Note interne (opzionale)</label><input type="text" id="approveNotes" placeholder="Note per uso interno"></div>
+        <div class="modal-error" id="approveError"></div>
+        <div class="modal-btns">
+            <button class="btn-cancel-m" onclick="closeApprove()">Annulla</button>
+            <button class="btn-ok" onclick="confirmApprove()">✓ Approva e Attiva</button>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL COMMISSIONE -->
+<div class="overlay" id="commModal">
+    <div class="modal">
+        <h3>✏️ Modifica Commissione</h3>
+        <div class="sub" id="commModalOrg">—</div>
+        <div class="fg"><label>Nuova Commissione (%)</label><input type="number" id="commModalVal" value="20" min="1" max="50" step="0.5"></div>
+        <div class="modal-error" id="commModalErr"></div>
+        <div class="modal-btns">
+            <button class="btn-cancel-m" onclick="document.getElementById('commModal').classList.remove('show')">Annulla</button>
+            <button class="btn-ok" onclick="saveCommission()">Salva</button>
+        </div>
+    </div>
+</div>
+
+<script>
+const API = 'https://italian-learning-platform.onrender.com';
+let token = null;
+let allAffiliates = [];
+let pendingApproveId = null;
+let pendingCommId    = null;
+
+function getToken() { return token || localStorage.getItem('saff_token'); }
+async function apiFetch(path, opts={}) {
+    const r = await fetch(API+path, { headers:{'Authorization':'Bearer '+getToken(),'Content-Type':'application/json',...(opts.headers||{})}, ...opts });
+    return r;
+}
+
+// ── LOGIN ──
+async function doLogin() {
+    const email = document.getElementById('loginEmail').value.trim();
+    const pass  = document.getElementById('loginPassword').value;
+    const errEl = document.getElementById('loginError');
+    errEl.style.display = 'none';
+    const btn = document.getElementById('btnLogin');
+    btn.disabled=true; btn.textContent='Accesso...';
+
+    try {
+        const r = await fetch(`${API}/api/auth/login`, {
+            method:'POST', headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({email, password:pass})
+        });
+        const d = await r.json();
+        if (!r.ok || d.user?.role !== 'admin') {
+            errEl.textContent = !r.ok ? (d.error||'Credenziali non valide') : 'Accesso non autorizzato (solo admin)';
+            errEl.style.display='block'; btn.disabled=false; btn.textContent='Accedi'; return;
+        }
+        token = d.token;
+        localStorage.setItem('saff_token', token);
+        document.getElementById('loginScreen').style.display='none';
+        document.getElementById('app').classList.add('visible');
+        loadAll();
+    } catch { errEl.textContent='Errore di connessione'; errEl.style.display='block'; btn.disabled=false; btn.textContent='Accedi'; }
+}
+
+window.addEventListener('DOMContentLoaded', async () => {
+    const saved = getToken();
+    if (saved) {
+        try {
+            const r = await apiFetch('/api/admin/affiliates/summary');
+            if (r.ok) { document.getElementById('loginScreen').style.display='none'; document.getElementById('app').classList.add('visible'); loadAll(); return; }
+        } catch {}
+        localStorage.removeItem('saff_token');
+    }
+});
+
+document.getElementById('btnLogout').addEventListener('click', () => { localStorage.removeItem('saff_token'); location.reload(); });
+
+// ── NAV ──
+document.querySelectorAll('.nav-item[data-page]').forEach(item => {
+    item.addEventListener('click', () => {
+        document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+        document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+        item.classList.add('active');
+        document.getElementById('page-'+item.dataset.page).classList.add('active');
+    });
+});
+
+// ── LOAD ALL ──
+async function loadAll() {
+    await Promise.all([loadSummary(), loadAffiliates(), loadCommissions()]);
+}
+
+async function loadSummary() {
+    const r = await apiFetch('/api/admin/affiliates/summary');
+    const d = await r.json();
+    document.getElementById('ovAff').textContent  = d.totals.active_affiliates;
+    document.getElementById('ovStu').textContent  = d.totals.total_students;
+    document.getElementById('ovMrr').textContent  = '€'+parseFloat(d.totals.total_mrr).toFixed(2);
+    document.getElementById('ovPend').textContent = '€'+parseFloat(d.totals.total_pending_commissions).toFixed(2);
+
+    // Top affiliates table
+    const tB = document.getElementById('topAffTable');
+    tB.innerHTML = d.top_affiliates.length ? d.top_affiliates.map(a => `
+        <tr><td><strong>${esc(a.organization_name)}</strong></td>
+        <td><span style="font-family:monospace;font-weight:700;color:var(--oro)">${a.referral_code}</span></td>
+        <td>${a.active_subs}</td>
+        <td>€${parseFloat(a.mrr).toFixed(2)}</td>
+        <td><span style="font-weight:700;color:var(--verde-dark)">${a.commission_rate}%</span></td>
+        <td><button class="btn-action btn-oro" onclick="openCommModal(${a.id},'${esc(a.organization_name)}',${a.commission_rate})">✏️ Comm.</button></td></tr>`).join('')
+        : '<tr><td colspan="6" style="text-align:center;color:var(--grigio-400);padding:24px">Nessun affiliato attivo</td></tr>';
+}
+
+async function loadAffiliates() {
+    const r = await apiFetch('/api/admin/affiliates');
+    const d = await r.json();
+    allAffiliates = d.affiliates;
+
+    // All affiliates table
+    const active  = d.affiliates.filter(a=>a.status==='active');
+    const pending = d.affiliates.filter(a=>a.status==='pending');
+
+    document.getElementById('pendingCount').textContent = `${pending.length} in attesa`;
+
+    const allT = document.getElementById('allAffTable');
+    allT.innerHTML = active.length ? active.map(a => `
+        <tr><td><strong>${esc(a.organization_name)}</strong><br><span style="font-size:.72rem;color:var(--grigio-400)">${esc(a.city||'')}</span></td>
+        <td>${esc(a.contact_name)}</td>
+        <td style="font-size:.78rem">${esc(a.email)}</td>
+        <td><span style="font-family:monospace;font-weight:700;color:var(--oro)">${a.referral_code}</span></td>
+        <td><strong>${a.commission_rate}%</strong> <button class="btn-action btn-oro" style="margin-left:4px" onclick="openCommModal(${a.id},'${esc(a.organization_name)}',${a.commission_rate})">✏️</button></td>
+        <td>${a.total_students||0}</td>
+        <td>€${parseFloat(a.mrr||0).toFixed(2)}</td>
+        <td><span class="badge active">Attivo</span></td>
+        <td><button class="btn-action btn-rosso" onclick="setStatus(${a.id},'suspended')">⏸ Sospendi</button></td></tr>`).join('')
+        : '<tr><td colspan="9" style="text-align:center;color:var(--grigio-400);padding:24px">Nessun centro attivo</td></tr>';
+
+    // Pending table
+    const pendT = document.getElementById('pendingTable');
+    pendT.innerHTML = pending.length ? pending.map(a => `
+        <tr><td><strong>${esc(a.organization_name)}</strong></td>
+        <td>${esc(a.contact_name)}</td>
+        <td style="font-size:.78rem">${esc(a.email)}</td>
+        <td>${esc(a.city||'—')}</td>
+        <td>${fmtDate(a.requested_at)}</td>
+        <td style="white-space:nowrap">
+            <button class="btn-action btn-verde" onclick="openApprove(${a.id},'${esc(a.organization_name)}')">✅ Approva</button>
+            <button class="btn-action btn-rosso" style="margin-left:4px" onclick="setStatus(${a.id},'rejected')">✗ Rifiuta</button>
+        </td></tr>`).join('')
+        : '<tr><td colspan="6" style="text-align:center;color:var(--grigio-400);padding:24px">Nessuna richiesta in attesa</td></tr>';
+}
+
+async function loadCommissions() {
+    const r = await apiFetch('/api/admin/commissions/pending');
+    const d = await r.json();
+    const commT = document.getElementById('commTable');
+    commT.innerHTML = d.commissions.length ? d.commissions.map(c => `
+        <tr><td><input type="checkbox" class="comm-cb" value="${c.id}"></td>
+        <td><strong>${esc(c.organization_name)}</strong></td>
+        <td>${c.period_month}</td>
+        <td>€${parseFloat(c.gross_amount_eur).toFixed(2)}</td>
+        <td><strong>€${parseFloat(c.commission_eur).toFixed(2)}</strong></td>
+        <td style="font-size:.75rem;color:var(--grigio-400)">${c.payout_iban||'—'}</td>
+        <td><span class="badge pending">Da pagare</span></td></tr>`).join('')
+        : '<tr><td colspan="7" style="text-align:center;color:var(--grigio-400);padding:24px">Nessuna provvigione da pagare</td></tr>';
+}
+
+// ── APPROVE ──
+function openApprove(id, org) {
+    pendingApproveId = id;
+    document.getElementById('approveOrgName').textContent = org;
+    document.getElementById('approveError').style.display = 'none';
+    document.getElementById('approveOverlay').classList.add('show');
+}
+function closeApprove() { document.getElementById('approveOverlay').classList.remove('show'); }
+
+async function confirmApprove() {
+    const comm = document.getElementById('approveComm').value;
+    const pass = document.getElementById('approvePass').value;
+    const errEl = document.getElementById('approveError');
+    errEl.style.display = 'none';
+    if (!pass || pass.length < 8) { errEl.textContent='Inserisci una password di almeno 8 caratteri'; errEl.style.display='block'; return; }
+
+    const r = await apiFetch(`/api/admin/affiliates/${pendingApproveId}/approve`, {
+        method:'PUT', body:JSON.stringify({commission_rate:parseFloat(comm), password:pass})
+    });
+    const d = await r.json();
+    if (!r.ok) { errEl.textContent=d.error||'Errore'; errEl.style.display='block'; return; }
+    closeApprove();
+    loadAll();
+}
+
+// ── COMMISSION MODAL ──
+function openCommModal(id, org, current) {
+    pendingCommId = id;
+    document.getElementById('commModalOrg').textContent = org;
+    document.getElementById('commModalVal').value = current;
+    document.getElementById('commModal').classList.add('show');
+}
+async function saveCommission() {
+    const val = parseFloat(document.getElementById('commModalVal').value);
+    const r = await apiFetch(`/api/admin/affiliates/${pendingCommId}/commission`, {
+        method:'PUT', body:JSON.stringify({commission_rate:val})
+    });
+    if (r.ok) { document.getElementById('commModal').classList.remove('show'); loadAll(); }
+    else { document.getElementById('commModalErr').textContent='Errore'; document.getElementById('commModalErr').style.display='block'; }
+}
+
+// ── STATUS ──
+async function setStatus(id, status) {
+    if (!confirm(`Confermi di voler impostare lo stato a "${status}"?`)) return;
+    await apiFetch(`/api/admin/affiliates/${id}/status`, { method:'PUT', body:JSON.stringify({status}) });
+    loadAll();
+}
+
+// ── COMMISSIONS PAYMENT ──
+function toggleAll(cb) { document.querySelectorAll('.comm-cb').forEach(c=>c.checked=cb.checked); }
+async function markSelectedPaid() {
+    const ids = [...document.querySelectorAll('.comm-cb:checked')].map(c=>parseInt(c.value));
+    if (!ids.length) { alert('Seleziona almeno una provvigione'); return; }
+    const ref = document.getElementById('paymentRef').value.trim() || 'MANUAL-' + new Date().toISOString().split('T')[0];
+    const r = await apiFetch('/api/admin/commissions/mark-paid', { method:'PUT', body:JSON.stringify({commission_ids:ids,payment_ref:ref}) });
+    const d = await r.json();
+    if (r.ok) { alert(`✅ ${d.updated} provvigioni marcate come pagate`); loadCommissions(); }
+    else alert('Errore: ' + (d.error||''));
+}
+
+// ── CALC COMMISSIONS ──
+async function calcCommissions() {
+    const month = document.getElementById('calcMonth').value;
+    if (!month) { alert('Seleziona un mese'); return; }
+    const r = await apiFetch('/api/admin/commissions/calculate', { method:'POST', body:JSON.stringify({period_month:month}) });
+    const d = await r.json();
+    const resEl = document.getElementById('calcResult');
+    resEl.style.display='block';
+    resEl.innerHTML = r.ok
+        ? `✅ Provvigioni calcolate per <strong>${month}</strong>: <strong>${d.records}</strong> righe generate · Totale: <strong>€${parseFloat(d.total_eur||0).toFixed(2)}</strong>`
+        : `❌ Errore: ${d.error}`;
+    if (r.ok) loadCommissions();
+}
+
+function exportAffiliates() {
+    const rows = allAffiliates.filter(a=>a.status==='active');
+    const csv = ['Centro;Referente;Email;Codice;Commissione%;Studenti;MRR']
+        .concat(rows.map(a=>`${a.organization_name};${a.contact_name};${a.email};${a.referral_code};${a.commission_rate};${a.total_students||0};${parseFloat(a.mrr||0).toFixed(2)}`))
+        .join('\n');
+    const blob = new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8;'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `affiliati-saam-${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+}
+
+// ── HELPERS ──
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;'); }
+function fmtDate(d) { return d ? new Date(d).toLocaleDateString('it-IT',{day:'2-digit',month:'short',year:'numeric'}) : '—'; }
+</script>
+</body>
+</html>

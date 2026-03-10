@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Diventa Partner — Saam 4.0 Italian Voice</title>
+    <link rel="icon" type="image/png" href="OminiLOGO_Saam40_ItalianVoice.png">
+    <meta name="theme-color" content="#1a1a17">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;1,600&family=Lato:wght@300;400;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --verde: #009246; --verde-dark: #006f35; --verde-pale: #e8f5ee;
+            --oro: #d4a017; --oro-pale: #fef9e7;
+            --grigio-100: #f4f4f2; --grigio-200: #e8e8e5; --grigio-400: #9a9a95;
+            --grigio-700: #3d3d3a; --nero: #1a1a17; --bianco: #fff; --avorio: #fafaf7;
+        }
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Lato', sans-serif; background: var(--avorio); color: var(--grigio-700); }
+
+        /* ── HERO con sfondo scuro ── */
+        .hero {
+            background: var(--nero);
+            color: #fff; padding: 48px 24px;
+            position: relative; overflow: hidden;
+        }
+        .hero::before {
+            content: '';
+            position: absolute; top: -50%; right: -10%;
+            width: 400px; height: 400px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(0,146,70,.25) 0%, transparent 70%);
+        }
+        .hero::after {
+            content: '';
+            position: absolute; bottom: -30%; left: -5%;
+            width: 300px; height: 300px; border-radius: 50%;
+            background: radial-gradient(circle, rgba(212,160,23,.15) 0%, transparent 70%);
+        }
+        .hero-inner { max-width: 760px; margin: 0 auto; position: relative; z-index: 1; }
+        .hero-top { display: flex; align-items: center; gap: 16px; margin-bottom: 28px; }
+        .hero-top img { width: 56px; height: 56px; object-fit: contain; }
+        .hero-top span { font-size: .8rem; color: rgba(255,255,255,.5); text-transform: uppercase; letter-spacing: .12em; }
+        .hero h1 { font-family: 'Playfair Display', serif; font-size: clamp(1.6rem, 4vw, 2.4rem); font-weight: 700; line-height: 1.15; margin-bottom: 12px; }
+        .hero h1 .accent { color: var(--oro); font-style: italic; }
+        .hero p { color: rgba(255,255,255,.68); font-size: .95rem; max-width: 560px; line-height: 1.7; margin-bottom: 24px; }
+
+        .benefits-row { display: flex; gap: 20px; flex-wrap: wrap; }
+        .benefit { display: flex; align-items: flex-start; gap: 10px; }
+        .benefit .ico { font-size: 1.3rem; flex-shrink: 0; }
+        .benefit div { }
+        .benefit strong { display: block; font-size: .88rem; color: #fff; margin-bottom: 2px; }
+        .benefit span   { font-size: .78rem; color: rgba(255,255,255,.5); }
+
+        /* ── COMMISSIONI PREVIEW ── */
+        .commissions-bar {
+            background: linear-gradient(135deg, var(--oro), #b8860b);
+            padding: 18px 28px; display: flex; align-items: center; justify-content: space-between;
+            gap: 14px; flex-wrap: wrap;
+        }
+        .comm-item { text-align: center; }
+        .comm-item .val { font-size: 1.4rem; font-weight: 900; color: var(--nero); }
+        .comm-item .lbl { font-size: .72rem; color: rgba(0,0,0,.6); font-weight: 700; text-transform: uppercase; letter-spacing: .06em; }
+        .comm-item .pkg { font-size: .78rem; color: rgba(0,0,0,.5); margin-top: 1px; }
+        .comm-sep { width: 1px; height: 40px; background: rgba(0,0,0,.15); }
+
+        /* ── FORM ── */
+        .container { max-width: 760px; margin: 0 auto; padding: 40px 20px 60px; }
+        .form-card {
+            background: var(--bianco); border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,.12); overflow: hidden;
+        }
+        .form-card-header {
+            background: linear-gradient(135deg, #0a4a25, #009246);
+            padding: 24px 32px; color: #fff;
+        }
+        .form-card-header h2 { font-family: 'Playfair Display', serif; font-size: 1.3rem; margin-bottom: 4px; }
+        .form-card-header p  { font-size: .85rem; opacity: .75; }
+
+        .form-body { padding: 32px; }
+        .section-label {
+            font-size: .72rem; font-weight: 900; letter-spacing: .12em;
+            text-transform: uppercase; color: var(--verde-dark);
+            border-bottom: 1px solid var(--grigio-200);
+            padding-bottom: 8px; margin-bottom: 18px; margin-top: 24px;
+        }
+        .section-label:first-child { margin-top: 0; }
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+        .fg { margin-bottom: 0; }
+        .fg label { display: block; font-size: .75rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--grigio-700); margin-bottom: 7px; }
+        .fg input, .fg textarea, .fg select {
+            width: 100%; border: 1.5px solid var(--grigio-200); border-radius: 10px;
+            padding: 11px 14px; font-family: 'Lato', sans-serif; font-size: .92rem;
+            color: var(--nero); background: var(--avorio); outline: none;
+            transition: border-color .2s, box-shadow .2s;
+        }
+        .fg input:focus, .fg textarea:focus, .fg select:focus {
+            border-color: var(--verde); box-shadow: 0 0 0 3px rgba(0,146,70,.12); background: #fff;
+        }
+        .fg textarea { resize: vertical; min-height: 80px; }
+        .full { grid-column: 1 / -1; }
+
+        .privacy-box { background: var(--grigio-100); border-radius: 10px; padding: 14px 16px; display: flex; gap: 10px; margin-bottom: 20px; margin-top: 8px; }
+        .privacy-box input { flex-shrink: 0; margin-top: 2px; accent-color: var(--verde); }
+        .privacy-box label { font-size: .82rem; color: var(--grigio-400); line-height: 1.5; }
+        .privacy-box a { color: var(--verde-dark); }
+
+        .btn-submit {
+            width: 100%; background: var(--verde); color: #fff;
+            border: none; border-radius: 12px; padding: 16px;
+            font-family: 'Lato', sans-serif; font-size: 1rem; font-weight: 900;
+            cursor: pointer; transition: all .2s;
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+        }
+        .btn-submit:hover { background: var(--verde-dark); transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,146,70,.35); }
+        .btn-submit:disabled { opacity: .6; cursor: not-allowed; transform: none; }
+
+        .form-note { text-align: center; font-size: .82rem; color: var(--grigio-400); margin-top: 14px; }
+        .form-error { background: #fff0f0; border: 1px solid #ffc7c7; color: #a52029; border-radius: 10px; padding: 12px; font-size: .88rem; margin-top: 12px; display: none; }
+
+        /* ── SUCCESS ── */
+        #successMsg {
+            display: none; text-align: center;
+            background: var(--bianco); border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,.12);
+            padding: 60px 40px;
+        }
+        #successMsg .ico { font-size: 3.5rem; margin-bottom: 16px; }
+        #successMsg h2 { font-family: 'Playfair Display', serif; font-size: 1.7rem; color: var(--verde-dark); margin-bottom: 10px; }
+        #successMsg p  { color: var(--grigio-400); font-size: .95rem; line-height: 1.7; max-width: 480px; margin: 0 auto; }
+
+        /* ── MOBILE ── */
+        @media (max-width: 640px) {
+            .form-row { grid-template-columns: 1fr; }
+            .form-body { padding: 22px 18px; }
+            .benefits-row { flex-direction: column; gap: 14px; }
+            .commissions-bar { padding: 16px 18px; justify-content: center; }
+            .comm-sep { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- HERO -->
+<div class="hero">
+    <div class="hero-inner">
+        <div class="hero-top">
+            <img src="LOGO_Saam40_ItalianVoice.png" alt="Saam 4.0">
+            <div>
+                <div style="font-weight:900;font-size:.95rem">Saam 4.0 Italian Voice</div>
+                <span>Programma Partner</span>
+            </div>
+        </div>
+        <h1>Diventa <span class="accent">Partner Accreditato</span><br>e guadagna con noi</h1>
+        <p>Proponi la piattaforma di apprendimento italiano ai tuoi studenti, traccia le iscrizioni con il tuo codice univoco e ricevi provvigioni mensili automatiche.</p>
+        <div class="benefits-row">
+            <div class="benefit"><div class="ico">💰</div><div><strong>Provvigioni mensili</strong><span>Guadagno ricorrente su ogni abbonato</span></div></div>
+            <div class="benefit"><div class="ico">📊</div><div><strong>Dashboard dedicata</strong><span>Monitora iscritti e incassi in tempo reale</span></div></div>
+            <div class="benefit"><div class="ico">🎯</div><div><strong>Codice univoco</strong><span>Tracciabilità completa delle tue segnalazioni</span></div></div>
+            <div class="benefit"><div class="ico">🎁</div><div><strong>1 prova gratuita/sett.</strong><span>Fai testare la piattaforma ai tuoi clienti</span></div></div>
+        </div>
+    </div>
+</div>
+
+<!-- COMMISSIONI PREVIEW -->
+<div class="commissions-bar">
+    <div class="comm-item">
+        <div class="val">fino al 30%</div>
+        <div class="lbl">Commissione</div>
+        <div class="pkg">impostata dal Super-Admin</div>
+    </div>
+    <div class="comm-sep"></div>
+    <div class="comm-item">
+        <div class="val">€9,70</div>
+        <div class="lbl">Piano Basic</div>
+        <div class="pkg">→ ~€2,91/mese per iscritto</div>
+    </div>
+    <div class="comm-sep"></div>
+    <div class="comm-item">
+        <div class="val">€16,70</div>
+        <div class="lbl">Piano Advanced</div>
+        <div class="pkg">→ ~€5,01/mese per iscritto</div>
+    </div>
+    <div class="comm-sep"></div>
+    <div class="comm-item">
+        <div class="val">€27,70</div>
+        <div class="lbl">Piano Gold</div>
+        <div class="pkg">→ ~€8,31/mese per iscritto</div>
+    </div>
+</div>
+
+<div class="container">
+
+    <!-- FORM -->
+    <div class="form-card" id="formCard">
+        <div class="form-card-header">
+            <h2>Richiesta di Accreditamento</h2>
+            <p>Compila il modulo. Riceverai una risposta entro 2 giorni lavorativi.</p>
+        </div>
+        <div class="form-body">
+
+            <div class="section-label">Dati del Centro / Ente di Formazione</div>
+            <div class="form-row">
+                <div class="fg">
+                    <label>Nome Centro / Ente *</label>
+                    <input type="text" id="fOrg" placeholder="Centro Italiano Formazione srl">
+                </div>
+                <div class="fg">
+                    <label>Partita IVA / Codice Fiscale</label>
+                    <input type="text" id="fVat" placeholder="IT12345678901">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="fg">
+                    <label>Città *</label>
+                    <input type="text" id="fCity" placeholder="Roma">
+                </div>
+                <div class="fg">
+                    <label>Indirizzo</label>
+                    <input type="text" id="fAddress" placeholder="Via Roma, 1">
+                </div>
+            </div>
+
+            <div class="section-label">Dati del Referente</div>
+            <div class="form-row">
+                <div class="fg">
+                    <label>Nome e Cognome *</label>
+                    <input type="text" id="fContact" placeholder="Mario Rossi">
+                </div>
+                <div class="fg">
+                    <label>Telefono *</label>
+                    <input type="tel" id="fPhone" placeholder="+39 333 1234567">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="fg full">
+                    <label>Email istituzionale *</label>
+                    <input type="email" id="fEmail" placeholder="direttore@centroformazione.it">
+                </div>
+            </div>
+
+            <div class="section-label">Presentazione e Motivazione</div>
+            <div class="form-row">
+                <div class="fg full">
+                    <label>Descrivi brevemente il tuo centro e il target di studenti</label>
+                    <textarea id="fNotes" placeholder="Siamo un centro di formazione linguistica con 150+ studenti l'anno, specializziamo in italiano per stranieri..."></textarea>
+                </div>
+            </div>
+
+            <div class="privacy-box">
+                <input type="checkbox" id="fPrivacy">
+                <label for="fPrivacy">Accetto il trattamento dei dati personali ai sensi del <a href="#" target="_blank">GDPR</a> e dei <a href="#" target="_blank">Termini del Programma Partner</a>. Confermo che i dati inseriti sono veritieri.</label>
+            </div>
+
+            <button class="btn-submit" id="btnSubmit" onclick="submitForm()">
+                ✉️ Invia Richiesta di Accreditamento
+            </button>
+            <div class="form-note">Nessun costo di iscrizione. L'attivazione è gratuita.</div>
+            <div class="form-error" id="formError"></div>
+
+        </div>
+    </div>
+
+    <!-- SUCCESS -->
+    <div id="successMsg">
+        <div class="ico">🎉</div>
+        <h2>Richiesta inviata con successo!</h2>
+        <p>Il tuo Centro è stato registrato nel nostro sistema. Il team Saam 4.0 esaminerà la tua richiesta e ti contatterà entro <strong>2 giorni lavorativi</strong> all'indirizzo email che hai indicato per comunicarti l'approvazione e le credenziali di accesso alla tua Dashboard Partner.</p>
+        <p style="margin-top:16px;font-weight:700;color:var(--verde-dark)">Grazie per il tuo interesse!</p>
+    </div>
+
+</div>
+
+<script>
+const API = 'https://italian-learning-platform.onrender.com';
+
+async function submitForm() {
+    const org     = document.getElementById('fOrg').value.trim();
+    const contact = document.getElementById('fContact').value.trim();
+    const email   = document.getElementById('fEmail').value.trim();
+    const phone   = document.getElementById('fPhone').value.trim();
+    const city    = document.getElementById('fCity').value.trim();
+    const vat     = document.getElementById('fVat').value.trim();
+    const address = document.getElementById('fAddress').value.trim();
+    const notes   = document.getElementById('fNotes').value.trim();
+    const privacy = document.getElementById('fPrivacy').checked;
+    const errEl   = document.getElementById('formError');
+
+    const showErr = msg => { errEl.textContent = msg; errEl.style.display = 'block'; };
+    errEl.style.display = 'none';
+
+    if (!org)     return showErr('Inserisci il nome del centro.');
+    if (!contact) return showErr('Inserisci il nome del referente.');
+    if (!email)   return showErr('Inserisci l\'email istituzionale.');
+    if (!phone)   return showErr('Inserisci il numero di telefono.');
+    if (!city)    return showErr('Inserisci la città.');
+    if (!privacy) return showErr('Devi accettare la Privacy Policy per procedere.');
+
+    const btn = document.getElementById('btnSubmit');
+    btn.disabled = true; btn.textContent = '⏳ Invio in corso...';
+
+    try {
+        const r = await fetch(`${API}/api/public/affiliate/apply`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ organization_name: org, contact_name: contact, email, phone, address, city, vat_number: vat, notes_applicant: notes }),
+        });
+        const d = await r.json();
+        if (!r.ok) { showErr(d.error || 'Errore nell\'invio.'); btn.disabled=false; btn.innerHTML='✉️ Invia Richiesta di Accreditamento'; return; }
+
+        document.getElementById('formCard').style.display = 'none';
+        document.getElementById('successMsg').style.display = 'block';
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    } catch {
+        showErr('Errore di connessione. Riprova tra poco.');
+        btn.disabled = false;
+        btn.innerHTML = '✉️ Invia Richiesta di Accreditamento';
+    }
+}
+</script>
+</body>
+</html>
