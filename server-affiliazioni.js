@@ -19,7 +19,16 @@ const crypto   = require('crypto');
 const { Pool } = require('pg');
 
 const pool   = new Pool({ connectionString: process.env.DATABASE_URL, ssl: { rejectUnauthorized: false } });
-const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+// Inizializzazione lazy — evita crash se STRIPE_SECRET_KEY non è ancora impostata su Render
+let _stripe = null;
+function getStripe() {
+    if (!_stripe) {
+        if (!process.env.STRIPE_SECRET_KEY) throw new Error('STRIPE_SECRET_KEY mancante nelle variabili di ambiente Render');
+        _stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+    }
+    return _stripe;
+}
+const stripe = new Proxy({}, { get: (_, prop) => getStripe()[prop] });
 
 const JWT_SECRET   = process.env.JWT_SECRET || 'saam-italian-voice-secret';
 const FRONTEND_URL = process.env.FRONTEND_URL || 'https://italian-learning-platform.onrender.com';
