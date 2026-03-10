@@ -107,6 +107,14 @@ app.post('/api/stripe/webhook', express.raw({ type: 'application/json' }), strip
 
 app.use(express.json());
 
+// ── FILE STATICI (HTML, CSS, immagini) ──
+const path = require('path');
+app.use(express.static(path.join(__dirname)));
+
+// ── ROUTES AFFILIAZIONI + STRIPE ──
+const affiliazioniRoutes = require('./server-affiliazioni');
+app.use('/api', affiliazioniRoutes);
+
 app.use((req, res, next) => {
     console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
     next();
@@ -1598,9 +1606,6 @@ app.get('/api/admin/users/:userId/sessions', authenticate, requireAdmin, async (
     finally { client.release(); }
 });
 
-// ── ROUTES AFFILIAZIONI + STRIPE ──
-const affiliazioniRoutes = require('./server-affiliazioni');
-app.use('/api', affiliazioniRoutes);
 
 app.listen(PORT, () => {
     console.log(`🚀 Server running on http://localhost:${PORT}`);
