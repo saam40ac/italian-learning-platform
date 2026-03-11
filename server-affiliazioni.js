@@ -30,7 +30,12 @@ function getStripe() {
 const stripe = new Proxy({}, { get: (_, prop) => getStripe()[prop] });
 
 const JWT_SECRET   = process.env.JWT_SECRET || 'saam-italian-voice-secret';
-const emailService = require('./server-email');
+// emailService: stub (server-email non ancora configurato)
+const emailService = {
+    notifyNewStudent:           async () => {},
+    notifyNewAffiliate:         async () => {},
+    sendPasswordResetAffiliate: async () => { throw new Error('Reset password via email non ancora configurato.'); }
+};
 const FRONTEND_URL = process.env.FRONTEND_URL || 'https://italian-learning-platform.onrender.com';
 
 // Packages config (mirror di server.js)
