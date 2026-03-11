@@ -104,6 +104,7 @@ app.use(cors());
 // ── WEBHOOK STRIPE (raw body — deve stare PRIMA di express.json) ──
 const { stripeWebhook } = require('./server-affiliazioni');
 app.post('/api/stripe/webhook', express.raw({ type: 'application/json' }), stripeWebhook);
+// Nota: stripeWebhook usa il pool iniettato tramite affiliazioniInit(pool) più sotto
 
 app.use(express.json());
 
@@ -112,7 +113,8 @@ const path = require('path');
 app.use(express.static(path.join(__dirname)));
 
 // ── ROUTES AFFILIAZIONI + STRIPE ──
-const affiliazioniRoutes = require('./server-affiliazioni');
+const affiliazioniInit = require('./server-affiliazioni');
+const affiliazioniRoutes = affiliazioniInit(pool);
 app.use('/api', affiliazioniRoutes);
 
 app.use((req, res, next) => {
