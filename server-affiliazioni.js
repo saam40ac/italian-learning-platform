@@ -150,12 +150,14 @@ async function stripeWebhook(req, res) {
                      pkgData?.price_eur || 0]
                 );
 
-                // Aggiorna utente
+                // Aggiorna utente con pacchetto e minuti corretti
+                const pkgLimits = PACKAGES[pkg];
                 await pool.query(
                     `UPDATE users SET package = $1, stripe_customer_id = $2,
-                     subscription_status = 'active', affiliate_id = $3
+                     subscription_status = 'active', affiliate_id = $3,
+                     minutes_limit = $5
                      WHERE id = $4`,
-                    [pkg, customerId, affiliateId, userId]
+                    [pkg, customerId, affiliateId, userId, pkgLimits?.minutes_day || 30]
                 );
 
                 console.log(`✅ Stripe checkout completato | user: ${userId} | pkg: ${pkg}`);
