@@ -229,6 +229,40 @@
                 <button class="copy-btn" onclick="copyLink()">📋 Copia Link</button>
             </div>
 
+            <!-- BOX CONTRATTO -->
+            <div id="contractBox" style="display:none;margin-bottom:16px">
+                <!-- Alert scadenza (visibile solo se entro 30gg) -->
+                <div id="contractAlert" style="display:none;background:#fff3cd;border:1.5px solid #d4a017;border-radius:10px;padding:14px 18px;margin-bottom:12px;display:flex;align-items:center;gap:12px">
+                    <span style="font-size:1.5rem">⚠️</span>
+                    <div>
+                        <div style="font-weight:700;color:#856404" id="contractAlertTitle">Contratto in scadenza</div>
+                        <div style="font-size:.82rem;color:#856404" id="contractAlertText"></div>
+                    </div>
+                </div>
+                <!-- Card contratto -->
+                <div style="background:#fff;border-radius:12px;border:1.5px solid #e0e0d8;padding:18px 22px">
+                    <div style="font-weight:700;color:var(--verde-dark);font-size:.8rem;letter-spacing:.06em;text-transform:uppercase;margin-bottom:12px">📋 Il Tuo Contratto Annuale</div>
+                    <div style="display:flex;gap:24px;flex-wrap:wrap">
+                        <div>
+                            <div style="font-size:.72rem;color:#aaa;text-transform:uppercase;letter-spacing:.05em">Data Attivazione</div>
+                            <div style="font-size:1.05rem;font-weight:700;color:#333" id="contractStart">—</div>
+                        </div>
+                        <div>
+                            <div style="font-size:.72rem;color:#aaa;text-transform:uppercase;letter-spacing:.05em">Scadenza Contratto</div>
+                            <div style="font-size:1.05rem;font-weight:700" id="contractEnd">—</div>
+                        </div>
+                        <div>
+                            <div style="font-size:.72rem;color:#aaa;text-transform:uppercase;letter-spacing:.05em">Giorni Rimanenti</div>
+                            <div style="font-size:1.05rem;font-weight:700" id="contractDays">—</div>
+                        </div>
+                        <div>
+                            <div style="font-size:.72rem;color:#aaa;text-transform:uppercase;letter-spacing:.05em">Piano</div>
+                            <div style="font-size:.85rem;font-weight:700" id="contractPlan">—</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <div class="panel">
                 <div class="panel-header"><span class="panel-title">Ultimi studenti iscritti</span></div>
                 <div class="panel-body"><table>
@@ -415,6 +449,49 @@ async function loadDashboard() {
         document.getElementById('rbCode').textContent = code;
         document.getElementById('rbLink').textContent = link;
         document.getElementById('rbLink').dataset.link = link;
+
+        // ── CONTRATTO ANNUALE ──
+        if (affiliate.contract_start || affiliate.contract_end) {
+            document.getElementById('contractBox').style.display = 'block';
+            const fmtD = d => d ? new Date(d).toLocaleDateString('it-IT', {day:'2-digit',month:'long',year:'numeric'}) : '—';
+            document.getElementById('contractStart').textContent = fmtD(affiliate.contract_start);
+
+            if (affiliate.contract_end) {
+                const endDate   = new Date(affiliate.contract_end);
+                const daysLeft  = Math.ceil((endDate - Date.now()) / 86400000);
+                const endColor  = daysLeft <= 30 ? '#CE2B37' : daysLeft <= 60 ? '#d4a017' : '#009246';
+
+                document.getElementById('contractEnd').textContent  = fmtD(affiliate.contract_end);
+                document.getElementById('contractEnd').style.color  = endColor;
+                document.getElementById('contractDays').textContent = daysLeft > 0 ? `${daysLeft} giorni` : 'SCADUTO';
+                document.getElementById('contractDays').style.color = endColor;
+
+                // Piano da notes
+                const notesRaw  = affiliate.notes || '';
+                const pianoMatch = notesRaw.match(/PIANO SCELTO: ([^|]+)/);
+                const pianoStr  = pianoMatch ? pianoMatch[1].trim() : '—';
+                const isPrem    = pianoStr.includes('197');
+                document.getElementById('contractPlan').textContent = pianoStr;
+                document.getElementById('contractPlan').style.color = isPrem ? '#009246' : '#d4a017';
+
+                // Alert 30gg
+                if (daysLeft <= 30 && daysLeft > 0) {
+                    const alertEl = document.getElementById('contractAlert');
+                    alertEl.style.display = 'flex';
+                    document.getElementById('contractAlertTitle').textContent = `⚠️ Contratto in scadenza tra ${daysLeft} giorni`;
+                    document.getElementById('contractAlertText').textContent  = `Il tuo contratto scade il ${fmtD(affiliate.contract_end)}. Contatta l'ufficio amministrativo per il rinnovo.`;
+                } else if (daysLeft <= 0) {
+                    const alertEl = document.getElementById('contractAlert');
+                    alertEl.style.display   = 'flex';
+                    alertEl.style.background = '#fde8e8';
+                    alertEl.style.borderColor = '#CE2B37';
+                    document.getElementById('contractAlertTitle').style.color = '#CE2B37';
+                    document.getElementById('contractAlertTitle').textContent  = '🔴 Contratto scaduto';
+                    document.getElementById('contractAlertText').style.color   = '#CE2B37';
+                    document.getElementById('contractAlertText').textContent   = `Il contratto è scaduto il ${fmtD(affiliate.contract_end)}. Contatta l'ufficio amministrativo per il rinnovo.`;
+                }
+            }
+        }
 
         // Recent students (first 5)
         const tBody = document.getElementById('recentStudents');
