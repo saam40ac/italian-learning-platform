@@ -487,10 +487,13 @@ router.get('/affiliate/dashboard', affiliateAuth, async (req, res) => {
             pool.query('SELECT * FROM affiliates WHERE id = $1', [affId]),
             pool.query(`
                 SELECT u.id, u.name, u.email, u.package, u.subscription_status, u.created_at,
-                       s.amount_eur, s.current_period_end, s.cancel_at_period_end
+                       s.amount_eur, s.current_period_end, s.cancel_at_period_end,
+                       COALESCE(SUM(CASE WHEN us.date >= date_trunc('month', NOW()) THEN us.minutes_used ELSE 0 END), 0) AS monthly_minutes_used
                 FROM users u
                 LEFT JOIN subscriptions s ON s.user_id = u.id AND s.status = 'active'
+                LEFT JOIN usage us ON us.user_id = u.id
                 WHERE u.affiliate_id = $1
+                GROUP BY u.id, s.amount_eur, s.current_period_end, s.cancel_at_period_end
                 ORDER BY u.created_at DESC`, [affId]),
             pool.query(`
                 SELECT period_month,
