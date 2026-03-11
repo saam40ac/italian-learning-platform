@@ -676,15 +676,11 @@ router.get('/admin/affiliates/summary', authMiddleware, adminOnly, async (req, r
         const [totals, byMonth, topAffiliates] = await Promise.all([
             pool.query(`
                 SELECT
-                  COUNT(DISTINCT a.id) FILTER (WHERE a.status='active')     AS active_affiliates,
-                  COUNT(DISTINCT u.id)                                       AS total_students,
-                  COUNT(DISTINCT s.id) FILTER (WHERE s.status='active')      AS active_subs,
-                  COALESCE(SUM(s.amount_eur) FILTER (WHERE s.status='active'),0) AS total_mrr,
-                  COALESCE(SUM(ac.commission_eur) FILTER (WHERE ac.status='pending'),0) AS total_pending_commissions
-                FROM affiliates a
-                LEFT JOIN users u ON u.affiliate_id = a.id
-                LEFT JOIN subscriptions s ON s.affiliate_id = a.id
-                LEFT JOIN affiliate_commissions ac ON ac.affiliate_id = a.id`),
+                  (SELECT COUNT(*) FROM affiliates WHERE status='active')                              AS active_affiliates,
+                  (SELECT COUNT(*) FROM users WHERE affiliate_id IS NOT NULL)                          AS total_students,
+                  (SELECT COUNT(*) FROM subscriptions WHERE status='active' AND affiliate_id IS NOT NULL) AS active_subs,
+                  (SELECT COALESCE(SUM(amount_eur),0) FROM subscriptions WHERE status='active' AND affiliate_id IS NOT NULL) AS total_mrr,
+                  (SELECT COALESCE(SUM(commission_eur),0) FROM affiliate_commissions WHERE status='pending') AS total_pending_commissions`),
             pool.query(`
                 SELECT to_char(s.created_at,'YYYY-MM') AS month,
                        COUNT(s.id) AS new_subs, SUM(s.amount_eur) AS gross
