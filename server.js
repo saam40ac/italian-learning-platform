@@ -1120,8 +1120,11 @@ app.get('/api/admin/users', authenticate, requireAdmin, async (req, res) => {
     try {
         const result = await client.query(`
             SELECT 
-                u.id, u.email, u.name, u.role, u.minutes_limit, COALESCE(u.package,'basic') as package, u.created_at, u.last_login,
+                u.id, u.email, u.name, u.role, u.minutes_limit,
+                COALESCE(u.package,'basic') as package,
+                u.created_at, u.last_login,
                 COALESCE(SUM(us.minutes_used), 0) as total_minutes_used,
+                COALESCE(SUM(CASE WHEN us.date >= date_trunc('month', NOW()) THEN us.minutes_used ELSE 0 END), 0) as monthly_minutes_used,
                 sl.level, sl.topics
             FROM users u
             LEFT JOIN usage us ON u.id = us.user_id
