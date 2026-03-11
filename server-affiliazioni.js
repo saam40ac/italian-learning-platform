@@ -431,7 +431,7 @@ router.post('/user/subscription/portal', authMiddleware, async (req, res) => {
 
 // Form di registrazione centro (pubblico — richiesta accreditamento)
 router.post('/public/affiliate/apply', async (req, res) => {
-    const { organization_name, contact_name, email, phone, address, city, vat_number, notes_applicant } = req.body;
+    const { organization_name, contact_name, email, phone, address, city, vat_number, notes_applicant, piano_adesione, commission_requested } = req.body;
     if (!organization_name || !contact_name || !email) {
         return res.status(400).json({ error: 'Campi obbligatori mancanti' });
     }
@@ -440,10 +440,16 @@ router.post('/public/affiliate/apply', async (req, res) => {
         if (existing.rows[0]) return res.status(409).json({ error: 'Email già registrata' });
 
         const referral_code = await generateReferralCode(organization_name);
+        // Componi notes con piano scelto in evidenza
+        const noteParts = [];
+        if (piano_adesione) noteParts.push(`📋 PIANO SCELTO: ${piano_adesione}`);
+        if (notes_applicant) noteParts.push(notes_applicant);
+        const finalNotes = noteParts.join(' | ') || null;
+
         await pool.query(
             `INSERT INTO affiliates (organization_name, contact_name, email, phone, address, city, vat_number, referral_code, notes)
              VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
-            [organization_name, contact_name, email, phone, address, city, vat_number, referral_code, notes_applicant || null]
+            [organization_name, contact_name, email, phone, address, city, vat_number, referral_code, finalNotes]
         );
         res.json({ success: true, message: 'Richiesta inviata. Sarai contattato per l\'approvazione.' });
     } catch (err) { res.status(500).json({ error: err.message }); }
