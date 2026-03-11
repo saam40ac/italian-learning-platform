@@ -30,6 +30,7 @@ function getStripe() {
 const stripe = new Proxy({}, { get: (_, prop) => getStripe()[prop] });
 
 const JWT_SECRET   = process.env.JWT_SECRET || 'saam-italian-voice-secret';
+const emailService = require('./server-email');
 const FRONTEND_URL = process.env.FRONTEND_URL || 'https://italian-learning-platform.onrender.com';
 
 // Packages config (mirror di server.js)
@@ -159,6 +160,20 @@ async function stripeWebhook(req, res) {
                      WHERE id = $4`,
                     [pkg, customerId, affiliateId, userId, pkgLimits?.minutes_day || 30]
                 );
+
+                // Notifica email admin — nuovo studente pagante
+                try {
+                    const userRow = await pool.query('SELECT name, email, phone FROM users WHERE id = $1', [userId]);
+                    if (userRow.rows[0]) {
+                        emailService.notifyNewStudent({
+                            name: userRow.rows[0].name,
+                            email: userRow.rows[0].email,
+                            phone: userRow.rows[0].phone,
+                            package: pkg,
+                            referral_code: session.metadata?.affiliate_id ? `ID affiliato: ${affiliateId}` : null
+                        }).catch(e => console.error('[EMAIL] notifyNewStudent:', e.message));
+                    }
+                } catch(e) { console.error('[EMAIL] lookup utente:', e.message); }
 
                 console.log(`✅ Stripe checkout completato | user: ${userId} | pkg: ${pkg}`);
                 break;
@@ -451,6 +466,16 @@ router.post('/public/affiliate/apply', async (req, res) => {
              VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
             [organization_name, contact_name, email, phone, address, city, vat_number, referral_code, finalNotes]
         );
+        // Notifica email admin
+        emailService.notifyNewAffiliate({
+            organization_name,
+            contact_name,
+            email,
+            phone,
+            city,
+            piano_adesione
+        }).catch(e => console.error('[EMAIL] notifyNewAffiliate:', e.message));
+
         res.json({ success: true, message: 'Richiesta inviata. Sarai contattato per l\'approvazione.' });
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
@@ -525,7 +550,10 @@ router.get('/affiliate/dashboard', affiliateAuth, async (req, res) => {
             affiliate: {
                 id: affiliate.id, organization_name: affiliate.organization_name,
                 referral_code: affiliate.referral_code, commission_rate: affiliate.commission_rate,
-                status: affiliate.status
+                status: affiliate.status,
+                contract_start: affiliate.contract_start,
+                contract_end:   affiliate.contract_end,
+                notes:          affiliate.notes
             },
             stats: {
                 total_students: students.rows.length,
@@ -653,7 +681,9 @@ router.put('/admin/affiliates/:id/approve', authMiddleware, adminOnly, async (re
         const passwordHash = await bcrypt.hash(password, 12);
         await pool.query(
             `UPDATE affiliates SET status='active', commission_rate=$1, password_hash=$2,
-             approved_at=NOW(), approved_by=$3 WHERE id=$4`,
+             approved_at=NOW(), approved_by=$3,
+             contract_start=NOW(), contract_end=NOW() + INTERVAL '1 year'
+             WHERE id=$4`,
             [commission_rate || 20, passwordHash, req.user.userId || req.user.id, affId]
         );
         res.json({ success: true });
@@ -747,6 +777,90 @@ router.post('/admin/commissions/calculate', authMiddleware, adminOnly, async (re
         res.json({ success: true, records: rows[0].cnt, total_eur: rows[0].total });
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
+
+// ════════════════════════════════════════════════════════════
+// ADMIN: CONTRATTI IN SCADENZA — Export mensile
+// ════════════════════════════════════════════════════════════
+
+// Lista centri con scadenza nel mese indicato (default: mese corrente)
+router.get('/admin/affiliates/expiring', authMiddleware, adminOnly, async (req, res) => {
+    const { month } = req.query; // formato YYYY-MM, default mese corrente
+    const targetMonth = month || new Date().toISOString().slice(0, 7);
+    try {
+        const { rows } = await pool.query(`
+            SELECT
+                a.id, a.organization_name, a.contact_name, a.email, a.phone, a.city,
+                a.referral_code, a.commission_rate,
+                a.contract_start::date AS contract_start,
+                a.contract_end::date   AS contract_end,
+                EXTRACT(DAY FROM a.contract_end - NOW())::int AS giorni_rimanenti,
+                a.notes,
+                (SELECT COUNT(*) FROM users WHERE affiliate_id = a.id) AS total_students,
+                (SELECT COALESCE(SUM(amount_eur),0) FROM subscriptions WHERE affiliate_id = a.id AND status='active') AS mrr
+            FROM affiliates a
+            WHERE a.status = 'active'
+              AND to_char(a.contract_end, 'YYYY-MM') = $1
+            ORDER BY a.contract_end ASC`,
+            [targetMonth]
+        );
+        res.json({ month: targetMonth, affiliates: rows, count: rows.length });
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// Lista centri con scadenza entro N giorni (per alert)
+router.get('/admin/affiliates/expiring-soon', authMiddleware, adminOnly, async (req, res) => {
+    const days = parseInt(req.query.days) || 30;
+    try {
+        const { rows } = await pool.query(`
+            SELECT
+                a.id, a.organization_name, a.contact_name, a.email, a.phone,
+                a.contract_end::date AS contract_end,
+                EXTRACT(DAY FROM a.contract_end - NOW())::int AS giorni_rimanenti
+            FROM affiliates a
+            WHERE a.status = 'active'
+              AND a.contract_end IS NOT NULL
+              AND a.contract_end BETWEEN NOW() AND NOW() + ($1 || ' days')::INTERVAL
+            ORDER BY a.contract_end ASC`,
+            [days]
+        );
+        res.json({ affiliates: rows });
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// ════════════════════════════════════════════════════════════
+// PASSWORD RESET — AFFILIATI
+// ════════════════════════════════════════════════════════════
+
+// Richiesta reset password affiliato
+router.post('/public/affiliate/forgot-password', async (req, res) => {
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ error: 'Email richiesta' });
+    try {
+        await emailService.sendPasswordResetAffiliate(pool, email);
+        res.json({ success: true, message: 'Se l\'email è registrata riceverai le istruzioni.' });
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// Verifica token e reset password affiliato
+router.post('/public/affiliate/reset-password', async (req, res) => {
+    const { token, password } = req.body;
+    if (!token || !password) return res.status(400).json({ error: 'Dati mancanti' });
+    try {
+        const { rows } = await pool.query(
+            `SELECT affiliate_id FROM affiliate_password_resets
+             WHERE token = $1 AND used = false AND expires_at > NOW()`, [token]
+        );
+        if (!rows[0]) return res.status(400).json({ error: 'Link non valido o scaduto' });
+        const hash = await bcrypt.hash(password, 12);
+        await pool.query('UPDATE affiliates SET password_hash = $1 WHERE id = $2', [hash, rows[0].affiliate_id]);
+        await pool.query('UPDATE affiliate_password_resets SET used = true WHERE token = $1', [token]);
+        res.json({ success: true });
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// ════════════════════════════════════════════════════════════
+// PASSWORD RESET — STUDENTI / ADMIN
+// ════════════════════════════════════════════════════════════
 
 // Funzione di inizializzazione — chiamata da server.js con il pool attivo
 function init(dbPool) {
