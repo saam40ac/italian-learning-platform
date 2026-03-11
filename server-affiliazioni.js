@@ -16,9 +16,8 @@ const router   = express.Router();
 const bcrypt   = require('bcryptjs');
 const jwt      = require('jsonwebtoken');
 const crypto   = require('crypto');
-const { Pool } = require('pg');
-
-const pool   = new Pool({ connectionString: process.env.DATABASE_URL, ssl: { rejectUnauthorized: false } });
+// Pool DB iniettato da server.js tramite module.exports (usa la connessione già attiva)
+let pool;
 // Inizializzazione lazy — evita crash se STRIPE_SECRET_KEY non è ancora impostata su Render
 let _stripe = null;
 function getStripe() {
@@ -746,5 +745,12 @@ router.post('/admin/commissions/calculate', authMiddleware, adminOnly, async (re
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-module.exports = router;
+// Funzione di inizializzazione — chiamata da server.js con il pool attivo
+function init(dbPool) {
+    pool = dbPool;
+    return router;
+}
+
+module.exports = init;
 module.exports.stripeWebhook = stripeWebhook;
+module.exports.init = init;
