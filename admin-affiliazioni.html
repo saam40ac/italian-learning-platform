@@ -208,12 +208,16 @@
             <div class="page" id="page-affiliates">
                 <div class="page-title">Tutti i Centri Accreditati</div>
                 <div class="panel">
-                    <div class="panel-header">
+                    <div class="panel-header" style="flex-wrap:wrap;gap:8px">
                         <span class="panel-title">Centri attivi</span>
-                        <button class="btn-primary" onclick="exportAffiliates()">⬇ Esporta CSV</button>
+                        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+                            <button class="btn-primary" onclick="exportAffiliates()">⬇ Esporta CSV Completo</button>
+                            <select id="expiringMonth" style="padding:6px 10px;border-radius:6px;border:1.5px solid #ddd;font-size:.8rem"></select>
+                            <button class="btn-primary" style="background:var(--oro)" onclick="exportExpiring()">📅 Esporta Scadenze Mese</button>
+                        </div>
                     </div>
                     <div style="overflow-x:auto"><table>
-                        <thead><tr><th>Centro</th><th>Referente</th><th>Email</th><th>Codice</th><th>Comm.%</th><th>Studenti</th><th>MRR</th><th>Stato</th><th>Azioni</th></tr></thead>
+                        <thead><tr><th>Centro</th><th>Referente</th><th>Email</th><th>Codice</th><th>Comm.%</th><th>Studenti</th><th>MRR</th><th>Scadenza Contratto</th><th>Stato</th><th>Azioni</th></tr></thead>
                         <tbody id="allAffTable"></tbody>
                     </table></div>
                 </div>
@@ -353,15 +357,53 @@ async function doLogin() {
 }
 
 window.addEventListener('DOMContentLoaded', async () => {
+    // Popola select mesi (mese corrente + 11 precedenti)
+    const selEl = document.getElementById('expiringMonth');
+    const now = new Date();
+    for (let i = 0; i < 12; i++) {
+        const d = new Date(now.getFullYear(), now.getMonth() + i, 1);
+        const val = d.toISOString().slice(0,7);
+        const opt = document.createElement('option');
+        opt.value = val;
+        const monthNames = ['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno','Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
+        opt.textContent = `${monthNames[d.getMonth()]} ${d.getFullYear()}`;
+        if (i === 0) opt.selected = true;
+        selEl.appendChild(opt);
+    }
+
     const saved = getToken();
     if (saved) {
         try {
             const r = await apiFetch('/api/admin/affiliates/summary');
-            if (r.ok) { document.getElementById('loginScreen').style.display='none'; document.getElementById('app').classList.add('visible'); loadAll(); return; }
+            if (r.ok) {
+                document.getElementById('loginScreen').style.display='none';
+                document.getElementById('app').classList.add('visible');
+                loadAll();
+                // Check scadenze imminenti
+                checkExpiringSoon();
+                return;
+            }
         } catch {}
         localStorage.removeItem('saff_token');
     }
 });
+
+async function checkExpiringSoon() {
+    try {
+        const r = await apiFetch('/api/admin/affiliates/expiring-soon?days=30');
+        if (!r.ok) return;
+        const d = await r.json();
+        if (d.affiliates && d.affiliates.length > 0) {
+            const names = d.affiliates.map(a => `${a.organization_name} (${new Date(a.contract_end).toLocaleDateString('it-IT')} — ${a.giorni_rimanenti} gg)`).join('\n• ');
+            const alertBox = document.createElement('div');
+            alertBox.style.cssText = 'position:fixed;top:70px;right:16px;background:#fff3cd;border:2px solid #d4a017;border-radius:12px;padding:16px 20px;max-width:360px;z-index:9999;box-shadow:0 4px 20px rgba(0,0,0,.15)';
+            alertBox.innerHTML = `<div style="font-weight:800;color:#856404;margin-bottom:6px">⚠️ ${d.affiliates.length} contratto/i in scadenza entro 30 giorni</div>`
+                + `<div style="font-size:.78rem;color:#856404;white-space:pre-line">• ${names}</div>`
+                + `<button onclick="this.parentElement.remove()" style="margin-top:10px;background:none;border:1px solid #d4a017;border-radius:6px;padding:3px 10px;cursor:pointer;font-size:.75rem;color:#856404">Chiudi</button>`;
+            document.body.appendChild(alertBox);
+        }
+    } catch {}
+}
 
 document.getElementById('btnLogout').addEventListener('click', () => { localStorage.removeItem('saff_token'); location.reload(); });
 
@@ -412,7 +454,16 @@ async function loadAffiliates() {
     document.getElementById('pendingCount').textContent = `${pending.length} in attesa`;
 
     const allT = document.getElementById('allAffTable');
-    allT.innerHTML = active.length ? active.map(a => `
+    allT.innerHTML = active.length ? active.map(a => {
+        let contractCell = '—';
+        if (a.contract_end) {
+            const dLeft = Math.ceil((new Date(a.contract_end) - Date.now()) / 86400000);
+            const col   = dLeft <= 30 ? '#CE2B37' : dLeft <= 60 ? '#d4a017' : '#009246';
+            const warn  = dLeft <= 30 ? (dLeft <= 0 ? '🔴' : '⚠️') : '';
+            contractCell = `<span style="color:${col};font-weight:700">${warn} ${new Date(a.contract_end).toLocaleDateString('it-IT')}</span>`
+                         + `<br><span style="font-size:.7rem;color:${col}">${dLeft > 0 ? dLeft+' gg' : 'SCADUTO'}</span>`;
+        }
+        return `
         <tr><td><strong>${esc(a.organization_name)}</strong><br><span style="font-size:.72rem;color:var(--grigio-400)">${esc(a.city||'')}</span></td>
         <td>${esc(a.contact_name)}</td>
         <td style="font-size:.78rem">${esc(a.email)}</td>
@@ -420,9 +471,11 @@ async function loadAffiliates() {
         <td><strong>${a.commission_rate}%</strong> <button class="btn-action btn-oro" style="margin-left:4px" onclick="openCommModal(${a.id},'${esc(a.organization_name)}',${a.commission_rate})">✏️</button></td>
         <td>${a.total_students||0}</td>
         <td>€${parseFloat(a.mrr||0).toFixed(2)}</td>
+        <td>${contractCell}</td>
         <td><span class="badge active">Attivo</span></td>
-        <td><button class="btn-action btn-rosso" onclick="setStatus(${a.id},'suspended')">⏸ Sospendi</button></td></tr>`).join('')
-        : '<tr><td colspan="9" style="text-align:center;color:var(--grigio-400);padding:24px">Nessun centro attivo</td></tr>';
+        <td><button class="btn-action btn-rosso" onclick="setStatus(${a.id},'suspended')">⏸ Sospendi</button></td></tr>`;
+    }).join('')
+        : '<tr><td colspan="10" style="text-align:center;color:var(--grigio-400);padding:24px">Nessun centro attivo</td></tr>';
 
     // Pending table
     const pendT = document.getElementById('pendingTable');
@@ -557,14 +610,49 @@ async function calcCommissions() {
 
 function exportAffiliates() {
     const rows = allAffiliates.filter(a=>a.status==='active');
-    const csv = ['Centro;Referente;Email;Codice;Commissione%;Studenti;MRR']
-        .concat(rows.map(a=>`${a.organization_name};${a.contact_name};${a.email};${a.referral_code};${a.commission_rate};${a.total_students||0};${parseFloat(a.mrr||0).toFixed(2)}`))
+    const csv = ['Centro;Referente;Email;Codice;Commissione%;Studenti;MRR;Scadenza Contratto']
+        .concat(rows.map(a=>{
+            const scad = a.contract_end ? new Date(a.contract_end).toLocaleDateString('it-IT') : '—';
+            return `${a.organization_name};${a.contact_name};${a.email};${a.referral_code};${a.commission_rate};${a.total_students||0};${parseFloat(a.mrr||0).toFixed(2)};${scad}`;
+        }))
         .join('\n');
     const blob = new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8;'});
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
     a.download = `affiliati-saam-${new Date().toISOString().split('T')[0]}.csv`;
     a.click();
+}
+
+async function exportExpiring() {
+    const month = document.getElementById('expiringMonth').value;
+    try {
+        const r   = await apiFetch(`/api/admin/affiliates/expiring?month=${month}`);
+        const d   = await r.json();
+        if (!d.affiliates || !d.affiliates.length) {
+            alert(`Nessun contratto in scadenza nel mese selezionato (${month}).`);
+            return;
+        }
+        const csv = ['Centro;Referente;Email;Telefono;Codice;Commissione%;Studenti;MRR;Inizio Contratto;Scadenza;Giorni Rimanenti;Piano']
+            .concat(d.affiliates.map(a => {
+                const pianoMatch = (a.notes||'').match(/PIANO SCELTO: ([^|]+)/);
+                const piano = pianoMatch ? pianoMatch[1].trim() : '—';
+                return [
+                    a.organization_name, a.contact_name, a.email, a.phone||'',
+                    a.referral_code, a.commission_rate,
+                    a.total_students||0, parseFloat(a.mrr||0).toFixed(2),
+                    a.contract_start ? new Date(a.contract_start).toLocaleDateString('it-IT') : '—',
+                    a.contract_end   ? new Date(a.contract_end).toLocaleDateString('it-IT')   : '—',
+                    a.giorni_rimanenti, piano
+                ].join(';');
+            })).join('\n');
+        const blob = new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8;'});
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        const monthNames = ['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno','Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
+        const [yr, mo] = month.split('-');
+        link.download = `scadenze-contratti-${monthNames[parseInt(mo)-1]}-${yr}.csv`;
+        link.click();
+    } catch(e) { alert('Errore nel recupero dei dati: ' + e.message); }
 }
 
 // ── HELPERS ──
