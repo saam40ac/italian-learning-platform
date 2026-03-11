@@ -255,22 +255,36 @@
             <button class="btn-submit" id="btnSubmit" onclick="submitForm()">
                 ✉️ Invia Richiesta di Accreditamento
             </button>
-            <div class="form-note" style="text-align:center;margin-top:18px">
-    <div style="font-weight:700;color:#5a4a2a;margin-bottom:10px;font-size:.85rem;letter-spacing:.05em;text-transform:uppercase">Scegli il tuo Piano di Adesione</div>
-    <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
-        <div style="background:#fff;border:2px solid #d4a017;border-radius:12px;padding:14px 22px;min-width:200px;text-align:center">
-            <div style="font-size:1.4rem;font-weight:800;color:#d4a017">€97,00</div>
-            <div style="font-size:.78rem;color:#5a4a2a;font-weight:700;margin:2px 0">QUOTA ANNUALE</div>
-            <div style="font-size:.8rem;color:#009246;font-weight:700;margin-top:6px">✦ Royalties 20% / mese</div>
-        </div>
-        <div style="background:#fff;border:2px solid #009246;border-radius:12px;padding:14px 22px;min-width:200px;text-align:center;position:relative">
-            <div style="position:absolute;top:-10px;left:50%;transform:translateX(-50%);background:#009246;color:#fff;font-size:.65rem;font-weight:800;padding:2px 10px;border-radius:20px;white-space:nowrap">PIÙ CONVENIENTE</div>
-            <div style="font-size:1.4rem;font-weight:800;color:#009246">€197,00</div>
-            <div style="font-size:.78rem;color:#5a4a2a;font-weight:700;margin:2px 0">QUOTA ANNUALE</div>
-            <div style="font-size:.8rem;color:#009246;font-weight:700;margin-top:6px">✦ Royalties 30% / mese</div>
-        </div>
+            <div style="margin-top:24px">
+    <div style="font-weight:700;color:#5a4a2a;margin-bottom:12px;font-size:.85rem;letter-spacing:.05em;text-transform:uppercase;text-align:center">
+        ★ Scegli il tuo Piano di Adesione <span style="color:#CE2B37">*</span>
     </div>
-    <div style="margin-top:12px;font-size:.75rem;color:#888;line-height:1.5">
+    <div style="display:flex;gap:14px;justify-content:center;flex-wrap:wrap">
+
+        <!-- PIANO STANDARD -->
+        <div id="plan-standard" onclick="selectPlan('standard')" style="cursor:pointer;background:#fff;border:2.5px solid #d4a017;border-radius:14px;padding:18px 26px;min-width:210px;text-align:center;transition:all .2s;position:relative">
+            <div style="font-size:1.6rem;font-weight:800;color:#d4a017">€97,00</div>
+            <div style="font-size:.75rem;color:#5a4a2a;font-weight:700;margin:3px 0;letter-spacing:.04em">QUOTA ANNUALE</div>
+            <div style="height:1px;background:#f0e8d0;margin:10px 0"></div>
+            <div style="font-size:.82rem;font-weight:700;color:#333;margin-bottom:4px">Royalties <span style="color:#d4a017">20%</span> / mese</div>
+            <div style="font-size:.75rem;color:#888">su ogni abbonato attivo</div>
+            <div id="check-standard" style="display:none;position:absolute;top:-12px;right:-12px;background:#d4a017;color:#fff;border-radius:50%;width:26px;height:26px;line-height:26px;font-size:.9rem;font-weight:800">✓</div>
+        </div>
+
+        <!-- PIANO PREMIUM -->
+        <div id="plan-premium" onclick="selectPlan('premium')" style="cursor:pointer;background:#fff;border:2.5px solid #009246;border-radius:14px;padding:18px 26px;min-width:210px;text-align:center;transition:all .2s;position:relative">
+            <div style="position:absolute;top:-11px;left:50%;transform:translateX(-50%);background:#009246;color:#fff;font-size:.62rem;font-weight:800;padding:2px 12px;border-radius:20px;white-space:nowrap">PIÙ CONVENIENTE</div>
+            <div style="font-size:1.6rem;font-weight:800;color:#009246">€197,00</div>
+            <div style="font-size:.75rem;color:#5a4a2a;font-weight:700;margin:3px 0;letter-spacing:.04em">QUOTA ANNUALE</div>
+            <div style="height:1px;background:#d0ead8;margin:10px 0"></div>
+            <div style="font-size:.82rem;font-weight:700;color:#333;margin-bottom:4px">Royalties <span style="color:#009246">30%</span> / mese</div>
+            <div style="font-size:.75rem;color:#888">su ogni abbonato attivo</div>
+            <div id="check-premium" style="display:none;position:absolute;top:-12px;right:-12px;background:#009246;color:#fff;border-radius:50%;width:26px;height:26px;line-height:26px;font-size:.9rem;font-weight:800">✓</div>
+        </div>
+
+    </div>
+    <div id="plan-error" style="display:none;color:#CE2B37;font-size:.8rem;text-align:center;margin-top:8px;font-weight:600">⚠ Seleziona un piano di adesione per continuare.</div>
+    <div style="margin-top:14px;font-size:.73rem;color:#aaa;line-height:1.6;text-align:center">
         Il piano verrà confermato contrattualmente dopo la verifica del centro.<br>
         Fatturazione e dettagli di pagamento gestiti dall'Ufficio Amministrativo — Project Manager.
     </div>
@@ -284,7 +298,8 @@
     <div id="successMsg">
         <div class="ico">🎉</div>
         <h2>Richiesta inviata con successo!</h2>
-        <p>Il tuo Centro è stato registrato nel nostro sistema. Il team Saam 4.0 esaminerà la tua richiesta e ti contatterà entro <strong>2 giorni lavorativi</strong> all'indirizzo email che hai indicato per comunicarti l'approvazione e le credenziali di accesso alla tua Dashboard Partner.</p>
+        <div id="successPlanBadge" style="display:inline-block;margin-bottom:14px;padding:8px 22px;border-radius:30px;font-weight:800;font-size:.9rem"></div>
+        <p>La tua richiesta è stata registrata nel nostro sistema. L'Ufficio Amministrativo verificherà il tuo centro e ti contatterà entro <strong>2 giorni lavorativi</strong> all'indirizzo email indicato per confermare il piano scelto, inviare il contratto e le istruzioni di pagamento.</p>
         <p style="margin-top:16px;font-weight:700;color:var(--verde-dark)">Grazie per il tuo interesse!</p>
     </div>
 
@@ -292,6 +307,32 @@
 
 <script>
 const API = 'https://italian-learning-platform.onrender.com';
+
+let selectedPlan = null;
+
+function selectPlan(plan) {
+    selectedPlan = plan;
+    document.getElementById('plan-error').style.display = 'none';
+
+    // Reset both cards
+    const std = document.getElementById('plan-standard');
+    const prm = document.getElementById('plan-premium');
+    std.style.boxShadow = 'none'; std.style.transform = 'scale(1)';
+    prm.style.boxShadow = 'none'; prm.style.transform = 'scale(1)';
+    document.getElementById('check-standard').style.display = 'none';
+    document.getElementById('check-premium').style.display  = 'none';
+
+    // Highlight selected
+    if (plan === 'standard') {
+        std.style.boxShadow = '0 4px 20px rgba(212,160,23,.35)';
+        std.style.transform = 'scale(1.03)';
+        document.getElementById('check-standard').style.display = 'block';
+    } else {
+        prm.style.boxShadow = '0 4px 20px rgba(0,146,70,.3)';
+        prm.style.transform = 'scale(1.03)';
+        document.getElementById('check-premium').style.display = 'block';
+    }
+}
 
 async function submitForm() {
     const org     = document.getElementById('fOrg').value.trim();
@@ -315,6 +356,18 @@ async function submitForm() {
     if (!city)    return showErr('Inserisci la città.');
     if (!privacy) return showErr('Devi accettare la Privacy Policy per procedere.');
 
+    // Validazione piano
+    if (!selectedPlan) {
+        document.getElementById('plan-error').style.display = 'block';
+        document.getElementById('plan-error').scrollIntoView({ behavior: 'smooth', block: 'center' });
+        return;
+    }
+
+    const planLabel = selectedPlan === 'standard'
+        ? 'Piano Standard — €97,00/anno — Royalties 20%'
+        : 'Piano Premium — €197,00/anno — Royalties 30%';
+    const planComm  = selectedPlan === 'standard' ? 20 : 30;
+
     const btn = document.getElementById('btnSubmit');
     btn.disabled = true; btn.textContent = '⏳ Invio in corso...';
 
@@ -322,10 +375,26 @@ async function submitForm() {
         const r = await fetch(`${API}/api/public/affiliate/apply`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ organization_name: org, contact_name: contact, email, phone, address, city, vat_number: vat, notes_applicant: notes }),
+            body: JSON.stringify({
+                organization_name: org, contact_name: contact, email, phone,
+                address, city, vat_number: vat,
+                notes_applicant: notes,
+                piano_adesione: planLabel,
+                commission_requested: planComm
+            }),
         });
         const d = await r.json();
         if (!r.ok) { showErr(d.error || 'Errore nell\'invio.'); btn.disabled=false; btn.innerHTML='✉️ Invia Richiesta di Accreditamento'; return; }
+
+        // Mostra badge piano nel messaggio di successo
+        const badge = document.getElementById('successPlanBadge');
+        if (selectedPlan === 'standard') {
+            badge.textContent = '✓ Piano Standard — €97,00/anno — Royalties 20%';
+            badge.style.background = '#fff3cd'; badge.style.color = '#856404'; badge.style.border = '1.5px solid #d4a017';
+        } else {
+            badge.textContent = '✓ Piano Premium — €197,00/anno — Royalties 30%';
+            badge.style.background = '#d1f0dc'; badge.style.color = '#155724'; badge.style.border = '1.5px solid #009246';
+        }
 
         document.getElementById('formCard').style.display = 'none';
         document.getElementById('successMsg').style.display = 'block';
