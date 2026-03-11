@@ -290,7 +290,7 @@ router.post('/public/subscribe', async (req, res) => {
         // Hash password e crea utente (status: pending fino a pagamento)
         const passwordHash = await bcrypt.hash(password, 12);
         const { rows: newUser } = await pool.query(
-            `INSERT INTO users (name, email, password_hash, role, level, package, phone,
+            `INSERT INTO users (name, email, password, role, level, package, phone,
              affiliate_id, referral_code_used, registered_via, subscription_status)
              VALUES ($1,$2,$3,'student','A1',$4,$5,$6,$7,$8,'incomplete')
              RETURNING id`,
@@ -558,7 +558,7 @@ router.post('/affiliate/trial', affiliateAuth, async (req, res) => {
         const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
 
         const { rows: newUser } = await pool.query(
-            `INSERT INTO users (name, email, password_hash, role, level, package, affiliate_id, registered_via, subscription_status)
+            `INSERT INTO users (name, email, password, role, level, package, affiliate_id, registered_via, subscription_status)
              VALUES ($1,$2,$3,'student','A1','basic',$4,'trial','trialing') RETURNING id`,
             [client_name, client_email, passwordHash, affId]
         );
