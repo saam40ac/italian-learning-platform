@@ -246,8 +246,8 @@
                     <span style="font-size:.8rem;color:var(--grigio-400)" id="studentsCount">—</span>
                 </div>
                 <div class="panel-body"><table>
-                    <thead><tr><th>Nome</th><th>Email</th><th>Piano</th><th>Stato abbonamento</th><th>Scadenza</th><th>Mensile</th></tr></thead>
-                    <tbody id="studentsTable"><tr><td colspan="6" style="text-align:center;color:var(--grigio-400);padding:24px">Caricamento...</td></tr></tbody>
+                    <thead><tr><th>Nome</th><th>Email</th><th>Piano</th><th>Stato</th><th>Min/Mese</th><th>Utilizzati</th><th>Residui</th><th>Scadenza</th><th>Mensile</th></tr></thead>
+                    <tbody id="studentsTable"><tr><td colspan="9" style="text-align:center;color:var(--grigio-400);padding:24px">Caricamento...</td></tr></tbody>
                 </table></div>
             </div>
         </div>
@@ -430,14 +430,31 @@ async function loadDashboard() {
         // All students
         const stT = document.getElementById('studentsTable');
         document.getElementById('studentsCount').textContent = `${students.length} studenti`;
-        stT.innerHTML = students.length ? students.map(s => `
-            <tr><td><strong>${esc(s.name)}</strong></td>
-            <td style="font-size:.78rem">${esc(s.email)}</td>
-            <td>${pkgBadge(s.package)}</td>
-            <td>${statusBadge(s.subscription_status)}</td>
-            <td>${s.current_period_end ? fmtDate(s.current_period_end) : '—'}</td>
-            <td>${s.amount_eur ? '€'+parseFloat(s.amount_eur).toFixed(2) : '—'}</td></tr>`).join('')
-            : '<tr><td colspan="6" style="text-align:center;color:var(--grigio-400);padding:24px">Nessuno studente ancora</td></tr>';
+        const PKG_LIMITS = { basic:900, advanced:1800, gold:3600, unlimited:99999 };
+        stT.innerHTML = students.length ? students.map(s => {
+            const monthLimit = PKG_LIMITS[s.package] || 900;
+            const used       = parseInt(s.monthly_minutes_used) || 0;
+            const residui    = Math.max(0, monthLimit - used);
+            const pct        = Math.min(100, Math.round(used / monthLimit * 100));
+            const col        = pct >= 90 ? '#CE2B37' : pct >= 60 ? '#d4a017' : '#009246';
+            return `<tr>
+                <td><strong>${esc(s.name)}</strong></td>
+                <td style="font-size:.75rem">${esc(s.email)}</td>
+                <td>${pkgBadge(s.package)}</td>
+                <td>${statusBadge(s.subscription_status)}</td>
+                <td style="font-weight:700">${monthLimit} min</td>
+                <td>
+                    <span style="font-weight:700;color:${col}">${used} min</span>
+                    <div style="background:#e8e8e5;border-radius:4px;height:4px;width:60px;margin-top:3px">
+                        <div style="background:${col};border-radius:4px;height:4px;width:${pct}%"></div>
+                    </div>
+                </td>
+                <td style="font-weight:700;color:${residui < monthLimit*0.1 ? '#CE2B37':'#009246'}">${residui} min</td>
+                <td>${s.current_period_end ? fmtDate(s.current_period_end) : '—'}</td>
+                <td>${s.amount_eur ? '€'+parseFloat(s.amount_eur).toFixed(2) : '—'}</td>
+            </tr>`;
+        }).join('')
+            : '<tr><td colspan="9" style="text-align:center;color:var(--grigio-400);padding:24px">Nessuno studente ancora</td></tr>';
 
         // Commissions
         const cT = document.getElementById('commissionsTable');
