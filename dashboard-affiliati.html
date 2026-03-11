@@ -451,10 +451,10 @@ async function loadDashboard() {
         document.getElementById('rbLink').dataset.link = link;
 
         // ── CONTRATTO ANNUALE ──
-        if (affiliate.contract_start || affiliate.contract_end) {
+        {
             document.getElementById('contractBox').style.display = 'block';
             const fmtD = d => d ? new Date(d).toLocaleDateString('it-IT', {day:'2-digit',month:'long',year:'numeric'}) : '—';
-            document.getElementById('contractStart').textContent = fmtD(affiliate.contract_start);
+            document.getElementById('contractStart').textContent = affiliate.contract_start ? fmtD(affiliate.contract_start) : 'In definizione';
 
             if (affiliate.contract_end) {
                 const endDate   = new Date(affiliate.contract_end);
