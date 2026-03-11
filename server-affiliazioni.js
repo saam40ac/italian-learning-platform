@@ -623,15 +623,12 @@ router.get('/admin/affiliates', authMiddleware, adminOnly, async (req, res) => {
     try {
         const { rows } = await pool.query(`
             SELECT a.*,
-                   COUNT(DISTINCT u.id)                                        AS total_students,
-                   COUNT(DISTINCT CASE WHEN s.status='active' THEN s.id END)   AS active_subs,
-                   COALESCE(SUM(CASE WHEN s.status='active' THEN s.amount_eur END),0) AS mrr,
-                   COALESCE(SUM(CASE WHEN ac.status='pending' THEN ac.commission_eur END),0) AS pending_commission
+                   (SELECT COUNT(*) FROM users WHERE affiliate_id = a.id) AS total_students,
+                   (SELECT COUNT(*) FROM subscriptions WHERE affiliate_id = a.id AND status='active') AS active_subs,
+                   (SELECT COALESCE(SUM(amount_eur),0) FROM subscriptions WHERE affiliate_id = a.id AND status='active') AS mrr,
+                   (SELECT COALESCE(SUM(commission_eur),0) FROM affiliate_commissions WHERE affiliate_id = a.id AND status='pending') AS pending_commission
             FROM affiliates a
-            LEFT JOIN users u ON u.affiliate_id = a.id
-            LEFT JOIN subscriptions s ON s.affiliate_id = a.id
-            LEFT JOIN affiliate_commissions ac ON ac.affiliate_id = a.id
-            GROUP BY a.id ORDER BY a.requested_at DESC`
+            ORDER BY a.requested_at DESC`
         );
         res.json({ affiliates: rows });
     } catch (err) { res.status(500).json({ error: err.message }); }
@@ -688,12 +685,11 @@ router.get('/admin/affiliates/summary', authMiddleware, adminOnly, async (req, r
                 GROUP BY 1 ORDER BY 1 DESC LIMIT 12`),
             pool.query(`
                 SELECT a.organization_name, a.referral_code, a.commission_rate,
-                       COUNT(DISTINCT s.id) FILTER (WHERE s.status='active') AS active_subs,
-                       COALESCE(SUM(s.amount_eur) FILTER (WHERE s.status='active'),0) AS mrr
+                       (SELECT COUNT(*) FROM subscriptions WHERE affiliate_id = a.id AND status='active') AS active_subs,
+                       (SELECT COALESCE(SUM(amount_eur),0) FROM subscriptions WHERE affiliate_id = a.id AND status='active') AS mrr
                 FROM affiliates a
-                LEFT JOIN subscriptions s ON s.affiliate_id = a.id
                 WHERE a.status='active'
-                GROUP BY a.id ORDER BY mrr DESC LIMIT 10`)
+                ORDER BY mrr DESC LIMIT 10`)
         ]);
         res.json({ totals: totals.rows[0], by_month: byMonth.rows, top_affiliates: topAffiliates.rows });
     } catch (err) { res.status(500).json({ error: err.message }); }
