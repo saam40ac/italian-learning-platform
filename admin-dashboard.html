@@ -580,13 +580,17 @@
                                     <th>Email</th>
                                     <th>Ruolo</th>
                                     <th>Livello</th>
-                                    <th>Limite Min.</th>
+                                    <th>Pacchetto</th>
+                                    <th>Min/Giorno</th>
+                                    <th>Min/Mese</th>
+                                    <th>Utilizzati</th>
+                                    <th>Residui</th>
                                     <th>Creato</th>
                                     <th>Azioni</th>
                                 </tr>
                             </thead>
                             <tbody id="usersTable">
-                                <tr><td colspan="8" style="text-align:center;padding:24px;color:var(--grigio-400)">Caricamento...</td></tr>
+                                <tr><td colspan="11" style="text-align:center;padding:24px;color:var(--grigio-400)">Caricamento...</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -637,7 +641,7 @@
                                 </tr>
                             </thead>
                             <tbody id="materialsTable">
-                                <tr><td colspan="8" style="text-align:center;padding:24px;color:var(--grigio-400)">Caricamento...</td></tr>
+                                <tr><td colspan="11" style="text-align:center;padding:24px;color:var(--grigio-400)">Caricamento...</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -1011,30 +1015,52 @@ async function loadUsers() {
         state.allUsers = data.users || [];
         renderUsersTable(state.allUsers);
     } catch (err) {
-        document.getElementById('usersTable').innerHTML = `<tr><td colspan="8" style="text-align:center;color:var(--rosso)">Errore: ${err.message}</td></tr>`;
+        document.getElementById('usersTable').innerHTML = `<tr><td colspan="11" style="text-align:center;color:var(--rosso)">Errore: ${err.message}</td></tr>`;
     }
 }
 
 function renderUsersTable(users) {
     const tbody = document.getElementById('usersTable');
     if (!users.length) {
-        tbody.innerHTML = `<tr><td colspan="8"><div class="empty-state"><div class="icon">👥</div><p>Nessun utente trovato.</p></div></td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="11"><div class="empty-state"><div class="icon">👥</div><p>Nessun utente trovato.</p></div></td></tr>`;
         return;
     }
-    tbody.innerHTML = users.map(u => `
+    const PKG_LIMITS = {
+        basic:    { day: 30,   month: 900   },
+        advanced: { day: 60,   month: 1800  },
+        gold:     { day: 120,  month: 3600  },
+        unlimited:{ day: 9999, month: 99999 },
+    };
+    tbody.innerHTML = users.map(u => {
+        const pkg      = u.package || 'basic';
+        const limits   = PKG_LIMITS[pkg] || PKG_LIMITS.basic;
+        const used     = parseInt(u.monthly_minutes_used) || 0;
+        const residui  = Math.max(0, limits.month - used);
+        const pct      = Math.min(100, Math.round(used / limits.month * 100));
+        const barColor = pct >= 90 ? '#CE2B37' : pct >= 60 ? '#d4a017' : '#009246';
+        return `
         <tr>
             <td><strong>${esc(u.name)}</strong></td>
-            <td>${esc(u.email)}</td>
+            <td style="font-size:.8rem">${esc(u.email)}</td>
             <td><span class="badge ${u.role==='admin'?'oro':'verde'}">${u.role==='admin'?'Admin':'Studente'}</span></td>
             <td><span class="badge grigio">${u.level || 'A1'}</span></td>
-            <td>${u.minutes_limit || 120} min</td>
-            <td>${pkgBadge(u.package)}</td>
+            <td>${pkgBadge(pkg)}</td>
+            <td style="font-weight:700">${limits.day} min</td>
+            <td style="font-weight:700">${limits.month} min</td>
+            <td>
+                <div style="font-size:.82rem;font-weight:700;color:${barColor}">${used} min</div>
+                <div style="background:#e8e8e5;border-radius:4px;height:4px;width:70px;margin-top:3px">
+                    <div style="background:${barColor};border-radius:4px;height:4px;width:${pct}%"></div>
+                </div>
+            </td>
+            <td style="font-weight:700;color:${residui < limits.month * 0.1 ? '#CE2B37' : '#009246'}">${residui} min</td>
             <td>${new Date(u.created_at).toLocaleDateString('it-IT')}</td>
             <td style="display:flex;gap:6px">
                 <button class="btn btn-outline btn-icon" onclick="editUser(${JSON.stringify(u).replace(/"/g,'&quot;')})">✏️</button>
                 <button class="btn btn-rosso btn-icon" onclick="deleteUser(${u.id})">🗑</button>
             </td>
-        </tr>`).join('');
+        </tr>`;
+    }).join('');
 }
 
 function filterUsers() {
