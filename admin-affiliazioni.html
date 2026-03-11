@@ -225,7 +225,7 @@
                 <div class="panel">
                     <div class="panel-header"><span class="panel-title">Nuove richieste accreditamento</span><span id="pendingCount" style="font-size:.8rem;color:var(--grigio-400)"></span></div>
                     <div style="overflow-x:auto"><table>
-                        <thead><tr><th>Centro</th><th>Referente</th><th>Email</th><th>Città</th><th>Richiesta il</th><th>Azioni</th></tr></thead>
+                        <thead><tr><th>Centro</th><th>Referente</th><th>Email</th><th>Città</th><th>Piano Scelto</th><th>Richiesta il</th><th>Azioni</th></tr></thead>
                         <tbody id="pendingTable"></tbody>
                     </table></div>
                 </div>
@@ -286,6 +286,7 @@
     <div class="modal">
         <h3>✅ Approva Centro Accreditato</h3>
         <div class="sub" id="approveOrgName">—</div>
+        <div id="approvePlanBadge" style="margin:8px 0 14px;text-align:center;min-height:24px"></div>
         <div class="fg"><label>Percentuale Commissione (%)</label><input type="number" id="approveComm" value="20" min="1" max="50" step="0.5"></div>
         <div class="fg"><label>Password temporanea per la Dashboard Partner</label><input type="password" id="approvePass" placeholder="Almeno 8 caratteri"></div>
         <div class="fg"><label>Note interne (opzionale)</label><input type="text" id="approveNotes" placeholder="Note per uso interno"></div>
@@ -425,17 +426,32 @@ async function loadAffiliates() {
 
     // Pending table
     const pendT = document.getElementById('pendingTable');
-    pendT.innerHTML = pending.length ? pending.map(a => `
-        <tr><td><strong>${esc(a.organization_name)}</strong></td>
+    pendT.innerHTML = pending.length ? pending.map(a => {
+        // Estrai piano da notes
+        const notesRaw = a.notes || '';
+        const pianoMatch = notesRaw.match(/PIANO SCELTO: ([^|]+)/);
+        const pianoStr   = pianoMatch ? pianoMatch[1].trim() : null;
+        const isPremium  = pianoStr && pianoStr.includes('197');
+        const commDef    = isPremium ? 30 : 20;
+        let pianoBadge   = '—';
+        if (pianoStr) {
+            const col = isPremium ? '#009246' : '#d4a017';
+            const lbl = isPremium ? '€197 · 30%' : '€97 · 20%';
+            pianoBadge = `<span style="background:${isPremium?'#d1f0dc':'#fff3cd'};color:${col};border:1.5px solid ${col};border-radius:20px;padding:2px 10px;font-size:.75rem;font-weight:700;white-space:nowrap">${lbl}</span>`;
+        }
+        return `
+        <tr><td><strong>${esc(a.organization_name)}</strong><br><span style="font-size:.72rem;color:#888">${esc(a.city||'')}</span></td>
         <td>${esc(a.contact_name)}</td>
         <td style="font-size:.78rem">${esc(a.email)}</td>
         <td>${esc(a.city||'—')}</td>
+        <td style="text-align:center">${pianoBadge}</td>
         <td>${fmtDate(a.requested_at)}</td>
         <td style="white-space:nowrap">
-            <button class="btn-action btn-verde" onclick="openApprove(${a.id},'${esc(a.organization_name)}')">✅ Approva</button>
+            <button class="btn-action btn-verde" onclick="openApprove(${a.id},'${esc(a.organization_name)}',${commDef},'${pianoStr?pianoStr.replace(/'/g,'').substring(0,60):''}')">✅ Approva</button>
             <button class="btn-action btn-rosso" style="margin-left:4px" onclick="setStatus(${a.id},'rejected')">✗ Rifiuta</button>
-        </td></tr>`).join('')
-        : '<tr><td colspan="6" style="text-align:center;color:var(--grigio-400);padding:24px">Nessuna richiesta in attesa</td></tr>';
+        </td></tr>`;
+    }).join('')
+        : '<tr><td colspan="7" style="text-align:center;color:var(--grigio-400);padding:24px">Nessuna richiesta in attesa</td></tr>';
 }
 
 async function loadCommissions() {
@@ -454,9 +470,21 @@ async function loadCommissions() {
 }
 
 // ── APPROVE ──
-function openApprove(id, org) {
+function openApprove(id, org, commDef, pianoStr) {
     pendingApproveId = id;
     document.getElementById('approveOrgName').textContent = org;
+    // Pre-imposta commissione dal piano scelto
+    if (commDef) document.getElementById('approveComm').value = commDef;
+    // Mostra badge piano
+    const badgeEl = document.getElementById('approvePlanBadge');
+    if (pianoStr) {
+        const isPrem = pianoStr.includes('197');
+        const col = isPrem ? '#009246' : '#d4a017';
+        const bg  = isPrem ? '#d1f0dc' : '#fff3cd';
+        badgeEl.innerHTML = `<span style="background:${bg};color:${col};border:1.5px solid ${col};border-radius:20px;padding:4px 14px;font-size:.8rem;font-weight:700">📋 ${pianoStr}</span>`;
+    } else {
+        badgeEl.innerHTML = '<span style="color:#aaa;font-size:.78rem">Piano non specificato</span>';
+    }
     document.getElementById('approveError').style.display = 'none';
     document.getElementById('approveOverlay').classList.add('show');
 }
