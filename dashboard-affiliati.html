@@ -453,8 +453,11 @@ async function loadDashboard() {
 
         // ── CONTRATTO ANNUALE ──
         {
+            console.log('[CONTRATTO DEBUG] affiliate completo:', JSON.stringify(affiliate));
+            console.log('[CONTRATTO DEBUG] contract_start:', affiliate.contract_start);
+            console.log('[CONTRATTO DEBUG] contract_end:', affiliate.contract_end);
             document.getElementById('contractBox').style.display = 'block';
-            const fmtD = d => d ? new Date(d).toLocaleDateString('it-IT', {day:'2-digit',month:'long',year:'numeric'}) : '—';
+            const fmtD = dt => dt ? new Date(dt).toLocaleDateString('it-IT', {day:'2-digit',month:'long',year:'numeric'}) : '—';
             document.getElementById('contractStart').textContent = affiliate.contract_start ? fmtD(affiliate.contract_start) : 'In definizione';
 
             if (affiliate.contract_end) {
