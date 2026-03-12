@@ -451,7 +451,7 @@ router.post('/user/subscription/portal', authMiddleware, async (req, res) => {
 
 // Form di registrazione centro (pubblico — richiesta accreditamento)
 router.post('/public/affiliate/apply', async (req, res) => {
-    const { organization_name, contact_name, email, phone, address, city, vat_number, notes_applicant, piano_adesione, commission_requested } = req.body;
+    const { organization_name, contact_name, email, phone, address, city, vat_number, pec, codice_sdi, notes_applicant, piano_adesione, commission_requested } = req.body;
     if (!organization_name || !contact_name || !email) {
         return res.status(400).json({ error: 'Campi obbligatori mancanti' });
     }
@@ -467,9 +467,9 @@ router.post('/public/affiliate/apply', async (req, res) => {
         const finalNotes = noteParts.join(' | ') || null;
 
         await pool.query(
-            `INSERT INTO affiliates (organization_name, contact_name, email, phone, address, city, vat_number, referral_code, notes)
-             VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
-            [organization_name, contact_name, email, phone, address, city, vat_number, referral_code, finalNotes]
+            `INSERT INTO affiliates (organization_name, contact_name, email, phone, address, city, vat_number, pec, codice_sdi, referral_code, notes)
+             VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`,
+            [organization_name, contact_name, email, phone, address, city, vat_number, pec || null, codice_sdi || null, referral_code, finalNotes]
         );
         // Notifica email admin
         emailService.notifyNewAffiliate({
