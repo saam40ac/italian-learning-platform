@@ -239,6 +239,20 @@
                 </div>
             </div>
 
+            <div class="section-label">Dati per Fatturazione Elettronica</div>
+            <div class="form-row">
+                <div class="fg">
+                    <label>PEC *</label>
+                    <input type="email" id="fPec" placeholder="centro@pec.it">
+                    <small style="color:#8a7a5a;font-size:.72rem;margin-top:4px;display:block">Posta Elettronica Certificata — necessaria per la ricezione delle fatture</small>
+                </div>
+                <div class="fg">
+                    <label>Codice SDI *</label>
+                    <input type="text" id="fSdi" placeholder="XXXXXXX" maxlength="7" style="text-transform:uppercase">
+                    <small style="color:#8a7a5a;font-size:.72rem;margin-top:4px;display:block">7 caratteri alfanumerici (es. M5UXCR1). Inserire 0000000 se si usa la PEC</small>
+                </div>
+            </div>
+
             <div class="section-label">Presentazione e Motivazione</div>
             <div class="form-row">
                 <div class="fg full">
@@ -342,6 +356,8 @@ async function submitForm() {
     const city    = document.getElementById('fCity').value.trim();
     const vat     = document.getElementById('fVat').value.trim();
     const address = document.getElementById('fAddress').value.trim();
+    const pec     = document.getElementById('fPec').value.trim();
+    const sdi     = document.getElementById('fSdi').value.trim().toUpperCase();
     const notes   = document.getElementById('fNotes').value.trim();
     const privacy = document.getElementById('fPrivacy').checked;
     const errEl   = document.getElementById('formError');
@@ -354,6 +370,10 @@ async function submitForm() {
     if (!email)   return showErr('Inserisci l\'email istituzionale.');
     if (!phone)   return showErr('Inserisci il numero di telefono.');
     if (!city)    return showErr('Inserisci la città.');
+    if (!pec)     return showErr('Inserisci la PEC del centro (es. centro@pec.it).');
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(pec)) return showErr('Il formato della PEC non è valido.');
+    if (!sdi)     return showErr('Inserisci il Codice SDI (7 caratteri). Se usi la PEC scrivi 0000000.');
+    if (!/^[A-Z0-9]{7}$/.test(sdi)) return showErr('Il Codice SDI deve essere di esattamente 7 caratteri alfanumerici.');
     if (!privacy) return showErr('Devi accettare la Privacy Policy per procedere.');
 
     // Validazione piano
@@ -377,7 +397,7 @@ async function submitForm() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 organization_name: org, contact_name: contact, email, phone,
-                address, city, vat_number: vat,
+                address, city, vat_number: vat, pec, codice_sdi: sdi,
                 notes_applicant: notes,
                 piano_adesione: planLabel,
                 commission_requested: planComm
