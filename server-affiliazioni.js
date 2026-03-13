@@ -16,6 +16,7 @@ const router   = express.Router();
 const bcrypt   = require('bcryptjs');
 const jwt      = require('jsonwebtoken');
 const crypto   = require('crypto');
+const { generateContractPDF } = require('./contract-generator');
 // Pool DB iniettato da server.js tramite module.exports (usa la connessione già attiva)
 let pool;
 // Inizializzazione lazy — evita crash se STRIPE_SECRET_KEY non è ancora impostata su Render
@@ -693,6 +694,39 @@ router.put('/admin/affiliates/:id/approve', authMiddleware, adminOnly, async (re
         );
         res.json({ success: true });
     } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// ────────────────────────────────────────────────
+// GENERAZIONE PDF CONTRATTO AFFILIAZIONE
+// ────────────────────────────────────────────────
+router.get('/admin/affiliates/:id/contract', authMiddleware, adminOnly, async (req, res) => {
+    const affId = parseInt(req.params.id);
+    try {
+        const { rows } = await pool.query(
+            `SELECT a.*,
+                    u.name AS approved_by_name
+             FROM affiliates a
+             LEFT JOIN users u ON u.id = a.approved_by
+             WHERE a.id = $1`,
+            [affId]
+        );
+        if (!rows[0]) return res.status(404).json({ error: 'Centro non trovato' });
+
+        const affiliate = rows[0];
+        const pdfBuffer = await generateContractPDF(affiliate);
+
+        const safeName = (affiliate.organization_name || 'centro')
+            .replace(/[^a-zA-Z0-9]/g, '-').substring(0, 40);
+        const fileName = `Contratto-Affiliazione-SAAM40-${safeName}.pdf`;
+
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+        res.setHeader('Content-Length', pdfBuffer.length);
+        res.send(pdfBuffer);
+    } catch (err) {
+        console.error('[CONTRACT PDF ERROR]', err);
+        res.status(500).json({ error: 'Errore generazione PDF: ' + err.message });
+    }
 });
 
 // Aggiorna commissione affiliato
