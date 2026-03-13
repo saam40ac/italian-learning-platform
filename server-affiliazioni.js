@@ -707,11 +707,9 @@ function _buildContractPDF(affiliate) {
         var path = require('path');
         var fs   = require('fs');
 
-        // Colori
         var VERDE='#009246', ROSSO='#CE2B37', NERO='#1A1A1A', GRIGIO='#4A4A4A';
         var GR2='#7A7A7A', BIANCO='#FFFFFF', ORO='#C8900A';
 
-        // Concedente
         var CONC = {
             rag:'SAAM 4.0 Academy School', pm:'Angelo Pagliara',
             sede:'Via Dott. Cosimo Argentieri, 24 \u2014 72022 Latiano (BR) \u2014 Italia',
@@ -720,18 +718,18 @@ function _buildContractPDF(affiliate) {
         };
 
         function fmtDate(d){ return d.toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit',year:'numeric'}); }
-        var TODAY  = fmtDate(new Date());
-        var YEAR1  = fmtDate(new Date(Date.now()+365*24*60*60*1000));
-        var CNUM   = String(affiliate.id||0).padStart(3,'0')+' / '+new Date().getFullYear();
-        var prem   = !!(affiliate.notes && affiliate.notes.toLowerCase().includes('premium'));
-        var cr     = affiliate.commission_rate || (prem?30:20);
-        var quota  = prem ? '\u20ac 197,00' : '\u20ac 97,00';
-        var subt   = 'Contratto N. '+CNUM+' \u2014 '+(affiliate.organization_name||'Centro');
+        var TODAY = fmtDate(new Date());
+        var YEAR1 = fmtDate(new Date(Date.now()+365*24*60*60*1000));
+        var CNUM  = String(affiliate.id||0).padStart(3,'0')+' / '+new Date().getFullYear();
+        var prem  = !!(affiliate.notes && affiliate.notes.toLowerCase().includes('premium'));
+        var cr    = affiliate.commission_rate || (prem?30:20);
+        var quota = prem ? '\u20ac 197,00' : '\u20ac 97,00';
+        var subt  = 'Contratto N. '+CNUM+' \u2014 '+(affiliate.organization_name||'Centro');
 
-        // ── Documento con bufferPages — NON usiamo pageAdded ──
+        // top:62 = spazio generoso tra intestazione (termina a y=27) e corpo testo
         var doc = new PDFDocument({
             size:'A4',
-            margins:{top:42, bottom:42, left:60, right:60},
+            margins:{top:62, bottom:50, left:60, right:60},
             bufferPages: true,
             info:{Title:'Contratto Affiliazione', Author:'SAAM 4.0 Academy School'}
         });
@@ -744,34 +742,39 @@ function _buildContractPDF(affiliate) {
         var W=595.28, H=841.89, ML=60, CW=475.28;
 
         // ══════════════════════════════════════
-        // PAG 0 — COPERTINA
+        // COPERTINA
         // ══════════════════════════════════════
-        // Logo
+        // Logo: prova jpg, poi png come fallback
         var logoPath = path.join(__dirname,'logo_contratto.jpg');
+        if (!fs.existsSync(logoPath)) logoPath = path.join(__dirname,'logo_contratto.png');
         var logoBotY = 14;
         if (fs.existsSync(logoPath)) {
-            var lh = Math.round(CW*156/800);
+            // logo_contratto.jpg: 800x436 → ratio 0.545
+            var lh = Math.round(CW * 436 / 800);
             doc.image(logoPath, ML, 14, {width:CW, height:lh});
-            logoBotY = 14+lh+6;
+            logoBotY = 14 + lh + 8;
         } else {
             doc.rect(0,0,W,7).fill(VERDE).rect(0,7,W,4).fill(ROSSO);
             doc.font('Helvetica-Bold').fontSize(20).fillColor(VERDE)
                .text('SAAM 4.0 ACADEMY SCHOOL',ML,24,{align:'center',width:CW});
             logoBotY = 54;
         }
+
+        // Linea tricolore separatrice
         var lw=CW/3;
-        doc.rect(ML,logoBotY,lw,3).fill(VERDE)
-           .rect(ML+lw,logoBotY,lw,3).fill('#EEEEEE')
-           .rect(ML+lw*2,logoBotY,lw,3).fill(ROSSO);
+        doc.rect(ML,      logoBotY,lw,3).fill(VERDE)
+           .rect(ML+lw,   logoBotY,lw,3).fill('#EEEEEE')
+           .rect(ML+lw*2, logoBotY,lw,3).fill(ROSSO);
+        logoBotY += 12;
 
         doc.font('Helvetica').fontSize(9).fillColor(GR2)
-           .text('Piattaforma AI di Apprendimento della Lingua Italiana',ML,logoBotY+10,{align:'center',width:CW});
+           .text('Piattaforma AI di Apprendimento della Lingua Italiana',ML,logoBotY,{align:'center',width:CW});
         doc.font('Helvetica-Bold').fontSize(24).fillColor(NERO)
-           .text('CONTRATTO DI AFFILIAZIONE',ML,logoBotY+26,{align:'center',width:CW});
+           .text('CONTRATTO DI AFFILIAZIONE',ML,logoBotY+16,{align:'center',width:CW});
         doc.font('Helvetica').fontSize(9.5).fillColor(GRIGIO)
-           .text('Accordo di Partnership \u2014 Programma Centri Accreditati',ML,logoBotY+54,{align:'center',width:CW});
+           .text('Accordo di Partnership \u2014 Programma Centri Accreditati',ML,logoBotY+44,{align:'center',width:CW});
 
-        var BY=logoBotY+74;
+        var BY = logoBotY + 62;
         doc.roundedRect(ML,BY,CW,128,8).fillAndStroke('#F0F7F2',VERDE);
         var iX=ML+18;
         doc.font('Helvetica-Bold').fontSize(8).fillColor(GR2).text('N. CONTRATTO',iX,BY+14);
@@ -793,17 +796,13 @@ function _buildContractPDF(affiliate) {
         doc.font('Helvetica-Oblique').fontSize(7.5).fillColor('#BBBBBB')
            .text('Documento generato automaticamente dalla piattaforma \u2014 Verificare prima della firma',
                  ML,BY+142,{align:'center',width:CW});
-        // Footer copertina
-        doc.rect(0,H-34,W,34).fill('#F5F9F5')
-           .moveTo(0,H-34).lineTo(W,H-34).lineWidth(0.8).strokeColor(VERDE).stroke();
-        doc.font('Helvetica').fontSize(7.5).fillColor(GR2)
-           .text('www.angelopagliara.it \u2014 training@angelopagliara.it \u2014 angelopagliara@mypec.eu',
-                 0,H-20,{align:'center',width:W});
 
         // ══════════════════════════════════════
-        // PAG 1 — PARTI CONTRAENTI
+        // PAG CONTENUTO (flusso continuo)
         // ══════════════════════════════════════
-        doc.addPage();
+        doc.addPage();  // unico addPage dopo copertina
+
+        // 1. PARTI CONTRAENTI
         pdfHBox(doc,'1. PARTI CONTRAENTI',ML,CW,VERDE);
         pdfH2(doc,'IL CONCEDENTE',ML,VERDE);
         pdfRows(doc,[
@@ -828,53 +827,58 @@ function _buildContractPDF(affiliate) {
             ['Telefono',            affiliate.phone||'___________________________'],
             ['IBAN (pagamenti)',     '___________________________'],
         ],ML,CW);
-        doc.moveDown(0.4);
+        doc.moveDown(0.5);
         doc.font('Helvetica-Oblique').fontSize(9).fillColor(GR2)
            .text('Le parti come sopra identificate convengono e stipulano quanto segue.',ML,doc.y,{width:CW,align:'center'});
+        doc.moveDown(1.2);
 
-        // ══════════════════════════════════════
-        // PAG 2 — ART. 2-6
-        // ══════════════════════════════════════
-        doc.addPage();
+        // ARTICOLI 2-14 (flusso continuo — pdfkit aggiunge pagine automaticamente)
         pdfArt(doc,2,'Oggetto del Contratto',ML,CW,VERDE,NERO);
         pdfBody(doc,'Il presente Contratto disciplina i termini e le condizioni dell\'affiliazione del Centro al Programma Partner di SAAM 4.0 Academy School, piattaforma AI di apprendimento della lingua italiana. Il Centro acquisisce il diritto non esclusivo di promuovere, distribuire e gestire l\'accesso dei propri studenti alla Piattaforma, in cambio di una commissione sulle sottoscrizioni generate tramite il proprio codice univoco.',ML,CW);
+
         pdfArt(doc,3,'Piani di Abbonamento e Struttura Commissioni',ML,CW,VERDE,NERO);
         pdfBody(doc,'Gli studenti iscritti tramite il Centro accedono alla Piattaforma attraverso i seguenti piani mensili:',ML,CW);
         pdfPlanTbl(doc,ML,CW,cr,VERDE,BIANCO);
+
         pdfArt(doc,4,'Quota Annuale di Adesione',ML,CW,VERDE,NERO);
         pdfBody(doc,'Il Centro corrisponde al Concedente una Quota Annuale di Adesione di '+quota+' (piano '+(prem?'Premium':'Standard')+'), con commissioni al '+cr+'%. La quota e\u2019 dovuta al momento dell\'approvazione e successivamente con cadenza annuale entro 30 giorni dalla data anniversario. Il mancato pagamento entro 15 giorni dalla scadenza comporta la sospensione dell\'accesso alla Dashboard Partner. La quota non e\u2019 rimborsabile.',ML,CW);
+
         pdfArt(doc,5,'Codice di Affiliazione e Tracciamento',ML,CW,VERDE,NERO);
         doc.font('Helvetica').fontSize(9.5).fillColor('#3A3A3A')
            .text('Al Centro viene assegnato il Codice Univoco: ',ML,doc.y+3,{continued:true});
         doc.font('Helvetica-Bold').fontSize(10).fillColor(VERDE)
            .text(affiliate.referral_code||'SAAM-XXXXX');
         pdfBody(doc,'Tale codice e\u2019 personale, non cedibile, accessibile dalla Dashboard Partner e utilizzabile nella pagina di registrazione pubblica tramite il parametro ?ref=CODICE.',ML,CW);
+
         pdfArt(doc,6,'Pagamento delle Provvigioni',ML,CW,VERDE,NERO);
         pdfBody(doc,'Le provvigioni ('+cr+'% sul canone mensile netto per studente attivo) sono calcolate il giorno 5 del mese successivo e liquidate entro il giorno 15 mediante bonifico bancario all\'IBAN comunicato dal Centro. Non sono corrisposte provvigioni su abbonamenti in prova, oggetto di chargeback o rimborso.',ML,CW);
 
-        // ══════════════════════════════════════
-        // PAG 3 — ART. 7-14
-        // ══════════════════════════════════════
-        doc.addPage();
         pdfArt(doc,7,'Account di Prova (Trial)',ML,CW,VERDE,NERO);
         pdfBody(doc,'Il Centro ha diritto ad attivare 1 account di prova settimanale (durata 7 giorni, limite 30 minuti, senza commissioni), tramite la Dashboard Partner. L\'abuso sistematico di questa funzionalita\u2019 comporta la revoca del diritto.',ML,CW);
+
         pdfArt(doc,8,'Dashboard Partner',ML,CW,VERDE,NERO);
         pdfBody(doc,'Il Concedente mette a disposizione una Dashboard Partner con: panoramica studenti attivi, MRR e commissioni maturate, monitoraggio minuti, reportistica mensile, attivazione account di prova e proiezione ricavi. Le credenziali sono comunicate all\'approvazione.',ML,CW);
+
         pdfArt(doc,9,'Obblighi del Centro Affiliato',ML,CW,VERDE,NERO);
         pdfBody(doc,'Il Centro si impegna a: promuovere la Piattaforma con correttezza; non cedere il codice a terzi; non registrare studenti fittizi; comunicare tempestivamente variazioni di IBAN o dati aziendali; rispettare il GDPR; non promuovere concorrenti diretti con materiali del Concedente.',ML,CW);
+
         pdfArt(doc,10,'Obblighi del Concedente',ML,CW,VERDE,NERO);
         pdfBody(doc,'Il Concedente garantisce: SLA minimo 99% mensile; aggiornamenti della Piattaforma senza costi aggiuntivi; preavviso di 30 giorni per variazioni tariffarie; supporto tecnico via email entro 48 ore lavorative; trasmissione mensile del riepilogo commissioni.',ML,CW);
+
         pdfArt(doc,11,'Durata, Rinnovo e Recesso',ML,CW,VERDE,NERO);
         pdfBody(doc,'Il Contratto ha durata di 12 mesi (dal '+TODAY+' al '+YEAR1+') con rinnovo automatico annuale, salvo disdetta scritta con 30 giorni di preavviso. Il recesso non da\u2019 diritto al rimborso della quota residua. Il Concedente puo\u2019 risolvere immediatamente per: frode, violazione grave degli obblighi, mancato pagamento oltre 15 giorni dalla scadenza.',ML,CW);
+
         pdfArt(doc,12,'Proprieta\u2019 Intellettuale e Riservatezza',ML,CW,VERDE,NERO);
         pdfBody(doc,'Tutti i contenuti della Piattaforma sono di proprieta\u2019 esclusiva del Concedente. Le parti si obbligano alla riservatezza su tutte le informazioni commerciali e tecniche per tutta la durata del contratto e per i 3 anni successivi alla cessazione.',ML,CW);
+
         pdfArt(doc,13,'GDPR e Protezione dei Dati',ML,CW,VERDE,NERO);
         pdfBody(doc,'Il trattamento dei dati personali avviene nel rispetto del Regolamento UE 2016/679 (GDPR). Le parti sottoscriveranno, ove necessario, apposito Accordo di Responsabilita\u2019 del Trattamento (DPA) ai sensi dell\'Art. 28 GDPR.',ML,CW);
+
         pdfArt(doc,14,'Foro Competente e Legge Applicabile',ML,CW,VERDE,NERO);
         pdfBody(doc,'Il Contratto e\u2019 regolato dalla legge italiana. Le parti tenteranno in primo luogo una risoluzione amichevole entro 30 giorni. In mancanza di accordo, il Foro esclusivamente competente e\u2019 quello di Brindisi (BR).',ML,CW);
 
         // ══════════════════════════════════════
-        // PAG 4 — FIRME
+        // PAGINA FIRME (sempre su pagina nuova)
         // ══════════════════════════════════════
         doc.addPage();
         pdfHBox(doc,'DICHIARAZIONI FINALI E FIRME',ML,CW,VERDE);
@@ -908,35 +912,23 @@ function _buildContractPDF(affiliate) {
                  ML,alY+6,{align:'center',width:CW});
 
         // ══════════════════════════════════════
-        // POST-PROCESSING: header + footer su ogni pagina
-        // con switchToPage (nessun evento, nessuna ricorsione)
+        // POST-PROCESSING: solo intestazione su ogni pagina
+        // NON footer, NON numeri pagina
         // ══════════════════════════════════════
         var range = doc.bufferedPageRange();
         for (var pi=0; pi<range.count; pi++) {
             doc.switchToPage(pi);
-            var pgNum = pi; // copertina = 0 (no numerazione), pag 1..N
+            if (pi === 0) continue; // copertina: niente intestazione
 
-            if (pi === 0) {
-                // Copertina: solo striscia tricolore in cima (già disegnata)
-                continue;
-            }
-            // Striscia tricolore header
+            // Solo striscia tricolore + testo contratto
             doc.rect(0,0,W,5).fill(VERDE);
             doc.rect(0,5,W,3).fill(ROSSO);
-            // Testo header
             doc.font('Helvetica-Bold').fontSize(7.5).fillColor(VERDE)
                .text('SAAM 4.0 ACADEMY SCHOOL \u2014 CONTRATTO DI AFFILIAZIONE',ML,13,{width:CW*0.55});
             doc.font('Helvetica').fontSize(7).fillColor('#AAAAAA')
                .text(subt,ML+CW*0.55,13,{width:CW*0.45,align:'right'});
             doc.moveTo(ML,27).lineTo(ML+CW,27).lineWidth(0.4).strokeColor('#DDDDDD').stroke();
-            // Footer
-            var FY=H-26;
-            doc.moveTo(ML,FY-5).lineTo(ML+CW,FY-5).lineWidth(0.4).strokeColor('#DDDDDD').stroke();
-            doc.font('Helvetica').fontSize(7).fillColor('#AAAAAA')
-               .text('www.angelopagliara.it \u2014 training@angelopagliara.it \u2014 angelopagliara@mypec.eu',
-                     ML,FY,{width:CW-44});
-            doc.font('Helvetica-Bold').fontSize(7).fillColor(VERDE)
-               .text('Pag. '+pgNum,ML+CW-38,FY,{width:38,align:'right'});
+            // Nessun footer, nessun numero pagina
         }
 
         doc.flushPages();
@@ -944,87 +936,6 @@ function _buildContractPDF(affiliate) {
     });
 }
 
-// ── Helper PDF (prefisso pdf* per evitare conflitti) ──
-function pdfHBox(doc,text,ML,CW,VERDE) {
-    var y=doc.y+4;
-    doc.rect(ML,y,CW,25).fill('#F0F7F2');
-    doc.rect(ML,y,4,25).fill(VERDE);
-    doc.font('Helvetica-Bold').fontSize(12).fillColor(VERDE).text(text,ML+12,y+6,{width:CW-20});
-    doc.y=y+31;
-}
-function pdfH2(doc,text,ML,VERDE) {
-    doc.font('Helvetica-Bold').fontSize(9.5).fillColor(VERDE).text(text,ML,doc.y+5);
-    doc.moveDown(0.2);
-}
-function pdfArt(doc,num,title,ML,CW,VERDE,NERO) {
-    var y=doc.y+4;
-    doc.font('Helvetica-Bold').fontSize(9.5).fillColor(VERDE)
-       .text('Art. '+num+' \u2014 ',ML,y,{continued:true});
-    doc.font('Helvetica-Bold').fontSize(9.5).fillColor(NERO).text(title);
-    doc.moveTo(ML,doc.y+1).lineTo(ML+CW,doc.y+1).lineWidth(0.4).strokeColor('#DDDDDD').stroke();
-    doc.moveDown(0.15);
-}
-function pdfBody(doc,text,ML,CW) {
-    doc.font('Helvetica').fontSize(9.5).fillColor('#3A3A3A')
-       .text(text,ML,doc.y+3,{width:CW});
-    doc.moveDown(0.3);
-}
-function pdfRows(doc,data,ML,CW) {
-    var rowH=19, col1=128, y=doc.y+3;
-    data.forEach(function(r,i){
-        doc.rect(ML,y,CW,rowH).fillAndStroke(i%2===0?'#F7FAF7':'#FFFFFF','#E0E8E0');
-        doc.font('Helvetica-Bold').fontSize(7.5).fillColor('#444').text(r[0],ML+5,y+6,{width:col1-8});
-        doc.font('Helvetica').fontSize(7.5).fillColor('#1A1A1A').text(r[1],ML+col1+4,y+6,{width:CW-col1-10,ellipsis:true});
-        y+=rowH;
-    });
-    doc.y=y+3;
-}
-function pdfPlanTbl(doc,ML,CW,cr,VERDE,BIANCO) {
-    var y=doc.y+4, cols=[70,115,140,150];
-    var hdrs=['Piano','Canone Mensile','Commissione ('+cr+'%)','Incasso Netto Centro'];
-    var data=[
-        ['Basic',   '\u20ac 9,70', '\u20ac '+(9.70 *cr/100).toFixed(2),'\u20ac '+(9.70 *cr/100).toFixed(2)+'/mese'],
-        ['Advanced','\u20ac 16,70','\u20ac '+(16.70*cr/100).toFixed(2),'\u20ac '+(16.70*cr/100).toFixed(2)+'/mese'],
-        ['Gold',    '\u20ac 27,70','\u20ac '+(27.70*cr/100).toFixed(2),'\u20ac '+(27.70*cr/100).toFixed(2)+'/mese'],
-    ];
-    var x=ML;
-    cols.forEach(function(w,i){
-        doc.rect(x,y,w,16).fillAndStroke('#007A38','#006030');
-        doc.font('Helvetica-Bold').fontSize(7.5).fillColor(BIANCO).text(hdrs[i],x+3,y+5,{width:w-6,align:'center'});
-        x+=w;
-    });
-    data.forEach(function(row,ri){
-        x=ML;
-        var ry=y+16+ri*15;
-        row.forEach(function(cell,ci){
-            doc.rect(x,ry,cols[ci],15).fillAndStroke(ri%2===0?'#F5F9F5':BIANCO,'#CCDDCC');
-            doc.font(ci>=2?'Helvetica-Bold':'Helvetica').fontSize(7.5).fillColor(ci>=2?VERDE:'#222')
-               .text(cell,x+3,ry+4,{width:cols[ci]-6,align:'center'});
-            x+=cols[ci];
-        });
-    });
-    doc.y=y+16+data.length*15+6;
-}
-function pdfSigBox(doc,x,y,w,role,org,ref,VERDE,GR2) {
-    doc.roundedRect(x,y,w,122,6).fillAndStroke('#F5F9F5',VERDE);
-    doc.font('Helvetica-Bold').fontSize(8).fillColor(VERDE).text(role,x,y+10,{align:'center',width:w});
-    doc.font('Helvetica').fontSize(8.5).fillColor('#4A4A4A').text(org,x,y+24,{align:'center',width:w});
-    doc.font('Helvetica-Oblique').fontSize(7.5).fillColor(GR2).text(ref,x,y+37,{align:'center',width:w});
-    doc.moveTo(x+16,y+82).lineTo(x+w-16,y+82).lineWidth(0.8).strokeColor(VERDE).stroke();
-    doc.font('Helvetica-Bold').fontSize(7.5).fillColor(VERDE)
-       .text('\u2611 Preferibilmente Firma Digitale (D.Lgs. 82/2005)',x,y+87,{align:'center',width:w});
-    doc.font('Helvetica-Oblique').fontSize(7).fillColor(GR2)
-       .text('oppure Firma Autografa e Timbro',x,y+99,{align:'center',width:w});
-    doc.font('Helvetica-Oblique').fontSize(6.5).fillColor('#BBBBBB')
-       .text('(Codice del Consumo Digitale)',x,y+110,{align:'center',width:w});
-}
-function pdfSig2Box(doc,x,y,w,label,VERDE,GR2) {
-    doc.roundedRect(x,y,w,58,4).fillAndStroke('#FAFAFA','#DDDDDD');
-    doc.moveTo(x+16,y+36).lineTo(x+w-16,y+36).lineWidth(0.6).strokeColor('#AAAAAA').stroke();
-    doc.font('Helvetica-Bold').fontSize(7).fillColor(VERDE)
-       .text('\u2611 Preferibilmente Firma Digitale',x,y+40,{align:'center',width:w});
-    doc.font('Helvetica-Oblique').fontSize(6.5).fillColor(GR2).text(label,x,y+50,{align:'center',width:w});
-}
 
 // ── Endpoint scarico contratto ──
 router.get('/admin/affiliates/:id/contract', authMiddleware, adminOnly, async (req, res) => {
