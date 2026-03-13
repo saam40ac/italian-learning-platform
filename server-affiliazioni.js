@@ -1415,6 +1415,32 @@ router.post('/public/admin/reset-password', async (req, res) => {
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+// ════════════════════════════════════════════════════════════
+// TEST SMTP — solo admin, per diagnostica
+// GET /api/affiliate/admin/test-email
+// ════════════════════════════════════════════════════════════
+router.get('/admin/test-email', authMiddleware, adminOnly, async (req, res) => {
+    try {
+        if (!process.env.SMTP_USER) {
+            return res.status(500).json({ 
+                ok: false, 
+                error: 'SMTP_USER non configurato su Render',
+                vars: { SMTP_USER: !!process.env.SMTP_USER, SMTP_PASS: !!process.env.SMTP_PASS, NOTIFY_EMAIL: process.env.NOTIFY_EMAIL || 'non impostato' }
+            });
+        }
+        await _smtpTransporter.verify();
+        await _smtpTransporter.sendMail({
+            from: FROM_LABEL,
+            to: process.env.NOTIFY_EMAIL || 'training@angelopagliara.it',
+            subject: '✅ Test SMTP — SAAM 4.0 funziona!',
+            html: '<h2 style="color:#009246">✅ Nodemailer funziona correttamente!</h2><p>Se ricevi questa email, le notifiche automatiche sono attive.</p><p><small>Inviata da: ' + process.env.SMTP_USER + '</small></p>'
+        });
+        res.json({ ok: true, message: 'Email di test inviata a ' + (process.env.NOTIFY_EMAIL || 'training@angelopagliara.it') });
+    } catch(err) {
+        res.status(500).json({ ok: false, error: err.message });
+    }
+});
+
 // Funzione di inizializzazione — chiamata da server.js con il pool attivo
 function init(dbPool) {
     pool = dbPool;
