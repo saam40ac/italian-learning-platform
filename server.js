@@ -3,6 +3,7 @@ const express = require('express');
 const cors = require('cors');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const emailService = require('./server-email');
 const { Pool } = require('pg');
 const { google } = require('googleapis');
 // ── Tracking costi API (inline — non dipende da file esterni) ──
@@ -113,9 +114,29 @@ const path = require('path');
 app.use(express.static(path.join(__dirname)));
 
 // ── ROUTES AFFILIAZIONI + STRIPE ──
-const affiliazioniInit = require('./server-affiliazioni');
-const affiliazioniRoutes = affiliazioniInit(pool);
-app.use('/api', affiliazioniRoutes);
+let affiliazioniRoutes;
+try {
+    const affiliazioniInit = require('./server-affiliazioni');
+    affiliazioniRoutes = affiliazioniInit(pool);
+    app.use('/api', affiliazioniRoutes);
+    console.log('[BOOT] server-affiliazioni caricato OK');
+} catch(bootErr) {
+    console.error('[BOOT ERROR] server-affiliazioni FALLITO:', bootErr.message, bootErr.stack);
+}
+
+// Route diagnostica pubblica — GET /api/ping
+app.get('/api/ping', (req, res) => {
+    res.json({
+        ok: true,
+        router_loaded: !!affiliazioniRoutes,
+        smtp_user: !!process.env.SMTP_USER,
+        smtp_pass: !!process.env.SMTP_PASS,
+        notify_email: process.env.NOTIFY_EMAIL || 'non impostato',
+        frontend_url: process.env.FRONTEND_URL || 'non impostato',
+        node_version: process.version,
+        time: new Date().toISOString()
+    });
+});
 
 app.use((req, res, next) => {
     console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
@@ -1544,6 +1565,36 @@ app.get('/api/admin/users/:userId/tts-usage', authenticate, requireAdmin, async 
 });
 
 // Update user (Admin only)
+
+// ════════════════════════════════════════════════════════════
+// PASSWORD RESET — STUDENTI / ADMIN
+// ════════════════════════════════════════════════════════════
+
+app.post('/api/auth/forgot-password', async (req, res) => {
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ error: 'Email richiesta' });
+    try {
+        await emailService.sendPasswordResetStudent(pool, email);
+        res.json({ success: true, message: 'Se l\'email è registrata riceverai le istruzioni.' });
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.post('/api/auth/reset-password', async (req, res) => {
+    const { token, password } = req.body;
+    if (!token || !password || password.length < 8)
+        return res.status(400).json({ error: 'Dati mancanti o password troppo corta' });
+    try {
+        const { rows } = await pool.query(
+            `SELECT user_id FROM password_resets
+             WHERE token = $1 AND used = false AND expires_at > NOW()`, [token]
+        );
+        if (!rows[0]) return res.status(400).json({ error: 'Link non valido o scaduto' });
+        const hash = await bcrypt.hash(password, 10);
+        await pool.query('UPDATE users SET password = $1 WHERE id = $2', [hash, rows[0].user_id]);
+        await pool.query('UPDATE password_resets SET used = true WHERE token = $1', [token]);
+        res.json({ success: true });
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
 
 // ============================================
 // START SERVER
