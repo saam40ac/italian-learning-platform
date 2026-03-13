@@ -5,6 +5,8 @@
  */
 
 const PDFDocument = require('pdfkit');
+const path = require('path');
+const fs   = require('fs');
 
 const CONCEDENTE = {
     ragioneSociale: 'SAAM 4.0 Academy School',
@@ -98,25 +100,34 @@ function generateContractPDF(affiliate) {
         doc.addPage();
         isCoverPage = false;
 
-        doc.rect(0, 0, W, 7).fill(VERDE);
-        doc.rect(0, 7, W, 4).fill(ROSSO);
+        // ── Logo aziendale in cima alla copertina ──
+        const logoPath = path.join(__dirname, 'logo_contratto.png');
+        let logoBottomY = 18;
+        if (fs.existsSync(logoPath)) {
+            // Ratio originale banner: 800x156px = 0.195
+            const logoW = CW;
+            const logoH = Math.round(logoW * 156 / 800);
+            doc.image(logoPath, ML, 14, { width: logoW, height: logoH });
+            logoBottomY = 14 + logoH + 8;
+        }
 
-        doc.font('Helvetica-Bold').fontSize(20).fillColor(VERDE)
-           .text('SAAM 4.0 ACADEMY SCHOOL', ML, 28, { align: 'center', width: CW });
-        doc.font('Helvetica').fontSize(9.5).fillColor(GR2)
-           .text('Piattaforma AI di Apprendimento della Lingua Italiana', ML, 54, { align: 'center', width: CW });
-
+        // Linea tricolore sotto il logo
         const lw3 = CW / 3;
-        doc.rect(ML,        72, lw3, 3).fill(VERDE);
-        doc.rect(ML + lw3,  72, lw3, 3).fill('#EEEEEE');
-        doc.rect(ML+lw3*2,  72, lw3, 3).fill(ROSSO);
+        doc.rect(ML,       logoBottomY, lw3, 3).fill(VERDE);
+        doc.rect(ML + lw3, logoBottomY, lw3, 3).fill('#EEEEEE');
+        doc.rect(ML+lw3*2, logoBottomY, lw3, 3).fill(ROSSO);
 
-        doc.font('Helvetica-Bold').fontSize(26).fillColor(NERO)
-           .text('CONTRATTO DI AFFILIAZIONE', ML, 88, { align: 'center', width: CW });
-        doc.font('Helvetica').fontSize(10).fillColor(GRIGIO)
-           .text('Accordo di Partnership \u2014 Programma Centri Accreditati', ML, 120, { align: 'center', width: CW });
+        doc.font('Helvetica').fontSize(9).fillColor(GR2)
+           .text('Piattaforma AI di Apprendimento della Lingua Italiana',
+                 ML, logoBottomY + 10, { align: 'center', width: CW });
 
-        const BX = ML, BY = 148, BW = CW, BH = 128;
+        doc.font('Helvetica-Bold').fontSize(24).fillColor(NERO)
+           .text('CONTRATTO DI AFFILIAZIONE', ML, logoBottomY + 26, { align: 'center', width: CW });
+        doc.font('Helvetica').fontSize(9.5).fillColor(GRIGIO)
+           .text('Accordo di Partnership \u2014 Programma Centri Accreditati',
+                 ML, logoBottomY + 54, { align: 'center', width: CW });
+
+        const BX = ML, BY = logoBottomY + 74, BW = CW, BH = 128;
         doc.roundedRect(BX, BY, BW, BH, 8).fillAndStroke('#F0F7F2', VERDE);
 
         const infoX = BX + 18;
