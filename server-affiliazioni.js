@@ -1417,7 +1417,7 @@ router.post('/public/admin/reset-password', async (req, res) => {
 
 // ════════════════════════════════════════════════════════════
 // TEST SMTP — solo admin, per diagnostica
-// GET /api/affiliate/admin/test-email
+// GET /api/admin/test-email
 // ════════════════════════════════════════════════════════════
 router.get('/admin/test-email', authMiddleware, adminOnly, async (req, res) => {
     try {
