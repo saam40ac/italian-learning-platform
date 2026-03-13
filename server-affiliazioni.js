@@ -16,7 +16,6 @@ const router   = express.Router();
 const bcrypt   = require('bcryptjs');
 const jwt      = require('jsonwebtoken');
 const crypto   = require('crypto');
-const { generateContractPDF } = require('./contract-generator');
 // Pool DB iniettato da server.js tramite module.exports (usa la connessione già attiva)
 let pool;
 // Inizializzazione lazy — evita crash se STRIPE_SECRET_KEY non è ancora impostata su Render
@@ -713,6 +712,8 @@ router.get('/admin/affiliates/:id/contract', authMiddleware, adminOnly, async (r
         if (!rows[0]) return res.status(404).json({ error: 'Centro non trovato' });
 
         const affiliate = rows[0];
+        // Lazy require: evita crash al boot se pdfkit non è ancora installato
+        const { generateContractPDF } = require('./contract-generator');
         const pdfBuffer = await generateContractPDF(affiliate);
 
         const safeName = (affiliate.organization_name || 'centro')
