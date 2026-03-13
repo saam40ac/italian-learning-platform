@@ -696,6 +696,51 @@ router.put('/admin/affiliates/:id/approve', authMiddleware, adminOnly, async (re
 });
 
 // ────────────────────────────────────────────────
+// DIAGNOSTICA PDF — rimuovere dopo il debug
+// ────────────────────────────────────────────────
+router.get('/admin/pdf-diag', authMiddleware, adminOnly, async (req, res) => {
+    const diag = { ok: true, checks: {} };
+    // 1. pdfkit
+    try {
+        require('pdfkit');
+        diag.checks.pdfkit = '✅ installato';
+    } catch(e) {
+        diag.checks.pdfkit = '❌ ' + e.message;
+        diag.ok = false;
+    }
+    // 2. contract-generator.js
+    try {
+        require('./contract-generator');
+        diag.checks.contractGenerator = '✅ caricato';
+    } catch(e) {
+        diag.checks.contractGenerator = '❌ ' + e.message;
+        diag.ok = false;
+    }
+    // 3. logo_contratto.png
+    const path = require('path');
+    const fs   = require('fs');
+    const logoPath = path.join(__dirname, 'logo_contratto.png');
+    diag.checks.logo = fs.existsSync(logoPath)
+        ? '✅ trovato (' + Math.round(fs.statSync(logoPath).size/1024) + 'KB)'
+        : '⚠️ non trovato (verrà saltato)';
+    // 4. Genera PDF di prova
+    try {
+        const { generateContractPDF } = require('./contract-generator');
+        const buf = await generateContractPDF({
+            id: 0, organization_name: 'TEST', contact_name: 'Test',
+            email: 'test@test.it', phone: '', city: 'Test', address: 'Via Test 1',
+            vat_number: '00000000000', pec: null, codice_sdi: null,
+            referral_code: 'SAAM-TEST', commission_rate: 20, notes: ''
+        });
+        diag.checks.pdfGeneration = '✅ PDF generato (' + Math.round(buf.length/1024) + 'KB)';
+    } catch(e) {
+        diag.checks.pdfGeneration = '❌ ' + e.message + ' | ' + (e.stack||'').split('\n')[1];
+        diag.ok = false;
+    }
+    res.json(diag);
+});
+
+// ────────────────────────────────────────────────
 // GENERAZIONE PDF CONTRATTO AFFILIAZIONE
 // ────────────────────────────────────────────────
 router.get('/admin/affiliates/:id/contract', authMiddleware, adminOnly, async (req, res) => {
