@@ -747,7 +747,7 @@ function _buildContractPDF(affiliate) {
         // PAG 0 — COPERTINA
         // ══════════════════════════════════════
         // Logo
-        var logoPath = path.join(__dirname,'logo_contratto.png');
+        var logoPath = path.join(__dirname,'logo_contratto.jpg');
         var logoBotY = 14;
         if (fs.existsSync(logoPath)) {
             var lh = Math.round(CW*156/800);
