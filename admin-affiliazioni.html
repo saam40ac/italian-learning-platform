@@ -482,7 +482,7 @@ async function loadAffiliates() {
         <td><span class="badge active">Attivo</span></td>
         <td>
             <button class="btn-action btn-rosso" onclick="setStatus(${a.id},'suspended')" style="margin-bottom:4px">⏸ Sospendi</button>
-            <button class="btn-action" onclick="downloadContractDirect(${a.id})" style="background:#1a5c8a;color:#fff;margin-top:2px">📄 PDF</button>
+            <button class="btn-action" onclick="downloadContractDirect(${a.id}, this)" style="background:#1a5c8a;color:#fff;margin-top:2px">📄 PDF</button>
         </td></tr>`;
     }).join('')
         : '<tr><td colspan="10" style="text-align:center;color:var(--grigio-400);padding:24px">Nessun centro attivo</td></tr>';
@@ -572,7 +572,7 @@ function downloadContract() {
     btn.textContent = '⏳ Generazione PDF...';
     btn.disabled = true;
     fetch(`${API}/api/admin/affiliates/${lastApprovedId}/contract`, {
-        headers: { 'Authorization': 'Bearer ' + localStorage.getItem('adminToken') }
+        headers: { 'Authorization': 'Bearer ' + getToken() }
     })
     .then(r => {
         if (!r.ok) throw new Error('Errore generazione PDF');
@@ -597,12 +597,12 @@ function downloadContract() {
     });
 }
 
-function downloadContractDirect(id) {
-    const btn = event.target;
+function downloadContractDirect(id, btnEl) {
+    const btn = btnEl;
     btn.textContent = '⏳';
     btn.disabled = true;
     fetch(`${API}/api/admin/affiliates/${id}/contract`, {
-        headers: { 'Authorization': 'Bearer ' + localStorage.getItem('adminToken') }
+        headers: { 'Authorization': 'Bearer ' + getToken() }
     })
     .then(r => {
         if (!r.ok) throw new Error('Errore');
