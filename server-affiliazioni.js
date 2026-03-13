@@ -900,7 +900,7 @@ function _buildContractPDF(affiliate) {
 
         art(doc, 5, 'Codice di Affiliazione e Tracciamento', ML, CW, VERDE, NERO);
         doc.font('Helvetica').fontSize(9.5).fillColor('#3A3A3A')
-           .text('Al Centro viene assegnato il Codice Univoco: ', ML, doc.y+3, {continued:true, lineGap:2});
+           .text('Al Centro viene assegnato il Codice Univoco: ', ML, doc.y+3, {continued:true});
         doc.font('Helvetica-Bold').fontSize(10).fillColor(VERDE)
            .text(affiliate.referral_code||'SAAM-XXXXX');
         body(doc, 'Tale codice \u00e8 personale, non cedibile, accessibile dalla Dashboard Partner e utilizzabile nella pagina di registrazione pubblica tramite il parametro ?ref=CODICE.', ML, CW, doc);
@@ -941,7 +941,7 @@ function _buildContractPDF(affiliate) {
         hBox(doc, 'DICHIARAZIONI FINALI E FIRME', ML, CW, VERDE);
         doc.font('Helvetica').fontSize(9.5).fillColor(GRIGIO)
            .text('Le parti dichiarano di aver letto, compreso e accettato integralmente il presente Contratto. Le seguenti clausole sono specificamente approvate ai sensi degli artt. 1341 e 1342 c.c.:',
-                 ML, doc.y+6, {width:CW, align:'justified', lineGap:2});
+                 ML, doc.y+6, {width:CW, align:'left'});
         doc.moveDown(0.4);
         ['Art. 11 \u2014 Risoluzione immediata per inadempimento del Centro',
          'Art. 12 \u2014 Riservatezza triennale post-contratto',
@@ -1004,7 +1004,7 @@ function art(doc,num,title,ML,CW,VERDE,NERO) {
 }
 function body(doc,text,ML,CW,docR) {
     docR.font('Helvetica').fontSize(9.5).fillColor('#3A3A3A')
-        .text(text,ML,docR.y+3,{width:CW,align:'justified',lineGap:2});
+        .text(text,ML,docR.y+3,{width:CW,align:'left'});
     docR.moveDown(0.3);
 }
 function rows(doc,data,ML,CW,docR) {
