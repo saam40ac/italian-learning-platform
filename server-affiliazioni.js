@@ -30,11 +30,182 @@ function getStripe() {
 const stripe = new Proxy({}, { get: (_, prop) => getStripe()[prop] });
 
 const JWT_SECRET   = process.env.JWT_SECRET || 'saam-italian-voice-secret';
-// emailService: stub (server-email non ancora configurato)
+// ── EMAIL SERVICE — Nodemailer + Gmail SMTP (100% gratuito) ──────────────────
+// Variabili d'ambiente richieste su Render:
+//   SMTP_USER     → es. saam40noreply@gmail.com
+//   SMTP_PASS     → Google App Password (16 caratteri, senza spazi)
+//   NOTIFY_EMAIL  → training@angelopagliara.it  (destinatario notifiche admin)
+//   FRONTEND_URL  → https://italianlearning.angelopagliara.it
+// ──────────────────────────────────────────────────────────────────────────────
+const nodemailer = require('nodemailer');
+
+const _smtpTransporter = nodemailer.createTransport({
+    host: process.env.SMTP_HOST || 'smtp.gmail.com',
+    port: parseInt(process.env.SMTP_PORT || '587'),
+    secure: false,
+    auth: {
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASS,
+    },
+});
+
+const NOTIFY_TO  = process.env.NOTIFY_EMAIL || 'training@angelopagliara.it';
+const FROM_LABEL = '"SAAM 4.0 Academy" <' + (process.env.SMTP_USER || 'noreply@saam40.net') + '>';
+
+// Header HTML comune
+function _htmlHeader(titolo, sottotitolo) {
+    return `<!DOCTYPE html><html><head><meta charset="UTF-8">
+<style>
+body{font-family:Arial,sans-serif;background:#f4f7f4;margin:0;padding:0}
+.wrap{max-width:600px;margin:32px auto;background:#fff;border-radius:10px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.08)}
+.top{background:#009246;padding:24px 32px;color:#fff}
+.top h1{margin:0;font-size:22px;font-weight:700}
+.top p{margin:6px 0 0;font-size:13px;opacity:.85}
+.body{padding:28px 32px}
+.row{display:flex;border-bottom:1px solid #eee;padding:10px 0}
+.row:last-child{border-bottom:none}
+.lbl{width:170px;font-size:13px;font-weight:700;color:#555;flex-shrink:0}
+.val{font-size:13px;color:#222;word-break:break-word}
+.badge{display:inline-block;background:#009246;color:#fff;font-size:12px;font-weight:700;padding:3px 10px;border-radius:20px;margin-top:16px}
+.footer{background:#f0f7f2;padding:16px 32px;font-size:11px;color:#888;text-align:center}
+.footer a{color:#009246}
+</style></head><body><div class="wrap">
+<div class="top"><h1>${titolo}</h1><p>${sottotitolo}</p></div>
+<div class="body">`;
+}
+function _htmlFooter() {
+    return `</div><div class="footer">
+SAAM 4.0 Academy School &mdash; <a href="https://italianlearning.angelopagliara.it">italianlearning.angelopagliara.it</a><br>
+training@angelopagliara.it &mdash; angelopagliara@mypec.eu
+</div></div></body></html>`;
+}
+function _row(label, value) {
+    if (!value) return '';
+    return `<div class="row"><div class="lbl">${label}</div><div class="val">${value}</div></div>`;
+}
+
 const emailService = {
-    notifyNewStudent:           async () => {},
-    notifyNewAffiliate:         async () => {},
-    sendPasswordResetAffiliate: async () => { throw new Error('Reset password via email non ancora configurato.'); }
+
+    // ── Notifica nuovo studente pagante ──────────────────────────────────────
+    async notifyNewStudent(data) {
+        if (!process.env.SMTP_USER) return;
+        const { name, email, phone, package: pkg, referral_code } = data;
+        const pkgLabel = { basic:'Basic (€ 9,70/mese)', advanced:'Advanced (€ 16,70/mese)', gold:'Gold (€ 27,70/mese)' }[pkg] || pkg;
+        const html = _htmlHeader('🎓 Nuovo Studente Iscritto', `Iscrizione completata il ${new Date().toLocaleString('it-IT')}`)
+            + _row('Nome', name)
+            + _row('Email', email)
+            + _row('Telefono', phone || '—')
+            + _row('Piano scelto', pkgLabel)
+            + _row('Codice affiliato', referral_code || '—')
+            + `<div class="badge">STUDENTE ATTIVO</div>`
+            + _htmlFooter();
+        await _smtpTransporter.sendMail({
+            from: FROM_LABEL, to: NOTIFY_TO,
+            subject: `🎓 Nuovo Studente — ${name} (${pkgLabel})`,
+            html
+        });
+        console.log('[EMAIL] Notifica nuovo studente inviata:', email);
+    },
+
+    // ── Notifica nuova richiesta affiliazione ────────────────────────────────
+    async notifyNewAffiliate(data) {
+        if (!process.env.SMTP_USER) return;
+        const { organization_name, contact_name, email, phone, city, vat_number, pec, piano_adesione } = data;
+        const html = _htmlHeader('🏢 Nuova Richiesta di Affiliazione', `Richiesta ricevuta il ${new Date().toLocaleString('it-IT')}`)
+            + _row('Organizzazione', organization_name)
+            + _row('Referente', contact_name)
+            + _row('Email', email)
+            + _row('Telefono', phone)
+            + _row('Città / Sede', city)
+            + _row('P.IVA / C.F.', vat_number)
+            + _row('PEC', pec)
+            + _row('Piano richiesto', piano_adesione)
+            + `<div class="badge">IN ATTESA DI APPROVAZIONE</div>`
+            + `<p style="margin-top:20px;font-size:13px;color:#555">Accedi alla <a href="${process.env.FRONTEND_URL || 'https://italian-learning-platform.onrender.com'}/admin-affiliazioni.html" style="color:#009246;font-weight:700">Dashboard Admin Affiliazioni</a> per approvare o rifiutare.</p>`
+            + _htmlFooter();
+        await _smtpTransporter.sendMail({
+            from: FROM_LABEL, to: NOTIFY_TO,
+            subject: `🏢 Nuova Affiliazione — ${organization_name} (${piano_adesione || 'n.d.'})`,
+            html
+        });
+        console.log('[EMAIL] Notifica nuova affiliazione inviata:', email);
+    },
+
+    // ── Reset password affiliato ─────────────────────────────────────────────
+    async sendPasswordResetAffiliate(pool, email) {
+        if (!process.env.SMTP_USER) throw new Error('Email non configurata. Imposta SMTP_USER e SMTP_PASS su Render.');
+        const { rows } = await pool.query('SELECT id, contact_name FROM affiliates WHERE email=$1', [email]);
+        if (!rows[0]) return; // risposta silenziosa per sicurezza
+        const token   = require('crypto').randomBytes(32).toString('hex');
+        const expires = new Date(Date.now() + 60*60*1000); // 1 ora
+        await pool.query(
+            `INSERT INTO affiliate_password_resets (affiliate_id, token, expires_at, used)
+             VALUES ($1,$2,$3,false)
+             ON CONFLICT DO NOTHING`, [rows[0].id, token, expires]
+        );
+        const link = `${process.env.FRONTEND_URL || 'https://italian-learning-platform.onrender.com'}/reset-password.html?type=affiliate&token=${token}`;
+        const html = _htmlHeader('🔑 Reset Password — Centro Affiliato', 'Hai richiesto il ripristino della tua password')
+            + `<p style="font-size:14px;color:#333">Ciao <strong>${rows[0].contact_name}</strong>,<br><br>
+               Clicca il pulsante qui sotto per impostare una nuova password. Il link è valido per <strong>1 ora</strong>.</p>
+               <a href="${link}" style="display:inline-block;margin:20px 0;background:#009246;color:#fff;padding:14px 28px;border-radius:8px;text-decoration:none;font-weight:700;font-size:15px">Reimposta la Password</a>
+               <p style="font-size:12px;color:#999">Se non hai richiesto il reset, ignora questa email. La tua password rimane invariata.</p>`
+            + _htmlFooter();
+        await _smtpTransporter.sendMail({
+            from: FROM_LABEL, to: email,
+            subject: '🔑 Reimposta la tua password — SAAM 4.0',
+            html
+        });
+    },
+
+    // ── Reset password studente ──────────────────────────────────────────────
+    async sendPasswordResetStudent(pool, email) {
+        if (!process.env.SMTP_USER) throw new Error('Email non configurata.');
+        const { rows } = await pool.query('SELECT id, name FROM users WHERE email=$1', [email]);
+        if (!rows[0]) return;
+        const token   = require('crypto').randomBytes(32).toString('hex');
+        const expires = new Date(Date.now() + 60*60*1000);
+        await pool.query(
+            `INSERT INTO password_resets (user_id, token, expires_at, used, type)
+             VALUES ($1,$2,$3,false,'student')`, [rows[0].id, token, expires]
+        );
+        const link = `${process.env.FRONTEND_URL || 'https://italian-learning-platform.onrender.com'}/reset-password.html?type=student&token=${token}`;
+        const html = _htmlHeader('🔑 Reset Password — Studente', 'Hai richiesto il ripristino della tua password')
+            + `<p style="font-size:14px;color:#333">Ciao <strong>${rows[0].name}</strong>,<br><br>
+               Clicca il pulsante qui sotto per impostare una nuova password. Il link è valido per <strong>1 ora</strong>.</p>
+               <a href="${link}" style="display:inline-block;margin:20px 0;background:#009246;color:#fff;padding:14px 28px;border-radius:8px;text-decoration:none;font-weight:700;font-size:15px">Reimposta la Password</a>
+               <p style="font-size:12px;color:#999">Se non hai richiesto il reset, ignora questa email.</p>`
+            + _htmlFooter();
+        await _smtpTransporter.sendMail({
+            from: FROM_LABEL, to: email,
+            subject: '🔑 Reimposta la tua password — SAAM 4.0 Italian Voice',
+            html
+        });
+    },
+
+    // ── Reset password admin ─────────────────────────────────────────────────
+    async sendPasswordResetAdmin(pool, email) {
+        if (!process.env.SMTP_USER) throw new Error('Email non configurata.');
+        const { rows } = await pool.query("SELECT id, name FROM users WHERE email=$1 AND role='admin'", [email]);
+        if (!rows[0]) return;
+        const token   = require('crypto').randomBytes(32).toString('hex');
+        const expires = new Date(Date.now() + 60*60*1000);
+        await pool.query(
+            `INSERT INTO password_resets (user_id, token, expires_at, used, type)
+             VALUES ($1,$2,$3,false,'admin')`, [rows[0].id, token, expires]
+        );
+        const link = `${process.env.FRONTEND_URL || 'https://italian-learning-platform.onrender.com'}/reset-password.html?type=admin&token=${token}`;
+        const html = _htmlHeader('🔐 Reset Password — Amministratore', 'Accesso amministrativo — Hai richiesto il ripristino password')
+            + `<p style="font-size:14px;color:#333">Ciao <strong>${rows[0].name}</strong>,<br><br>
+               Clicca il pulsante qui sotto per impostare una nuova password admin. Il link è valido per <strong>1 ora</strong>.</p>
+               <a href="${link}" style="display:inline-block;margin:20px 0;background:#1A3A5C;color:#fff;padding:14px 28px;border-radius:8px;text-decoration:none;font-weight:700;font-size:15px">Reimposta la Password Admin</a>
+               <p style="font-size:12px;color:#999">Se non hai richiesto il reset, contatta immediatamente training@angelopagliara.it.</p>`
+            + _htmlFooter();
+        await _smtpTransporter.sendMail({
+            from: FROM_LABEL, to: email,
+            subject: '🔐 Reset Password ADMIN — SAAM 4.0',
+            html
+        });
+    },
 };
 const FRONTEND_URL = process.env.FRONTEND_URL || 'https://italian-learning-platform.onrender.com';
 
@@ -1187,8 +1358,62 @@ router.post('/public/affiliate/reset-password', async (req, res) => {
 });
 
 // ════════════════════════════════════════════════════════════
-// PASSWORD RESET — STUDENTI / ADMIN
+// PASSWORD RESET — STUDENTI
 // ════════════════════════════════════════════════════════════
+
+router.post('/public/student/forgot-password', async (req, res) => {
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ error: 'Email richiesta' });
+    try {
+        await emailService.sendPasswordResetStudent(pool, email);
+        res.json({ success: true, message: "Se l'email è registrata riceverai le istruzioni." });
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+router.post('/public/student/reset-password', async (req, res) => {
+    const { token, password } = req.body;
+    if (!token || !password) return res.status(400).json({ error: 'Dati mancanti' });
+    try {
+        const { rows } = await pool.query(
+            `SELECT user_id FROM password_resets
+             WHERE token=$1 AND used=false AND expires_at>NOW() AND type='student'`, [token]
+        );
+        if (!rows[0]) return res.status(400).json({ error: 'Link non valido o scaduto' });
+        const hash = await bcrypt.hash(password, 12);
+        await pool.query('UPDATE users SET password=$1 WHERE id=$2', [hash, rows[0].user_id]);
+        await pool.query('UPDATE password_resets SET used=true WHERE token=$1', [token]);
+        res.json({ success: true });
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// ════════════════════════════════════════════════════════════
+// PASSWORD RESET — ADMIN
+// ════════════════════════════════════════════════════════════
+
+router.post('/public/admin/forgot-password', async (req, res) => {
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ error: 'Email richiesta' });
+    try {
+        await emailService.sendPasswordResetAdmin(pool, email);
+        res.json({ success: true, message: "Se l'email è registrata riceverai le istruzioni." });
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+router.post('/public/admin/reset-password', async (req, res) => {
+    const { token, password } = req.body;
+    if (!token || !password) return res.status(400).json({ error: 'Dati mancanti' });
+    try {
+        const { rows } = await pool.query(
+            `SELECT user_id FROM password_resets
+             WHERE token=$1 AND used=false AND expires_at>NOW() AND type='admin'`, [token]
+        );
+        if (!rows[0]) return res.status(400).json({ error: 'Link non valido o scaduto' });
+        const hash = await bcrypt.hash(password, 12);
+        await pool.query('UPDATE users SET password=$1 WHERE id=$2', [hash, rows[0].user_id]);
+        await pool.query('UPDATE password_resets SET used=true WHERE token=$1', [token]);
+        res.json({ success: true });
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
 
 // Funzione di inizializzazione — chiamata da server.js con il pool attivo
 function init(dbPool) {
