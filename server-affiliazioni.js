@@ -37,17 +37,21 @@ const JWT_SECRET   = process.env.JWT_SECRET || 'saam-italian-voice-secret';
 //   NOTIFY_EMAIL  → training@angelopagliara.it  (destinatario notifiche admin)
 //   FRONTEND_URL  → https://italianlearning.angelopagliara.it
 // ──────────────────────────────────────────────────────────────────────────────
-const nodemailer = require('nodemailer');
-
-const _smtpTransporter = nodemailer.createTransport({
-    host: process.env.SMTP_HOST || 'smtp.gmail.com',
-    port: parseInt(process.env.SMTP_PORT || '587'),
-    secure: false,
-    auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS,
-    },
-});
+// nodemailer caricato in modo lazy — se non installato NON crashа il router
+function _getTransporter() {
+    try {
+        const nodemailer = require('nodemailer');
+        return nodemailer.createTransport({
+            host: process.env.SMTP_HOST || 'smtp.gmail.com',
+            port: parseInt(process.env.SMTP_PORT || '587'),
+            secure: false,
+            auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
+        });
+    } catch(e) {
+        console.error('[EMAIL] nodemailer non disponibile:', e.message);
+        return null;
+    }
+}
 
 const NOTIFY_TO  = process.env.NOTIFY_EMAIL || 'training@angelopagliara.it';
 const FROM_LABEL = '"SAAM 4.0 Academy" <' + (process.env.SMTP_USER || 'noreply@saam40.net') + '>';
@@ -99,7 +103,7 @@ const emailService = {
             + _row('Codice affiliato', referral_code || '—')
             + `<div class="badge">STUDENTE ATTIVO</div>`
             + _htmlFooter();
-        await _smtpTransporter.sendMail({
+        const __t = _getTransporter(); if (!__t) throw new Error("nodemailer non installato"); await __t.sendMail({
             from: FROM_LABEL, to: NOTIFY_TO,
             subject: `🎓 Nuovo Studente — ${name} (${pkgLabel})`,
             html
@@ -123,7 +127,7 @@ const emailService = {
             + `<div class="badge">IN ATTESA DI APPROVAZIONE</div>`
             + `<p style="margin-top:20px;font-size:13px;color:#555">Accedi alla <a href="${process.env.FRONTEND_URL || 'https://italian-learning-platform.onrender.com'}/admin-affiliazioni.html" style="color:#009246;font-weight:700">Dashboard Admin Affiliazioni</a> per approvare o rifiutare.</p>`
             + _htmlFooter();
-        await _smtpTransporter.sendMail({
+        const __t = _getTransporter(); if (!__t) throw new Error("nodemailer non installato"); await __t.sendMail({
             from: FROM_LABEL, to: NOTIFY_TO,
             subject: `🏢 Nuova Affiliazione — ${organization_name} (${piano_adesione || 'n.d.'})`,
             html
@@ -150,7 +154,7 @@ const emailService = {
                <a href="${link}" style="display:inline-block;margin:20px 0;background:#009246;color:#fff;padding:14px 28px;border-radius:8px;text-decoration:none;font-weight:700;font-size:15px">Reimposta la Password</a>
                <p style="font-size:12px;color:#999">Se non hai richiesto il reset, ignora questa email. La tua password rimane invariata.</p>`
             + _htmlFooter();
-        await _smtpTransporter.sendMail({
+        const __t = _getTransporter(); if (!__t) throw new Error("nodemailer non installato"); await __t.sendMail({
             from: FROM_LABEL, to: email,
             subject: '🔑 Reimposta la tua password — SAAM 4.0',
             html
@@ -175,7 +179,7 @@ const emailService = {
                <a href="${link}" style="display:inline-block;margin:20px 0;background:#009246;color:#fff;padding:14px 28px;border-radius:8px;text-decoration:none;font-weight:700;font-size:15px">Reimposta la Password</a>
                <p style="font-size:12px;color:#999">Se non hai richiesto il reset, ignora questa email.</p>`
             + _htmlFooter();
-        await _smtpTransporter.sendMail({
+        const __t = _getTransporter(); if (!__t) throw new Error("nodemailer non installato"); await __t.sendMail({
             from: FROM_LABEL, to: email,
             subject: '🔑 Reimposta la tua password — SAAM 4.0 Italian Voice',
             html
@@ -200,7 +204,7 @@ const emailService = {
                <a href="${link}" style="display:inline-block;margin:20px 0;background:#1A3A5C;color:#fff;padding:14px 28px;border-radius:8px;text-decoration:none;font-weight:700;font-size:15px">Reimposta la Password Admin</a>
                <p style="font-size:12px;color:#999">Se non hai richiesto il reset, contatta immediatamente training@angelopagliara.it.</p>`
             + _htmlFooter();
-        await _smtpTransporter.sendMail({
+        const __t = _getTransporter(); if (!__t) throw new Error("nodemailer non installato"); await __t.sendMail({
             from: FROM_LABEL, to: email,
             subject: '🔐 Reset Password ADMIN — SAAM 4.0',
             html
@@ -1428,8 +1432,8 @@ router.get('/admin/test-email', authMiddleware, adminOnly, async (req, res) => {
                 vars: { SMTP_USER: !!process.env.SMTP_USER, SMTP_PASS: !!process.env.SMTP_PASS, NOTIFY_EMAIL: process.env.NOTIFY_EMAIL || 'non impostato' }
             });
         }
-        await _smtpTransporter.verify();
-        await _smtpTransporter.sendMail({
+        const __tv = _getTransporter(); if (!__tv) throw new Error("nodemailer non installato"); await __tv.verify();
+        const __t = _getTransporter(); if (!__t) throw new Error("nodemailer non installato"); await __t.sendMail({
             from: FROM_LABEL,
             to: process.env.NOTIFY_EMAIL || 'training@angelopagliara.it',
             subject: '✅ Test SMTP — SAAM 4.0 funziona!',
