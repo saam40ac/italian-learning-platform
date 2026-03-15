@@ -1279,12 +1279,16 @@ router.get('/admin/affiliates/expiring-soon', authMiddleware, adminOnly, async (
 
 // Richiesta reset password affiliato
 router.post('/public/affiliate/forgot-password', async (req, res) => {
+    res.setHeader('Content-Type', 'application/json');
     const { email } = req.body;
     if (!email) return res.status(400).json({ error: 'Email richiesta' });
     try {
         await emailService.sendPasswordResetAffiliate(pool, email);
-        res.json({ success: true, message: 'Se l\'email è registrata riceverai le istruzioni.' });
-    } catch (err) { res.status(500).json({ error: err.message }); }
+        return res.json({ success: true, message: "Se l'email è registrata riceverai le istruzioni." });
+    } catch (err) {
+        console.error('[RESET AFFILIATE]', err.message);
+        return res.status(500).json({ error: err.message });
+    }
 });
 
 // Verifica token e reset password affiliato
@@ -1309,12 +1313,16 @@ router.post('/public/affiliate/reset-password', async (req, res) => {
 // ════════════════════════════════════════════════════════════
 
 router.post('/public/student/forgot-password', async (req, res) => {
+    res.setHeader('Content-Type', 'application/json');
     const { email } = req.body;
     if (!email) return res.status(400).json({ error: 'Email richiesta' });
     try {
         await emailService.sendPasswordResetStudent(pool, email);
-        res.json({ success: true, message: "Se l'email è registrata riceverai le istruzioni." });
-    } catch (err) { res.status(500).json({ error: err.message }); }
+        return res.json({ success: true, message: "Se l'email è registrata riceverai le istruzioni." });
+    } catch (err) {
+        console.error('[RESET STUDENT]', err.message);
+        return res.status(500).json({ error: err.message });
+    }
 });
 
 router.post('/public/student/reset-password', async (req, res) => {
@@ -1338,12 +1346,16 @@ router.post('/public/student/reset-password', async (req, res) => {
 // ════════════════════════════════════════════════════════════
 
 router.post('/public/admin/forgot-password', async (req, res) => {
+    res.setHeader('Content-Type', 'application/json');
     const { email } = req.body;
     if (!email) return res.status(400).json({ error: 'Email richiesta' });
     try {
         await emailService.sendPasswordResetAdmin(pool, email);
-        res.json({ success: true, message: "Se l'email è registrata riceverai le istruzioni." });
-    } catch (err) { res.status(500).json({ error: err.message }); }
+        return res.json({ success: true, message: "Se l'email è registrata riceverai le istruzioni." });
+    } catch (err) {
+        console.error('[RESET ADMIN]', err.message);
+        return res.status(500).json({ error: err.message });
+    }
 });
 
 router.post('/public/admin/reset-password', async (req, res) => {
