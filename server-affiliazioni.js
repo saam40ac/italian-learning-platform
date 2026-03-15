@@ -288,13 +288,18 @@ async function stripeWebhook(req, res) {
                 try {
                     const userRow = await pool.query('SELECT name, email, phone FROM users WHERE id = $1', [userId]);
                     if (userRow.rows[0]) {
-                        emailService.notifyNewStudent({
-                            name: userRow.rows[0].name,
-                            email: userRow.rows[0].email,
-                            phone: userRow.rows[0].phone,
-                            package: pkg,
-                            referral_code: session.metadata?.affiliate_id ? `ID affiliato: ${affiliateId}` : null
-                        }).catch(e => console.error('[EMAIL] notifyNewStudent:', e.message));
+                        try {
+                            await emailService.notifyNewStudent({
+                                name: userRow.rows[0].name,
+                                email: userRow.rows[0].email,
+                                phone: userRow.rows[0].phone,
+                                package: pkg,
+                                referral_code: session.metadata?.affiliate_id ? `ID affiliato: ${affiliateId}` : null
+                            });
+                            console.log('[EMAIL] Notifica studente inviata OK a', process.env.NOTIFY_EMAIL);
+                        } catch(e) {
+                            console.error('[EMAIL] notifyNewStudent ERRORE:', e.message);
+                        }
                     }
                 } catch(e) { console.error('[EMAIL] lookup utente:', e.message); }
 
@@ -590,14 +595,15 @@ router.post('/public/affiliate/apply', async (req, res) => {
             [organization_name, contact_name, email, phone, address, city, vat_number, pec || null, codice_sdi || null, referral_code, finalNotes]
         );
         // Notifica email admin
-        emailService.notifyNewAffiliate({
-            organization_name,
-            contact_name,
-            email,
-            phone,
-            city,
-            piano_adesione
-        }).catch(e => console.error('[EMAIL] notifyNewAffiliate:', e.message));
+        try {
+            await emailService.notifyNewAffiliate({
+                organization_name, contact_name, email, phone, city, piano_adesione,
+                vat_number, pec
+            });
+            console.log('[EMAIL] Notifica affiliazione inviata OK a', process.env.NOTIFY_EMAIL);
+        } catch(e) {
+            console.error('[EMAIL] notifyNewAffiliate ERRORE:', e.message);
+        }
 
         res.json({ success: true, message: 'Richiesta inviata. Sarai contattato per l\'approvazione.' });
     } catch (err) { res.status(500).json({ error: err.message }); }
