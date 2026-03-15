@@ -3,6 +3,37 @@ const express = require('express');
 const cors = require('cors');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+// ============================================
+// POSTGRESQL CONNECTION
+// ============================================
+
+const pool = new Pool({
+    host: process.env.DB_HOST || 'localhost',
+    port: process.env.DB_PORT || 5432,
+    database: process.env.DB_NAME || 'italian_learning_db',
+    user: process.env.DB_USER || 'postgres',
+    password: process.env.DB_PASSWORD,
+    ssl: {
+        rejectUnauthorized: false
+    },
+    max: 20,
+    idleTimeoutMillis: 30000,
+    connectionTimeoutMillis: 2000,
+});
+
+pool.on('error', (err) => {
+    console.error('Unexpected error on idle PostgreSQL client', err);
+    process.exit(-1);
+});
+
+pool.query('SELECT NOW()', (err, res) => {
+    if (err) {
+        console.error('❌ PostgreSQL connection error:', err);
+    } else {
+        console.log('✅ PostgreSQL connected successfully at:', res.rows[0].now);
+    }
+});
+
 // ── EMAIL SERVICE (Nodemailer + Gmail SMTP) ──────────────────────────────────
 function _getTransporter() {
     try {
@@ -136,36 +167,7 @@ function getPackageLimits(pkg) {
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// ============================================
-// POSTGRESQL CONNECTION
-// ============================================
 
-const pool = new Pool({
-    host: process.env.DB_HOST || 'localhost',
-    port: process.env.DB_PORT || 5432,
-    database: process.env.DB_NAME || 'italian_learning_db',
-    user: process.env.DB_USER || 'postgres',
-    password: process.env.DB_PASSWORD,
-    ssl: {
-        rejectUnauthorized: false
-    },
-    max: 20,
-    idleTimeoutMillis: 30000,
-    connectionTimeoutMillis: 2000,
-});
-
-pool.on('error', (err) => {
-    console.error('Unexpected error on idle PostgreSQL client', err);
-    process.exit(-1);
-});
-
-pool.query('SELECT NOW()', (err, res) => {
-    if (err) {
-        console.error('❌ PostgreSQL connection error:', err);
-    } else {
-        console.log('✅ PostgreSQL connected successfully at:', res.rows[0].now);
-    }
-});
 
 // ============================================
 // GOOGLE APIS SETUP
