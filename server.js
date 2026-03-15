@@ -36,23 +36,53 @@ pool.query('SELECT NOW()', (err, res) => {
     }
 });
 
-// ── EMAIL SERVICE (Nodemailer + Gmail SMTP) ──────────────────────────────────
-function _getTransporter() {
-    try {
-        const nodemailer = require('nodemailer');
-        return nodemailer.createTransport({
-            host: process.env.SMTP_HOST || 'smtp-relay.brevo.com',
-            port: parseInt(process.env.SMTP_PORT || '587'),
-            secure: false,
-            auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
-            tls: { rejectUnauthorized: false },
-            connectionTimeout: 10000,
-            greetingTimeout: 10000,
-        });
-    } catch(e) { console.error('[EMAIL] nodemailer non disponibile:', e.message); return null; }
-}
+// ── EMAIL SERVICE — Brevo HTTP API (porta 443, mai bloccata da Render) ────────
+// Variabili Render richieste:
+//   BREVO_API_KEY  → la API key di Brevo (Settings → API Keys → Create API Key)
+//   NOTIFY_EMAIL   → training@angelopagliara.it
+//   FRONTEND_URL   → https://italianlearning.angelopagliara.it
+// ─────────────────────────────────────────────────────────────────────────────
 const NOTIFY_TO = process.env.NOTIFY_EMAIL || 'training@angelopagliara.it';
-const FROM_LABEL = '"SAAM 4.0 Academy" <' + (process.env.SMTP_USER || 'noreply@saam40.net') + '>';
+const BREVO_FROM = { name: 'SAAM 4.0 Academy', email: process.env.BREVO_SENDER || 'training@angelopagliara.it' };
+
+async function _brevoSend(to, subject, html) {
+    const apiKey = process.env.BREVO_API_KEY;
+    if (!apiKey) throw new Error('BREVO_API_KEY non impostata su Render');
+    const https = require('https');
+    const body = JSON.stringify({
+        sender: BREVO_FROM,
+        to: Array.isArray(to) ? to : [{ email: to }],
+        subject,
+        htmlContent: html
+    });
+    return new Promise((resolve, reject) => {
+        const req = https.request({
+            hostname: 'api.brevo.com',
+            path: '/v3/smtp/email',
+            method: 'POST',
+            headers: {
+                'accept': 'application/json',
+                'api-key': apiKey,
+                'content-type': 'application/json',
+                'content-length': Buffer.byteLength(body)
+            }
+        }, (res) => {
+            let data = '';
+            res.on('data', d => data += d);
+            res.on('end', () => {
+                if (res.statusCode >= 200 && res.statusCode < 300) {
+                    resolve(JSON.parse(data || '{}'));
+                } else {
+                    reject(new Error('Brevo API error ' + res.statusCode + ': ' + data));
+                }
+            });
+        });
+        req.on('error', reject);
+        req.setTimeout(15000, () => { req.destroy(); reject(new Error('Brevo API timeout')); });
+        req.write(body);
+        req.end();
+    });
+}
 function _htmlWrap(titolo, sub, body) {
     return '<!DOCTYPE html><html><head><meta charset="UTF-8"><style>'
         + 'body{font-family:Arial,sans-serif;background:#f4f7f4;margin:0}'
@@ -72,7 +102,7 @@ function _htmlWrap(titolo, sub, body) {
 function _row(l, v) { return v ? '<div class="r"><div class="l">'+l+'</div><div class="v">'+v+'</div></div>' : ''; }
 
 async function _sendResetEmail(pool, email, userType) {
-    if (!process.env.SMTP_USER) throw new Error('SMTP non configurato (manca SMTP_USER su Render)');
+    if (!process.env.BREVO_API_KEY) throw new Error('BREVO_API_KEY non configurata su Render');
     let userRow, table, pwCol, tokenTable;
     if (userType === 'affiliate') {
         const r = await pool.query('SELECT id, contact_name AS name FROM affiliates WHERE email=$1', [email]);
@@ -104,14 +134,11 @@ async function _sendResetEmail(pool, email, userType) {
         + '<a href="' + link + '" class="btn">Reimposta la Password</a>'
         + '<p style="font-size:11px;color:#999">Se non hai richiesto il reset, ignora questa email.</p>'
     );
-    const t = _getTransporter();
-    if (!t) throw new Error('Impossibile creare il transporter email');
-    await t.sendMail({ from: FROM_LABEL, to: email,
-        subject: icon + ' Reimposta la tua password — SAAM 4.0', html });
+    await _brevoSend(email, icon + ' Reimposta la tua password — SAAM 4.0', html);
 }
 
 async function _sendNotifyAdmin(type, data) {
-    if (!process.env.SMTP_USER) return;
+    if (!process.env.BREVO_API_KEY) return;
     try {
         let subject, body;
         if (type === 'student') {
@@ -129,8 +156,7 @@ async function _sendNotifyAdmin(type, data) {
                  + '<p style="margin-top:14px;font-size:13px"><a href="'+(process.env.FRONTEND_URL||'')+'/admin-affiliazioni.html" style="color:#009246;font-weight:700">Apri Dashboard Admin →</a></p>';
         }
         const html = _htmlWrap(subject, new Date().toLocaleString('it-IT'), body);
-        const t = _getTransporter();
-        if (t) await t.sendMail({ from: FROM_LABEL, to: NOTIFY_TO, subject, html });
+        await _brevoSend(NOTIFY_TO, subject, html);
     } catch(e) { console.error('[EMAIL NOTIFY]', e.message); }
 }
 
@@ -239,8 +265,7 @@ app.get('/api/ping', (req, res) => {
     res.json({
         ok: true,
         router_loaded: !!affiliazioniRoutes,
-        smtp_user: !!process.env.SMTP_USER,
-        smtp_pass: !!process.env.SMTP_PASS,
+        brevo_api_key: !!process.env.BREVO_API_KEY,
         notify_email: process.env.NOTIFY_EMAIL || 'non impostato',
         frontend_url: process.env.FRONTEND_URL || 'non impostato',
         node_version: process.version,
@@ -1723,15 +1748,11 @@ app.get('/api/admin/users/:userId/tts-usage', authenticate, requireAdmin, async 
 
 // Test SMTP — GET /api/public/test-email (temporaneo, solo per debug)
 app.get('/api/public/test-email', async (req, res) => {
-    if (!process.env.SMTP_USER) return res.json({ ok:false, error:'SMTP_USER non impostato su Render' });
+    if (!process.env.BREVO_API_KEY) return res.json({ ok:false, error:'BREVO_API_KEY non impostata su Render' });
     try {
-        const t = _getTransporter();
-        if (!t) return res.json({ ok:false, error:'nodemailer non disponibile' });
-        await t.verify();
-        await t.sendMail({ from: FROM_LABEL, to: NOTIFY_TO,
-            subject: '✅ Test SMTP SAAM 4.0',
-            html: '<h2 style="color:#009246">✅ Funziona!</h2><p>SMTP_USER: '+process.env.SMTP_USER+'</p>' });
-        res.json({ ok:true, message:'Email inviata a '+NOTIFY_TO });
+        await _brevoSend(NOTIFY_TO, '✅ Test Email SAAM 4.0',
+            '<h2 style="color:#009246">✅ Brevo API funziona!</h2><p>Notifiche email attive su SAAM 4.0.</p>');
+        res.json({ ok:true, message:'Email di test inviata a '+NOTIFY_TO });
     } catch(e) { res.json({ ok:false, error: e.message }); }
 });
 
