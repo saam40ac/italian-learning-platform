@@ -3,6 +3,8 @@ const express = require('express');
 const cors = require('cors');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const { Pool } = require('pg');
+
 // ============================================
 // POSTGRESQL CONNECTION
 // ============================================
@@ -131,8 +133,13 @@ const emailService = {
     notifyNewStudent:  (d) => _sendNotifyAdmin('student', d),
     notifyNewAffiliate:(d) => _sendNotifyAdmin('affiliate', d),
 };
-const { Pool } = require('pg');
+
+
+
 const { google } = require('googleapis');
+
+
+
 // ── Tracking costi API (inline — non dipende da file esterni) ──
 async function trackApiUsage(pool, userId, apiType, units, sessionType, sessionId) {
     try {
