@@ -3,7 +3,8 @@ const express = require('express');
 const cors = require('cors');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const emailService = require('./server-email');
+// emailService — stub (le notifiche email sono gestite in server-affiliazioni.js)
+const emailService = { notifyNewStudent: async()=>{}, notifyNewAffiliate: async()=>{} };
 const { Pool } = require('pg');
 const { google } = require('googleapis');
 // ── Tracking costi API (inline — non dipende da file esterni) ──
