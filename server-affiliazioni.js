@@ -1857,6 +1857,18 @@ router.post('/admin/teachers', authMiddleware, adminOnly, async (req, res) => {
     } catch(err) { res.status(500).json({ error: err.message }); }
 });
 
+// ── ADMIN: reset password docente ───────────────────────────
+router.post('/admin/teachers/:id/reset-password', authMiddleware, adminOnly, async (req, res) => {
+    try {
+        const { rows } = await pool.query('SELECT id, name, email FROM teachers WHERE id=$1', [req.params.id]);
+        if (!rows[0]) return res.status(404).json({ error: 'Docente non trovato' });
+        const tempPwd = Math.random().toString(36).slice(-8) + Math.random().toString(36).slice(-4).toUpperCase();
+        const hash = await bcrypt.hash(tempPwd, 12);
+        await pool.query('UPDATE teachers SET password_hash=$1 WHERE id=$2', [hash, req.params.id]);
+        res.json({ success: true, temp_password: tempPwd, name: rows[0].name, email: rows[0].email });
+    } catch(err) { res.status(500).json({ error: err.message }); }
+});
+
 // ── ADMIN: tutte le prenotazioni (con filtro stato) ──────────
 router.get('/admin/bookings', authMiddleware, adminOnly, async (req, res) => {
     const { status, from, to } = req.query;
