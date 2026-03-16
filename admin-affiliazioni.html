@@ -182,6 +182,8 @@
             <div class="nav-divider"></div>
             <div class="nav-item" style="font-size:.78rem;opacity:.5;cursor:default;padding:8px 20px;border:none">TOOLS</div>
             <div class="nav-item" data-page="calc"><span class="icon">🧮</span>Calcola Provvigioni</div>
+            <div class="nav-item" data-page="teachers"><span class="icon">🎓</span>Docenti</div>
+            <div class="nav-item" data-page="bookings"><span class="icon">📅</span>Prenotazioni</div>
         </div>
 
         <div class="content">
@@ -277,6 +279,120 @@
                             <button class="btn-primary" onclick="calcCommissions()">🧮 Calcola Provvigioni</button>
                         </div>
                         <div id="calcResult" style="margin-top:20px;display:none;background:var(--verde-pale);border:1px solid rgba(0,146,70,.2);border-radius:10px;padding:16px;font-size:.9rem;color:var(--verde-dark)"></div>
+                    </div>
+                </div>
+            </div>
+
+
+            <!-- DOCENTI -->
+            <div class="page" id="page-teachers">
+                <div class="page-title">Gestione Docenti</div>
+
+                <!-- Form nuovo docente -->
+                <div class="panel" style="margin-bottom:24px">
+                    <div class="panel-header"><span class="panel-title">➕ Aggiungi Nuovo Docente</span></div>
+                    <div style="padding:24px">
+                        <div id="teacherFormAlert"></div>
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+                            <div>
+                                <label style="display:block;font-size:.75rem;font-weight:700;color:var(--grigio-700);margin-bottom:5px;text-transform:uppercase">Nome Completo *</label>
+                                <input id="tName" type="text" placeholder="Es. Maria Rossi" style="width:100%;border:1.5px solid var(--grigio-200);border-radius:10px;padding:10px 14px;font-family:Lato,sans-serif;font-size:.9rem;outline:none">
+                            </div>
+                            <div>
+                                <label style="display:block;font-size:.75rem;font-weight:700;color:var(--grigio-700);margin-bottom:5px;text-transform:uppercase">Email *</label>
+                                <input id="tEmail" type="email" placeholder="docente@email.it" style="width:100%;border:1.5px solid var(--grigio-200);border-radius:10px;padding:10px 14px;font-family:Lato,sans-serif;font-size:.9rem;outline:none">
+                            </div>
+                            <div>
+                                <label style="display:block;font-size:.75rem;font-weight:700;color:var(--grigio-700);margin-bottom:5px;text-transform:uppercase">Centro Affiliato *</label>
+                                <select id="tAffiliate" style="width:100%;border:1.5px solid var(--grigio-200);border-radius:10px;padding:10px 14px;font-family:Lato,sans-serif;font-size:.9rem;outline:none;background:#fff">
+                                    <option value="">Seleziona centro...</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label style="display:block;font-size:.75rem;font-weight:700;color:var(--grigio-700);margin-bottom:5px;text-transform:uppercase">Telefono</label>
+                                <input id="tPhone" type="tel" placeholder="+39 333 1234567" style="width:100%;border:1.5px solid var(--grigio-200);border-radius:10px;padding:10px 14px;font-family:Lato,sans-serif;font-size:.9rem;outline:none">
+                            </div>
+                            <div>
+                                <label style="display:block;font-size:.75rem;font-weight:700;color:var(--grigio-700);margin-bottom:5px;text-transform:uppercase">Link Zoom (Personal Meeting Room) *</label>
+                                <input id="tZoom" type="url" placeholder="https://zoom.us/j/..." style="width:100%;border:1.5px solid var(--grigio-200);border-radius:10px;padding:10px 14px;font-family:Lato,sans-serif;font-size:.9rem;outline:none">
+                            </div>
+                            <div>
+                                <label style="display:block;font-size:.75rem;font-weight:700;color:var(--grigio-700);margin-bottom:5px;text-transform:uppercase">Materie / Livelli</label>
+                                <input id="tSubjects" type="text" placeholder="Es. A1-B2, CILS, Italiano per il lavoro" style="width:100%;border:1.5px solid var(--grigio-200);border-radius:10px;padding:10px 14px;font-family:Lato,sans-serif;font-size:.9rem;outline:none">
+                            </div>
+                            <div style="grid-column:1/-1">
+                                <label style="display:block;font-size:.75rem;font-weight:700;color:var(--grigio-700);margin-bottom:5px;text-transform:uppercase">Presentazione (Bio pubblica)</label>
+                                <textarea id="tBio" rows="3" placeholder="Descrivi l'approccio didattico, le specializzazioni..." style="width:100%;border:1.5px solid var(--grigio-200);border-radius:10px;padding:10px 14px;font-family:Lato,sans-serif;font-size:.9rem;outline:none;resize:vertical"></textarea>
+                            </div>
+                            <div style="grid-column:1/-1">
+                                <label style="display:block;font-size:.75rem;font-weight:700;color:var(--grigio-700);margin-bottom:5px;text-transform:uppercase">URL Foto (link immagine online)</label>
+                                <input id="tPhoto" type="url" placeholder="https://..." style="width:100%;border:1.5px solid var(--grigio-200);border-radius:10px;padding:10px 14px;font-family:Lato,sans-serif;font-size:.9rem;outline:none">
+                            </div>
+                        </div>
+                        <div style="margin-top:18px;display:flex;gap:12px;align-items:center">
+                            <button class="btn-primary" onclick="createTeacher()">➕ Crea Docente</button>
+                            <span style="font-size:.8rem;color:var(--grigio-400)">Una password temporanea verrà generata automaticamente</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Lista docenti -->
+                <div class="panel">
+                    <div class="panel-header" style="display:flex;justify-content:space-between;align-items:center">
+                        <span class="panel-title">Docenti Registrati</span>
+                        <button class="btn-primary" onclick="loadTeachers()" style="padding:7px 16px;font-size:.8rem">🔄 Aggiorna</button>
+                    </div>
+                    <div style="overflow-x:auto">
+                        <table>
+                            <thead><tr>
+                                <th>Docente</th><th>Centro</th><th>Materie</th>
+                                <th>Lezioni</th><th>Da liquidare</th><th>Stato</th><th>Azioni</th>
+                            </tr></thead>
+                            <tbody id="teachersBody">
+                                <tr><td colspan="7" style="text-align:center;padding:24px;color:var(--grigio-400)">Caricamento...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PRENOTAZIONI LEZIONI -->
+            <div class="page" id="page-bookings">
+                <div class="page-title">Prenotazioni Lezioni Live</div>
+
+                <!-- KPI -->
+                <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:24px">
+                    <div class="kpi-card"><div class="kpi-icon">💰</div><div class="kpi-val" id="bkRevenue">—</div><div class="kpi-label">Incasso totale</div></div>
+                    <div class="kpi-card"><div class="kpi-icon">⏳</div><div class="kpi-val" id="bkUnpaid">—</div><div class="kpi-label">Da liquidare ai centri</div></div>
+                    <div class="kpi-card"><div class="kpi-icon">📅</div><div class="kpi-val" id="bkTotal">—</div><div class="kpi-label">Prenotazioni totali</div></div>
+                </div>
+
+                <div class="panel">
+                    <div class="panel-header" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px">
+                        <span class="panel-title">Tutte le Prenotazioni</span>
+                        <div style="display:flex;gap:10px;flex-wrap:wrap">
+                            <select id="bkStatusFilter" onchange="loadBookings()" style="border:1.5px solid var(--grigio-200);border-radius:8px;padding:7px 12px;font-family:Lato,sans-serif;font-size:.85rem;background:#fff;outline:none">
+                                <option value="">Tutti gli stati</option>
+                                <option value="pending">Pending</option>
+                                <option value="paid">Pagata</option>
+                                <option value="confirmed">Confermata</option>
+                                <option value="completed">Completata</option>
+                                <option value="cancelled">Cancellata</option>
+                            </select>
+                            <button class="btn-primary" onclick="markCentersPaid()" style="padding:7px 16px;font-size:.8rem;background:var(--oro)">💳 Segna Tutti Liquidati</button>
+                        </div>
+                    </div>
+                    <div style="overflow-x:auto">
+                        <table>
+                            <thead><tr>
+                                <th>Data Lezione</th><th>Studente</th><th>Docente</th>
+                                <th>Centro</th><th>Importo</th><th>Quota Centro</th>
+                                <th>Stato</th><th>Liquidato</th>
+                            </tr></thead>
+                            <tbody id="bookingsBody">
+                                <tr><td colspan="8" style="text-align:center;padding:24px;color:var(--grigio-400)">Caricamento...</td></tr>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>
@@ -427,6 +543,9 @@ document.querySelectorAll('.nav-item[data-page]').forEach(item => {
 // ── LOAD ALL ──
 async function loadAll() {
     await Promise.all([loadSummary(), loadAffiliates(), loadCommissions()]);
+    loadTeachers();
+    loadBookings();
+    populateAffiliateSelect();
 }
 
 async function loadSummary() {
@@ -593,7 +712,8 @@ function downloadContract() {
     .catch(err => {
         btn.textContent = '❌ Errore — Riprova';
         btn.disabled = false;
-        console.error(err);
+        console.error('[PDF ERROR]', err.message);
+        alert('Errore generazione PDF:\n' + err.message);
     });
 }
 
@@ -604,8 +724,12 @@ function downloadContractDirect(id, btnEl) {
     fetch(`${API}/api/admin/affiliates/${id}/contract`, {
         headers: { 'Authorization': 'Bearer ' + getToken() }
     })
-    .then(r => {
-        if (!r.ok) throw new Error('Errore');
+    .then(async r => {
+        if (!r.ok) {
+            let errMsg = 'Errore ' + r.status;
+            try { const d = await r.json(); errMsg = d.error || errMsg; } catch(e) {}
+            throw new Error(errMsg);
+        }
         return r.blob();
     })
     .then(blob => {
@@ -620,9 +744,12 @@ function downloadContractDirect(id, btnEl) {
         btn.textContent = '📄 PDF';
         btn.disabled = false;
     })
-    .catch(() => {
-        btn.textContent = '❌';
+    .catch(err => {
+        btn.textContent = '❌ ' + err.message;
+        btn.style.fontSize = '0.65rem';
         btn.disabled = false;
+        console.error('[PDF ERROR]', err.message);
+        alert('Errore generazione PDF:\n' + err.message);
     });
 }
 
@@ -747,6 +874,182 @@ async function exportExpiring() {
 // ── HELPERS ──
 function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;'); }
 function fmtDate(d) { return d ? new Date(d).toLocaleDateString('it-IT',{day:'2-digit',month:'short',year:'numeric'}) : '—'; }
+
+// ══════════════════════════════════════════════
+// DOCENTI
+// ══════════════════════════════════════════════
+
+async function populateAffiliateSelect() {
+    try {
+        const r = await apiFetch('/api/admin/affiliates');
+        const d = await r.json();
+        const sel = document.getElementById('tAffiliate');
+        if (!sel) return;
+        const active = (d.affiliates || []).filter(a => a.status === 'active');
+        sel.innerHTML = '<option value="">Seleziona centro...</option>' +
+            active.map(a => `<option value="${a.id}">${a.organization_name} — ${a.city||''}</option>`).join('');
+    } catch(e) {}
+}
+
+async function loadTeachers() {
+    try {
+        const r = await apiFetch('/api/admin/teachers');
+        const d = await r.json();
+        const tbody = document.getElementById('teachersBody');
+        if (!tbody) return;
+        const teachers = d.teachers || [];
+        if (!teachers.length) {
+            tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--grigio-400)">Nessun docente registrato</td></tr>';
+            return;
+        }
+        tbody.innerHTML = teachers.map(t => `
+            <tr>
+                <td>
+                    ${t.photo_url ? `<img src="${t.photo_url}" style="width:36px;height:36px;border-radius:50%;object-fit:cover;vertical-align:middle;margin-right:8px" onerror="this.style.display='none'">` : '👨‍🏫 '}
+                    <strong>${t.name}</strong><br>
+                    <small style="color:var(--grigio-400)">${t.email}</small>
+                </td>
+                <td>${t.center_name||'—'}<br><small style="color:var(--grigio-400)">${t.center_city||''}</small></td>
+                <td style="font-size:.82rem">${t.subjects||'—'}</td>
+                <td style="text-align:center;font-weight:700;color:var(--verde)">${t.lessons_completed||0}</td>
+                <td style="text-align:center;font-weight:700;color:var(--oro)">€${parseFloat(t.pending_payout||0).toFixed(2)}</td>
+                <td>
+                    ${t.approved_at
+                        ? `<span style="background:#e8f8ed;color:#1a6b35;padding:3px 10px;border-radius:100px;font-size:.72rem;font-weight:700">${t.is_active ? '✅ Attivo' : '⏸ Sospeso'}</span>`
+                        : `<span style="background:#fff9e6;color:#856404;padding:3px 10px;border-radius:100px;font-size:.72rem;font-weight:700">⏳ Da approvare</span>`}
+                </td>
+                <td style="white-space:nowrap">
+                    ${!t.approved_at ? `<button onclick="approveTeacher(${t.id})" style="background:var(--verde);color:#fff;border:none;padding:5px 12px;border-radius:6px;cursor:pointer;font-size:.78rem;margin-right:4px">✅ Approva</button>` : ''}
+                    <button onclick="toggleTeacher(${t.id},${!t.is_active})" style="background:${t.is_active?'#fff9e6':'#e8f8ed'};color:${t.is_active?'#856404':'#1a6b35'};border:1px solid;border-color:${t.is_active?'#f0d060':'#a8dfb9'};padding:5px 12px;border-radius:6px;cursor:pointer;font-size:.78rem">
+                        ${t.is_active ? '⏸ Sospendi' : '▶ Riattiva'}
+                    </button>
+                </td>
+            </tr>`).join('');
+    } catch(e) {
+        console.error('loadTeachers:', e);
+    }
+}
+
+async function createTeacher() {
+    const name      = document.getElementById('tName').value.trim();
+    const email     = document.getElementById('tEmail').value.trim();
+    const affId     = document.getElementById('tAffiliate').value;
+    const zoom      = document.getElementById('tZoom').value.trim();
+    const phone     = document.getElementById('tPhone').value.trim();
+    const subjects  = document.getElementById('tSubjects').value.trim();
+    const bio       = document.getElementById('tBio').value.trim();
+    const photo_url = document.getElementById('tPhoto').value.trim();
+    const alertEl   = document.getElementById('teacherFormAlert');
+
+    if (!name || !email || !affId || !zoom) {
+        alertEl.innerHTML = '<div style="background:#fdecea;color:#9b1c1c;padding:10px 14px;border-radius:8px;margin-bottom:12px;font-size:.875rem">⚠️ Nome, email, centro affiliato e link Zoom sono obbligatori.</div>';
+        return;
+    }
+
+    try {
+        const r = await apiFetch('/api/admin/teachers', {
+            method: 'POST',
+            body: JSON.stringify({ affiliate_id: parseInt(affId), name, email, phone, bio, photo_url, zoom_link: zoom, subjects })
+        });
+        const d = await r.json();
+        if (!r.ok) throw new Error(d.error);
+
+        alertEl.innerHTML = `<div style="background:#e8f8ed;color:#1a6b35;border:1px solid #a8dfb9;padding:12px 16px;border-radius:8px;margin-bottom:12px;font-size:.875rem">
+            ✅ Docente <strong>${d.teacher.name}</strong> creato con successo!<br>
+            🔑 Password temporanea: <strong style="font-family:monospace;background:#f0f7f2;padding:2px 8px;border-radius:4px">${d.temp_password}</strong>
+            <br><small style="color:#4a8a5a">Comunica questa password al docente via canale sicuro. Dovrà cambiarla dal suo profilo.</small>
+        </div>`;
+
+        // Reset form
+        ['tName','tEmail','tPhone','tZoom','tSubjects','tBio','tPhoto'].forEach(id => {
+            document.getElementById(id).value = '';
+        });
+        document.getElementById('tAffiliate').value = '';
+        loadTeachers();
+    } catch(e) {
+        alertEl.innerHTML = `<div style="background:#fdecea;color:#9b1c1c;padding:10px 14px;border-radius:8px;margin-bottom:12px;font-size:.875rem">⚠️ ${e.message}</div>`;
+    }
+}
+
+async function approveTeacher(id) {
+    try {
+        const r = await apiFetch(`/api/admin/teachers/${id}/approve`, { method: 'PUT' });
+        if (r.ok) loadTeachers();
+        else alert((await r.json()).error);
+    } catch(e) { alert(e.message); }
+}
+
+async function toggleTeacher(id, activate) {
+    try {
+        await apiFetch(`/api/admin/teachers/${id}/status`, {
+            method: 'PUT', body: JSON.stringify({ is_active: activate })
+        });
+        loadTeachers();
+    } catch(e) { alert(e.message); }
+}
+
+// ══════════════════════════════════════════════
+// PRENOTAZIONI LEZIONI
+// ══════════════════════════════════════════════
+
+async function loadBookings() {
+    const status = document.getElementById('bkStatusFilter')?.value || '';
+    try {
+        const r = await apiFetch('/api/admin/bookings' + (status ? '?status=' + status : ''));
+        const d = await r.json();
+        const tbody = document.getElementById('bookingsBody');
+        if (!tbody) return;
+
+        // KPI
+        if (d.summary) {
+            document.getElementById('bkRevenue').textContent = '€' + parseFloat(d.summary.revenue_eur||0).toFixed(2);
+            document.getElementById('bkUnpaid').textContent  = '€' + parseFloat(d.summary.unpaid_to_centers||0).toFixed(2);
+            document.getElementById('bkTotal').textContent   = d.summary.total || 0;
+        }
+
+        const bookings = d.bookings || [];
+        if (!bookings.length) {
+            tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:24px;color:var(--grigio-400)">Nessuna prenotazione trovata</td></tr>';
+            return;
+        }
+        tbody.innerHTML = bookings.map(b => {
+            const dt = new Date(b.lesson_at).toLocaleString('it-IT',{
+                weekday:'short',day:'2-digit',month:'short',year:'numeric',
+                hour:'2-digit',minute:'2-digit',timeZone:'Europe/Rome'
+            });
+            const statusColors = {
+                pending:'background:#fff9e6;color:#856404',
+                paid:'background:#e8f8ed;color:#1a6b35',
+                confirmed:'background:#e8eef8;color:#1A3A5C',
+                completed:'background:#e8f5ee;color:#007A38',
+                cancelled:'background:#fdecea;color:#9b1c1c',
+            };
+            const sc = statusColors[b.status] || '';
+            return `<tr>
+                <td><strong>${dt}</strong></td>
+                <td>${b.student_name}<br><small style="color:var(--grigio-400)">${b.student_email||''}</small></td>
+                <td>${b.teacher_name}</td>
+                <td>${b.center_name}</td>
+                <td style="font-weight:700;color:var(--verde)">€${parseFloat(b.amount_eur).toFixed(2)}</td>
+                <td style="font-weight:700;color:var(--oro)">€${parseFloat(b.teacher_share_eur).toFixed(2)}</td>
+                <td><span style="${sc};padding:3px 10px;border-radius:100px;font-size:.72rem;font-weight:700">${b.status}</span></td>
+                <td style="text-align:center">${b.paid_to_center
+                    ? '<span style="color:var(--verde);font-weight:700">✅</span>'
+                    : '<span style="color:var(--grigio-400)">⏳</span>'}</td>
+            </tr>`;
+        }).join('');
+    } catch(e) { console.error('loadBookings:', e); }
+}
+
+async function markCentersPaid() {
+    if (!confirm('Segna come liquidate al centro tutte le prenotazioni non ancora pagate?')) return;
+    try {
+        const r = await apiFetch('/api/admin/bookings/mark-paid-centers', { method: 'PUT', body: JSON.stringify({}) });
+        const d = await r.json();
+        if (r.ok) { alert(`✅ ${d.updated} prenotazioni segnate come liquidate`); loadBookings(); }
+    } catch(e) { alert(e.message); }
+}
+
 </script>
 </body>
 </html>
