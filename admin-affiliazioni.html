@@ -920,8 +920,11 @@ async function loadTeachers() {
                 </td>
                 <td style="white-space:nowrap">
                     ${!t.approved_at ? `<button onclick="approveTeacher(${t.id})" style="background:var(--verde);color:#fff;border:none;padding:5px 12px;border-radius:6px;cursor:pointer;font-size:.78rem;margin-right:4px">✅ Approva</button>` : ''}
-                    <button onclick="toggleTeacher(${t.id},${!t.is_active})" style="background:${t.is_active?'#fff9e6':'#e8f8ed'};color:${t.is_active?'#856404':'#1a6b35'};border:1px solid;border-color:${t.is_active?'#f0d060':'#a8dfb9'};padding:5px 12px;border-radius:6px;cursor:pointer;font-size:.78rem">
+                    <button onclick="toggleTeacher(${t.id},${!t.is_active})" style="background:${t.is_active?'#fff9e6':'#e8f8ed'};color:${t.is_active?'#856404':'#1a6b35'};border:1px solid;border-color:${t.is_active?'#f0d060':'#a8dfb9'};padding:5px 12px;border-radius:6px;cursor:pointer;font-size:.78rem;margin-right:4px">
                         ${t.is_active ? '⏸ Sospendi' : '▶ Riattiva'}
+                    </button>
+                    <button onclick="resetTeacherPassword(${t.id},'${t.name}')" style="background:#e8eef8;color:var(--blu);border:1px solid #b8ccf0;padding:5px 12px;border-radius:6px;cursor:pointer;font-size:.78rem">
+                        🔑 Reset pwd
                     </button>
                 </td>
             </tr>`).join('');
@@ -986,6 +989,49 @@ async function toggleTeacher(id, activate) {
         });
         loadTeachers();
     } catch(e) { alert(e.message); }
+}
+
+// ══════════════════════════════════════════════
+// RESET PASSWORD DOCENTE
+// ══════════════════════════════════════════════
+
+async function resetTeacherPassword(id, name) {
+    if (!confirm(`Generare una nuova password temporanea per "${name}"?`)) return;
+    try {
+        const r = await apiFetch(`/api/admin/teachers/${id}/reset-password`, { method: 'POST' });
+        const d = await r.json();
+        if (!r.ok) throw new Error(d.error);
+
+        // Mostra modale con password
+        const modal = document.createElement('div');
+        modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px';
+        modal.innerHTML = `
+            <div style="background:#fff;border-radius:16px;padding:36px;max-width:460px;width:100%;box-shadow:0 24px 64px rgba(0,0,0,.2)">
+                <h3 style="font-family:Georgia,serif;font-size:1.4rem;color:var(--blu);margin-bottom:8px">🔑 Nuova Password Generata</h3>
+                <p style="font-size:.875rem;color:var(--grigio-400);margin-bottom:20px">Docente: <strong>${d.name}</strong> — ${d.email}</p>
+                <div style="background:var(--avorio);border:1.5px solid rgba(0,146,70,.2);border-radius:10px;padding:18px;text-align:center;margin-bottom:20px">
+                    <div style="font-size:.75rem;font-weight:700;text-transform:uppercase;color:var(--grigio-400);margin-bottom:8px">Password Temporanea</div>
+                    <div id="tmpPwdDisplay" style="font-family:monospace;font-size:1.6rem;font-weight:700;color:var(--blu);letter-spacing:.1em">${d.temp_password}</div>
+                </div>
+                <p style="font-size:.8rem;color:#856404;background:#fff9e6;border-radius:8px;padding:10px 14px;margin-bottom:20px">
+                    ⚠️ Comunica questa password al docente via canale sicuro (email, messaggio privato). Non verrà più mostrata.
+                </p>
+                <div style="display:flex;gap:10px">
+                    <button onclick="navigator.clipboard.writeText('${d.temp_password}').then(()=>this.textContent='✅ Copiata!')"
+                        style="flex:1;padding:11px;background:var(--verde);color:#fff;border:none;border-radius:8px;cursor:pointer;font-weight:700">
+                        📋 Copia Password
+                    </button>
+                    <button onclick="this.closest('[style*=position]').remove()"
+                        style="flex:1;padding:11px;background:#eee;color:#333;border:none;border-radius:8px;cursor:pointer;font-weight:600">
+                        Chiudi
+                    </button>
+                </div>
+            </div>`;
+        document.body.appendChild(modal);
+        modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+    } catch(e) {
+        alert('❌ Errore: ' + e.message);
+    }
 }
 
 // ══════════════════════════════════════════════
