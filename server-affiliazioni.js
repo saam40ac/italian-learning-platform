@@ -1400,6 +1400,510 @@ router.get('/admin/test-email', authMiddleware, adminOnly, async (req, res) => {
     }
 });
 
+// ════════════════════════════════════════════════════════════
+// LEZIONI PERSONALIZZATE LIVE
+// ════════════════════════════════════════════════════════════
+
+const LESSON_PRICE      = 30.00;
+const LESSON_TEACHER_SHARE = 0.70;  // 70% al docente/centro
+const LESSON_DAYS = ['Domenica','Lunedì','Martedì','Mercoledì','Giovedì','Venerdì','Sabato'];
+
+// ── Helpers ──────────────────────────────────────────────────
+function lessonShares(price) {
+    const teacher  = Math.round(price * LESSON_TEACHER_SHARE * 100) / 100;
+    const platform = Math.round((price - teacher) * 100) / 100;
+    return { teacher, platform };
+}
+
+// Genera slot disponibili per le prossime N settimane
+// escludendo quelli già prenotati (paid/confirmed/completed)
+async function getAvailableSlots(teacherId, weeksAhead = 4) {
+    const slots = await pool.query(
+        'SELECT * FROM teacher_slots WHERE teacher_id=$1 AND is_active=true ORDER BY day_of_week, start_time',
+        [teacherId]
+    );
+    const bookedRows = await pool.query(
+        `SELECT lesson_at FROM bookings
+         WHERE teacher_id=$1 AND status IN ('paid','confirmed','completed')
+         AND lesson_at > NOW() AND lesson_at < NOW() + INTERVAL '${weeksAhead} weeks'`,
+        [teacherId]
+    );
+    const bookedSet = new Set(bookedRows.rows.map(r => new Date(r.lesson_at).getTime()));
+
+    const result = [];
+    const now = new Date();
+    for (let w = 0; w < weeksAhead; w++) {
+        for (const slot of slots.rows) {
+            // Calcola la data del prossimo giorno-settimana corrispondente
+            const d = new Date(now);
+            d.setDate(d.getDate() + ((slot.day_of_week - d.getDay() + 7) % 7) + w * 7);
+            const [hh, mm] = slot.start_time.split(':');
+            d.setHours(parseInt(hh), parseInt(mm), 0, 0);
+            // Scarta date passate o entro 24h
+            if (d.getTime() < Date.now() + 24 * 60 * 60 * 1000) continue;
+            if (!bookedSet.has(d.getTime())) {
+                result.push({
+                    slot_id: slot.id,
+                    datetime: d.toISOString(),
+                    day_label: LESSON_DAYS[slot.day_of_week],
+                    start_time: slot.start_time,
+                    end_time: slot.end_time,
+                });
+            }
+        }
+    }
+    return result.sort((a, b) => new Date(a.datetime) - new Date(b.datetime));
+}
+
+// ── PUBLIC: lista docenti attivi con slot disponibili ────────
+router.get('/public/teachers', async (req, res) => {
+    try {
+        const { rows } = await pool.query(`
+            SELECT t.id, t.name, t.bio, t.photo_url, t.subjects,
+                   t.price_per_hour, t.zoom_link,
+                   a.organization_name AS center_name, a.city AS center_city
+            FROM teachers t
+            JOIN affiliates a ON a.id = t.affiliate_id
+            WHERE t.is_active = true AND t.approved_at IS NOT NULL
+            AND a.status = 'active'
+            ORDER BY t.name`);
+        res.json({ teachers: rows });
+    } catch(err) { res.status(500).json({ error: err.message }); }
+});
+
+// ── PUBLIC: slot disponibili di un docente ───────────────────
+router.get('/public/teachers/:id/slots', async (req, res) => {
+    const teacherId = parseInt(req.params.id);
+    if (isNaN(teacherId)) return res.status(400).json({ error: 'ID non valido' });
+    try {
+        const { rows } = await pool.query(
+            'SELECT id FROM teachers WHERE id=$1 AND is_active=true AND approved_at IS NOT NULL',
+            [teacherId]
+        );
+        if (!rows[0]) return res.status(404).json({ error: 'Docente non trovato' });
+        const slots = await getAvailableSlots(teacherId, 4);
+        res.json({ slots });
+    } catch(err) { res.status(500).json({ error: err.message }); }
+});
+
+// ── AUTH: crea sessione Stripe per prenotare una lezione ─────
+router.post('/lessons/checkout', authMiddleware, async (req, res) => {
+    const { teacher_id, lesson_at, notes } = req.body;
+    if (!teacher_id || !lesson_at) return res.status(400).json({ error: 'Dati mancanti' });
+    try {
+        // Solo studenti Advanced o Gold
+        const userRow = await pool.query(
+            "SELECT id, name, email, package FROM users WHERE id=$1", [req.user.userId]
+        );
+        const user = userRow.rows[0];
+        if (!user) return res.status(404).json({ error: 'Utente non trovato' });
+        if (!['advanced','gold'].includes(user.package))
+            return res.status(403).json({ error: 'Le lezioni personalizzate sono disponibili per i piani Advanced e Gold.' });
+
+        // Verifica docente
+        const tRow = await pool.query(
+            `SELECT t.*, a.id AS aff_id FROM teachers t
+             JOIN affiliates a ON a.id = t.affiliate_id
+             WHERE t.id=$1 AND t.is_active=true AND t.approved_at IS NOT NULL AND a.status='active'`,
+            [teacher_id]
+        );
+        if (!tRow.rows[0]) return res.status(404).json({ error: 'Docente non disponibile' });
+        const teacher = tRow.rows[0];
+
+        // Verifica slot non già prenotato
+        const lessonDate = new Date(lesson_at);
+        const conflictRow = await pool.query(
+            `SELECT id FROM bookings WHERE teacher_id=$1 AND lesson_at=$2
+             AND status IN ('paid','confirmed','completed')`,
+            [teacher_id, lessonDate]
+        );
+        if (conflictRow.rows[0]) return res.status(409).json({ error: 'Slot non più disponibile.' });
+
+        const shares = lessonShares(LESSON_PRICE);
+        const stripe = getStripe();
+        const feUrl  = process.env.FRONTEND_URL || 'https://italian-learning-platform.onrender.com';
+
+        // Crea prenotazione pending
+        const bookRow = await pool.query(
+            `INSERT INTO bookings
+             (student_id, teacher_id, affiliate_id, lesson_at, amount_eur,
+              teacher_share_eur, platform_share_eur, zoom_link, notes, status)
+             VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,'pending') RETURNING id`,
+            [user.id, teacher_id, teacher.aff_id, lessonDate,
+             LESSON_PRICE, shares.teacher, shares.platform,
+             teacher.zoom_link, notes || null]
+        );
+        const bookingId = bookRow.rows[0].id;
+
+        const dateLabel = lessonDate.toLocaleString('it-IT', {
+            weekday:'long', day:'2-digit', month:'long', year:'numeric',
+            hour:'2-digit', minute:'2-digit', timeZone:'Europe/Rome'
+        });
+
+        const session = await stripe.checkout.sessions.create({
+            payment_method_types: ['card'],
+            mode: 'payment',
+            customer_email: user.email,
+            line_items: [{
+                price_data: {
+                    currency: 'eur',
+                    unit_amount: Math.round(LESSON_PRICE * 100),
+                    product_data: {
+                        name: `Lezione personalizzata con ${teacher.name}`,
+                        description: `${dateLabel} · 60 minuti · via Zoom`,
+                    }
+                },
+                quantity: 1,
+            }],
+            metadata: { booking_id: bookingId, type: 'lesson' },
+            success_url: `${feUrl}/prenotazione-lezioni.html?success=1&booking=${bookingId}`,
+            cancel_url:  `${feUrl}/prenotazione-lezioni.html?cancelled=1`,
+        });
+
+        // Salva session id
+        await pool.query(
+            'UPDATE bookings SET stripe_session_id=$1 WHERE id=$2',
+            [session.id, bookingId]
+        );
+
+        res.json({ checkout_url: session.url });
+    } catch(err) { res.status(500).json({ error: err.message }); }
+});
+
+// ── PUBLIC: verifica pagamento e conferma prenotazione ───────
+router.get('/public/lessons/verify/:sessionId', async (req, res) => {
+    try {
+        const stripe  = getStripe();
+        const session = await stripe.checkout.sessions.retrieve(req.params.sessionId);
+        if (session.payment_status !== 'paid')
+            return res.status(400).json({ error: 'Pagamento non completato' });
+
+        const bookingId = parseInt(session.metadata.booking_id);
+        const piId      = session.payment_intent;
+
+        const { rows } = await pool.query(
+            `UPDATE bookings SET status='paid', stripe_payment_intent_id=$1, updated_at=NOW()
+             WHERE id=$2 AND status='pending' RETURNING *`,
+            [piId, bookingId]
+        );
+        if (!rows[0]) return res.json({ already_confirmed: true });
+        const booking = rows[0];
+
+        // Dati studente e docente per le email
+        const [stuRow, tchRow] = await Promise.all([
+            pool.query('SELECT name, email FROM users WHERE id=$1', [booking.student_id]),
+            pool.query(`SELECT t.name, t.email, t.zoom_link,
+                               a.organization_name AS center_name
+                        FROM teachers t JOIN affiliates a ON a.id=t.affiliate_id
+                        WHERE t.id=$1`, [booking.teacher_id]),
+        ]);
+        const stu = stuRow.rows[0];
+        const tch = tchRow.rows[0];
+        const dateLabel = new Date(booking.lesson_at).toLocaleString('it-IT', {
+            weekday:'long', day:'2-digit', month:'long', year:'numeric',
+            hour:'2-digit', minute:'2-digit', timeZone:'Europe/Rome'
+        });
+
+        // Email allo studente
+        if (process.env.BREVO_API_KEY && stu) {
+            await _brevoSendAff(stu.email, `✅ Lezione confermata con ${tch?.name}`, `
+                <h2 style="color:#009246">✅ Prenotazione Confermata!</h2>
+                <p>Ciao <strong>${stu.name}</strong>,</p>
+                <p>La tua lezione personalizzata è confermata.</p>
+                <table style="border-collapse:collapse;width:100%;margin:16px 0">
+                  <tr><td style="padding:8px;background:#f0f7f2;font-weight:700">Docente</td><td style="padding:8px">${tch?.name} — ${tch?.center_name}</td></tr>
+                  <tr><td style="padding:8px;background:#f0f7f2;font-weight:700">Data e ora</td><td style="padding:8px">${dateLabel}</td></tr>
+                  <tr><td style="padding:8px;background:#f0f7f2;font-weight:700">Durata</td><td style="padding:8px">60 minuti</td></tr>
+                  <tr><td style="padding:8px;background:#f0f7f2;font-weight:700">Link Zoom</td><td style="padding:8px"><a href="${booking.zoom_link}">${booking.zoom_link}</a></td></tr>
+                  <tr><td style="padding:8px;background:#f0f7f2;font-weight:700">Importo pagato</td><td style="padding:8px">€${booking.amount_eur}</td></tr>
+                </table>
+                <p style="font-size:12px;color:#888">SAAM 4.0 Academy School — training@angelopagliara.it</p>`
+            ).catch(e => console.error('[EMAIL booking student]', e.message));
+        }
+
+        // Email al docente
+        if (process.env.BREVO_API_KEY && tch?.email) {
+            await _brevoSendAff(tch.email, `📅 Nuova lezione prenotata — ${dateLabel}`, `
+                <h2 style="color:#009246">📅 Nuova Prenotazione!</h2>
+                <p>Ciao <strong>${tch.name}</strong>,</p>
+                <p>Hai una nuova lezione prenotata e pagata.</p>
+                <table style="border-collapse:collapse;width:100%;margin:16px 0">
+                  <tr><td style="padding:8px;background:#f0f7f2;font-weight:700">Studente</td><td style="padding:8px">${stu?.name}</td></tr>
+                  <tr><td style="padding:8px;background:#f0f7f2;font-weight:700">Data e ora</td><td style="padding:8px">${dateLabel}</td></tr>
+                  <tr><td style="padding:8px;background:#f0f7f2;font-weight:700">Il tuo link Zoom</td><td style="padding:8px"><a href="${booking.zoom_link}">${booking.zoom_link}</a></td></tr>
+                  <tr><td style="padding:8px;background:#f0f7f2;font-weight:700">Il tuo compenso</td><td style="padding:8px">€${booking.teacher_share_eur} (liquidazione mensile)</td></tr>
+                </table>
+                <p style="font-size:12px;color:#888">SAAM 4.0 Academy School — training@angelopagliara.it</p>`
+            ).catch(e => console.error('[EMAIL booking teacher]', e.message));
+        }
+
+        // Notifica admin
+        if (process.env.BREVO_API_KEY) {
+            await _brevoSendAff(
+                process.env.NOTIFY_EMAIL || 'training@angelopagliara.it',
+                `💰 Nuova lezione pagata — ${stu?.name} con ${tch?.name}`,
+                `<h2>💰 Lezione pagata — €${booking.amount_eur}</h2>
+                 <p>Studente: ${stu?.name} | Docente: ${tch?.name} | Data: ${dateLabel}</p>
+                 <p>Quota SAAM: €${booking.platform_share_eur} | Quota docente: €${booking.teacher_share_eur}</p>`
+            ).catch(e => console.error('[EMAIL booking admin]', e.message));
+        }
+
+        res.json({ success: true, booking });
+    } catch(err) { res.status(500).json({ error: err.message }); }
+});
+
+// ── PUBLIC: verifica booking by id (per pagina success) ────────
+router.get('/public/lessons/verify-booking/:bookingId', async (req, res) => {
+    const bookingId = parseInt(req.params.bookingId);
+    if (isNaN(bookingId)) return res.status(400).json({ error: 'ID non valido' });
+    try {
+        const { rows } = await pool.query(
+            `SELECT b.id, b.status, b.lesson_at, b.zoom_link, b.amount_eur,
+                    t.name AS teacher_name, a.organization_name AS center_name
+             FROM bookings b
+             JOIN teachers t ON t.id=b.teacher_id
+             JOIN affiliates a ON a.id=b.affiliate_id
+             WHERE b.id=$1`, [bookingId]
+        );
+        if (!rows[0]) return res.status(404).json({ error: 'Prenotazione non trovata' });
+        res.json({ booking: rows[0] });
+    } catch(err) { res.status(500).json({ error: err.message }); }
+});
+
+// ── AUTH: storico prenotazioni studente ──────────────────────
+router.get('/lessons/my-bookings', authMiddleware, async (req, res) => {
+    try {
+        const { rows } = await pool.query(`
+            SELECT b.id, b.lesson_at, b.status, b.amount_eur, b.zoom_link, b.notes,
+                   t.name AS teacher_name, t.photo_url AS teacher_photo,
+                   a.organization_name AS center_name
+            FROM bookings b
+            JOIN teachers t ON t.id = b.teacher_id
+            JOIN affiliates a ON a.id = b.affiliate_id
+            WHERE b.student_id = $1
+            ORDER BY b.lesson_at DESC`, [req.user.userId]);
+        res.json({ bookings: rows });
+    } catch(err) { res.status(500).json({ error: err.message }); }
+});
+
+// ── TEACHER AUTH: login docente (usa email+password) ─────────
+router.post('/teacher/login', async (req, res) => {
+    const { email, password } = req.body;
+    if (!email || !password) return res.status(400).json({ error: 'Dati mancanti' });
+    try {
+        const { rows } = await pool.query(
+            'SELECT * FROM teachers WHERE email=$1 AND is_active=true', [email]
+        );
+        if (!rows[0]) return res.status(401).json({ error: 'Credenziali non valide' });
+        // Usa stessa tabella password_resets per reset — password hashata con bcrypt
+        const ok = await bcrypt.compare(password, rows[0].password_hash || '');
+        if (!ok) return res.status(401).json({ error: 'Credenziali non valide' });
+        const token = jwt.sign(
+            { teacherId: rows[0].id, role: 'teacher', affiliateId: rows[0].affiliate_id },
+            JWT_SECRET, { expiresIn: '7d' }
+        );
+        res.json({ token, teacher: {
+            id: rows[0].id, name: rows[0].name, email: rows[0].email,
+            bio: rows[0].bio, photo_url: rows[0].photo_url, zoom_link: rows[0].zoom_link
+        }});
+    } catch(err) { res.status(500).json({ error: err.message }); }
+});
+
+function teacherAuth(req, res, next) {
+    const token = req.headers.authorization?.replace('Bearer ', '');
+    if (!token) return res.status(401).json({ error: 'Token mancante' });
+    try {
+        req.teacher = jwt.verify(token, JWT_SECRET);
+        if (req.teacher.role !== 'teacher') throw new Error('Ruolo non valido');
+        next();
+    } catch { return res.status(401).json({ error: 'Token non valido' }); }
+}
+
+// ── TEACHER: la sua dashboard ────────────────────────────────
+router.get('/teacher/dashboard', teacherAuth, async (req, res) => {
+    try {
+        const [teacherRow, slotsRow, bookingsRow] = await Promise.all([
+            pool.query(
+                `SELECT t.*, a.organization_name AS center_name, a.city AS center_city
+                 FROM teachers t JOIN affiliates a ON a.id=t.affiliate_id
+                 WHERE t.id=$1`, [req.teacher.teacherId]),
+            pool.query(
+                'SELECT * FROM teacher_slots WHERE teacher_id=$1 ORDER BY day_of_week, start_time',
+                [req.teacher.teacherId]),
+            pool.query(
+                `SELECT b.id, b.lesson_at, b.status, b.amount_eur, b.teacher_share_eur,
+                        b.zoom_link, b.notes, b.paid_to_center,
+                        u.name AS student_name, u.email AS student_email
+                 FROM bookings b JOIN users u ON u.id=b.student_id
+                 WHERE b.teacher_id=$1
+                 ORDER BY b.lesson_at DESC LIMIT 50`, [req.teacher.teacherId]),
+        ]);
+        if (!teacherRow.rows[0]) return res.status(404).json({ error: 'Docente non trovato' });
+
+        const upcomingBookings = bookingsRow.rows.filter(b =>
+            ['paid','confirmed'].includes(b.status) && new Date(b.lesson_at) > new Date()
+        );
+        const totalEarned = bookingsRow.rows
+            .filter(b => b.status === 'completed')
+            .reduce((s, b) => s + parseFloat(b.teacher_share_eur), 0);
+        const pendingPayout = bookingsRow.rows
+            .filter(b => ['paid','confirmed','completed'].includes(b.status) && !b.paid_to_center)
+            .reduce((s, b) => s + parseFloat(b.teacher_share_eur), 0);
+
+        res.json({
+            teacher: teacherRow.rows[0],
+            slots: slotsRow.rows,
+            bookings: bookingsRow.rows,
+            stats: {
+                upcoming: upcomingBookings.length,
+                total_lessons: bookingsRow.rows.filter(b => b.status === 'completed').length,
+                total_earned_eur: totalEarned.toFixed(2),
+                pending_payout_eur: pendingPayout.toFixed(2),
+            }
+        });
+    } catch(err) { res.status(500).json({ error: err.message }); }
+});
+
+// ── TEACHER: gestione disponibilità ─────────────────────────
+router.post('/teacher/slots', teacherAuth, async (req, res) => {
+    const { day_of_week, start_time } = req.body;
+    if (day_of_week === undefined || !start_time)
+        return res.status(400).json({ error: 'Dati mancanti' });
+    const [hh] = start_time.split(':');
+    const end_time = `${String(parseInt(hh)+1).padStart(2,'0')}:${start_time.split(':')[1]}`;
+    try {
+        await pool.query(
+            `INSERT INTO teacher_slots (teacher_id, day_of_week, start_time, end_time)
+             VALUES ($1,$2,$3,$4) ON CONFLICT (teacher_id, day_of_week, start_time) DO UPDATE SET is_active=true`,
+            [req.teacher.teacherId, day_of_week, start_time, end_time]
+        );
+        res.json({ success: true });
+    } catch(err) { res.status(500).json({ error: err.message }); }
+});
+
+router.delete('/teacher/slots/:id', teacherAuth, async (req, res) => {
+    try {
+        await pool.query(
+            'UPDATE teacher_slots SET is_active=false WHERE id=$1 AND teacher_id=$2',
+            [req.params.id, req.teacher.teacherId]
+        );
+        res.json({ success: true });
+    } catch(err) { res.status(500).json({ error: err.message }); }
+});
+
+// ── TEACHER: aggiorna profilo ────────────────────────────────
+router.put('/teacher/profile', teacherAuth, async (req, res) => {
+    const { bio, photo_url, zoom_link, subjects, phone } = req.body;
+    if (!zoom_link) return res.status(400).json({ error: 'Il link Zoom è obbligatorio' });
+    try {
+        const { rows } = await pool.query(
+            `UPDATE teachers SET bio=$1, photo_url=$2, zoom_link=$3, subjects=$4, phone=$5
+             WHERE id=$6 RETURNING *`,
+            [bio||null, photo_url||null, zoom_link, subjects||null, phone||null, req.teacher.teacherId]
+        );
+        res.json({ teacher: rows[0] });
+    } catch(err) { res.status(500).json({ error: err.message }); }
+});
+
+// ── ADMIN: lista tutti i docenti ─────────────────────────────
+router.get('/admin/teachers', authMiddleware, adminOnly, async (req, res) => {
+    try {
+        const { rows } = await pool.query(`
+            SELECT t.*, a.organization_name AS center_name, a.city AS center_city,
+                   (SELECT COUNT(*) FROM bookings b WHERE b.teacher_id=t.id AND b.status='completed') AS lessons_completed,
+                   (SELECT COALESCE(SUM(teacher_share_eur),0) FROM bookings b
+                    WHERE b.teacher_id=t.id AND b.status IN ('paid','confirmed','completed') AND NOT b.paid_to_center) AS pending_payout
+            FROM teachers t JOIN affiliates a ON a.id=t.affiliate_id
+            ORDER BY t.is_active DESC, t.name`);
+        res.json({ teachers: rows });
+    } catch(err) { res.status(500).json({ error: err.message }); }
+});
+
+// ── ADMIN: approva/disattiva docente ─────────────────────────
+router.put('/admin/teachers/:id/approve', authMiddleware, adminOnly, async (req, res) => {
+    try {
+        const { rows } = await pool.query(
+            `UPDATE teachers SET approved_at=NOW(), approved_by=$1, is_active=true WHERE id=$2 RETURNING *`,
+            [req.user.userId, req.params.id]
+        );
+        if (!rows[0]) return res.status(404).json({ error: 'Docente non trovato' });
+        res.json({ success: true, teacher: rows[0] });
+    } catch(err) { res.status(500).json({ error: err.message }); }
+});
+
+router.put('/admin/teachers/:id/status', authMiddleware, adminOnly, async (req, res) => {
+    const { is_active } = req.body;
+    try {
+        await pool.query('UPDATE teachers SET is_active=$1 WHERE id=$2', [is_active, req.params.id]);
+        res.json({ success: true });
+    } catch(err) { res.status(500).json({ error: err.message }); }
+});
+
+// ── ADMIN: crea docente ───────────────────────────────────────
+router.post('/admin/teachers', authMiddleware, adminOnly, async (req, res) => {
+    const { affiliate_id, name, email, phone, bio, photo_url, zoom_link, subjects } = req.body;
+    if (!affiliate_id || !name || !email || !zoom_link)
+        return res.status(400).json({ error: 'affiliate_id, name, email, zoom_link obbligatori' });
+    try {
+        // Password temporanea hashata
+        const tempPwd = Math.random().toString(36).slice(-8);
+        const hash = await bcrypt.hash(tempPwd, 12);
+        const { rows } = await pool.query(
+            `INSERT INTO teachers (affiliate_id, name, email, phone, bio, photo_url, zoom_link, subjects, password_hash)
+             VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *`,
+            [affiliate_id, name, email, phone||null, bio||null, photo_url||null, zoom_link, subjects||null, hash]
+        );
+        res.json({ success: true, teacher: rows[0], temp_password: tempPwd });
+    } catch(err) { res.status(500).json({ error: err.message }); }
+});
+
+// ── ADMIN: tutte le prenotazioni (con filtro stato) ──────────
+router.get('/admin/bookings', authMiddleware, adminOnly, async (req, res) => {
+    const { status, from, to } = req.query;
+    let where = 'WHERE 1=1';
+    const params = [];
+    if (status) { params.push(status); where += ` AND b.status=$${params.length}`; }
+    if (from)   { params.push(from);   where += ` AND b.lesson_at >= $${params.length}`; }
+    if (to)     { params.push(to);     where += ` AND b.lesson_at <= $${params.length}`; }
+    try {
+        const { rows } = await pool.query(`
+            SELECT b.*,
+                   u.name AS student_name, u.email AS student_email,
+                   t.name AS teacher_name,
+                   a.organization_name AS center_name
+            FROM bookings b
+            JOIN users u ON u.id=b.student_id
+            JOIN teachers t ON t.id=b.teacher_id
+            JOIN affiliates a ON a.id=b.affiliate_id
+            ${where}
+            ORDER BY b.lesson_at DESC LIMIT 200`, params);
+
+        const summary = {
+            total: rows.length,
+            revenue_eur: rows.filter(b => ['paid','confirmed','completed'].includes(b.status))
+                             .reduce((s,b) => s + parseFloat(b.amount_eur), 0).toFixed(2),
+            unpaid_to_centers: rows.filter(b => ['paid','confirmed','completed'].includes(b.status) && !b.paid_to_center)
+                                   .reduce((s,b) => s + parseFloat(b.teacher_share_eur), 0).toFixed(2),
+        };
+        res.json({ bookings: rows, summary });
+    } catch(err) { res.status(500).json({ error: err.message }); }
+});
+
+// ── ADMIN: segna lezioni come pagate al centro ───────────────
+router.put('/admin/bookings/mark-paid-centers', authMiddleware, adminOnly, async (req, res) => {
+    const { affiliate_id } = req.body;
+    let where = "status IN ('paid','confirmed','completed') AND paid_to_center=false";
+    const params = [];
+    if (affiliate_id) { params.push(affiliate_id); where += ` AND affiliate_id=$${params.length}`; }
+    try {
+        const { rowCount } = await pool.query(
+            `UPDATE bookings SET paid_to_center=true, paid_to_center_at=NOW()
+             WHERE ${where}`, params
+        );
+        res.json({ success: true, updated: rowCount });
+    } catch(err) { res.status(500).json({ error: err.message }); }
+});
+
 // Funzione di inizializzazione — chiamata da server.js con il pool attivo
 function init(dbPool) {
     pool = dbPool;
