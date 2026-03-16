@@ -150,11 +150,11 @@ body{font-family:'Outfit',sans-serif;background:var(--crema);color:var(--testo);
 .success-title{font-family:'Cormorant Garamond',serif;font-size:2rem;font-weight:600;
   color:var(--blu);margin-bottom:12px}
 .success-desc{font-size:.95rem;color:var(--grigio);line-height:1.7;margin-bottom:32px}
-.success-zoom{background:var(--verde-pale);border:1px solid rgba(0,146,70,.2);
+.success-meet{background:var(--verde-pale);border:1px solid rgba(0,146,70,.2);
   border-radius:14px;padding:20px 24px;margin:24px 0;text-align:left}
-.success-zoom label{display:block;font-size:.75rem;font-weight:700;color:var(--verde);
+.success-meet label{display:block;font-size:.75rem;font-weight:700;color:var(--verde);
   text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px}
-.success-zoom a{color:var(--verde);font-weight:600;word-break:break-all;font-size:.9rem}
+.success-meet a{color:var(--verde);font-weight:600;word-break:break-all;font-size:.9rem}
 .btn-back{display:inline-flex;align-items:center;gap:8px;padding:13px 28px;
   background:var(--verde);color:#fff;border-radius:100px;font-weight:600;
   text-decoration:none;transition:all .25s}
@@ -201,7 +201,7 @@ body{font-family:'Outfit',sans-serif;background:var(--crema);color:var(--testo);
 <div class="hero">
   <div class="hero-badge">🎓 Lezioni Personalizzate Live</div>
   <h1>Prenota una lezione<br><em>con un docente madrelingua</em></h1>
-  <p>Scegli il docente, seleziona giorno e orario e inizia a imparare con una lezione dedicata esclusivamente a te — via Zoom, 60 minuti.</p>
+  <p>Scegli il docente, seleziona giorno e orario e inizia a imparare con una lezione dedicata esclusivamente a te — via Google Meet, 60 minuti.</p>
   <div class="badge-advanced">⭐ Disponibile per piani Advanced e Gold</div>
 </div>
 
@@ -209,10 +209,10 @@ body{font-family:'Outfit',sans-serif;background:var(--crema);color:var(--testo);
 <div id="successPage" class="success-page" style="display:none">
   <div class="success-icon">✅</div>
   <h2 class="success-title">Lezione Confermata!</h2>
-  <p class="success-desc">Il pagamento è andato a buon fine. Hai ricevuto una email di conferma con tutti i dettagli e il link Zoom per accedere alla lezione.</p>
-  <div class="success-zoom">
-    <label>Link Zoom per la tua lezione</label>
-    <a id="successZoom" href="#" target="_blank">—</a>
+  <p class="success-desc">Il pagamento è andato a buon fine. Hai ricevuto una email di conferma con tutti i dettagli e il link Google Meet per accedere alla lezione.</p>
+  <div class="success-meet">
+    <label>Link Google Meet per la tua lezione</label>
+    <a id="successGoogle Meet" href="#" target="_blank">—</a>
   </div>
   <a class="btn-back" href="tutor-italiano.html">← Torna alla piattaforma</a>
 </div>
@@ -283,7 +283,7 @@ body{font-family:'Outfit',sans-serif;background:var(--crema);color:var(--testo);
           </div>
           <div class="booking-summary-row">
             <span>Metodo</span>
-            <span class="val">Zoom</span>
+            <span class="val">Google Meet</span>
           </div>
           <div class="booking-summary-row">
             <span>Totale</span>
@@ -514,17 +514,17 @@ async function verifyPayment(bookingId) {
     if (r.ok) {
       const d = await r.json();
       document.getElementById('successPage').style.display = 'block';
-      const zoomLink = d.booking?.zoom_link || '#';
-      const el = document.getElementById('successZoom');
-      el.href = zoomLink;
-      el.textContent = zoomLink;
+      const meetLink = d.booking?.meet_link || '#';
+      const el = document.getElementById('successGoogle Meet');
+      el.href = meetLink;
+      el.textContent = meetLink;
       return;
     }
   } catch(e) {}
 
   // Fallback: mostra successo generico
   document.getElementById('successPage').style.display = 'block';
-  document.getElementById('successZoom').textContent = 'Controlla la tua email per il link Zoom';
+  document.getElementById('successGoogle Meet').textContent = 'Controlla la tua email per il link Google Meet';
 }
 
 function setAlert(msg, type) {
