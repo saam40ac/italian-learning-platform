@@ -217,7 +217,7 @@
                 <div class="kpi-card verde"><div class="kpi-icon">👥</div><div class="kpi-val" id="kTot">—</div><div class="kpi-label">Studenti totali</div></div>
                 <div class="kpi-card blu"><div class="kpi-icon">✅</div><div class="kpi-val" id="kActive">—</div><div class="kpi-label">Abbonamenti attivi</div></div>
                 <div class="kpi-card oro"><div class="kpi-icon">💶</div><div class="kpi-val" id="kMrr">—</div><div class="kpi-label">MRR generato</div><div class="kpi-sub">ricavi mensili tuoi iscritti</div></div>
-                <div class="kpi-card verde"><div class="kpi-icon">🏦</div><div class="kpi-val" id="kComm">—</div><div class="kpi-label">Mia quota mensile</div><div class="kpi-sub" id="kRate">commissione —%</div></div>
+                <div class="kpi-card verde"><div class="kpi-icon">🏦</div><div class="kpi-val" id="kComm">—</div><div class="kpi-label">Provvigione stimata/mese</div><div class="kpi-sub" id="kRate">su abbonamenti attivi · —%</div></div>
             </div>
 
             <div class="referral-box">
@@ -442,7 +442,7 @@ async function loadDashboard() {
         document.getElementById('kActive').textContent  = stats.active_subscriptions;
         document.getElementById('kMrr').textContent     = '€' + parseFloat(stats.mrr_eur).toFixed(2);
         document.getElementById('kComm').textContent    = '€' + parseFloat(stats.my_commission_mrr).toFixed(2);
-        document.getElementById('kRate').textContent    = `commissione ${affiliate.commission_rate}%`;
+        document.getElementById('kRate').textContent    = `su abbonamenti attivi · ${affiliate.commission_rate}%`;
 
         // Referral
         const code = affiliate.referral_code;
