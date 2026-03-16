@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard Docente — SAAM 4.0</title>
+<link rel="icon" type="image/x-icon" href="favicon.ico">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,600&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--verde:#009246;--verde-dark:#007A38;--verde-pale:#e8f5ee;
+  --rosso:#CE2B37;--blu:#1A3A5C;--oro:#C8900A;
+  --crema:#faf7f2;--bianco:#fff;--grigio:#6b7280;--shadow:0 4px 20px rgba(13,31,60,.08)}
+body{font-family:'Outfit',sans-serif;background:var(--crema);min-height:100vh}
+
+/* LOGIN */
+.login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;
+  background:linear-gradient(135deg,var(--blu),#1e3a5f)}
+.login-card{background:#fff;border-radius:20px;padding:40px 36px;width:100%;max-width:420px;
+  box-shadow:0 24px 64px rgba(0,0,0,.2)}
+.login-logo{text-align:center;margin-bottom:28px}
+.login-logo img{height:60px}
+.login-title{font-family:'Cormorant Garamond',serif;font-size:1.8rem;font-weight:600;
+  color:var(--blu);text-align:center;margin-bottom:6px}
+.login-sub{font-size:.85rem;color:var(--grigio);text-align:center;margin-bottom:28px}
+.form-group{margin-bottom:16px}
+.form-group label{display:block;font-size:.8rem;font-weight:600;color:#444;margin-bottom:6px}
+.form-group input{width:100%;padding:11px 14px;border:1.5px solid #d0d8d0;border-radius:10px;
+  font-family:'Outfit',sans-serif;font-size:.95rem;outline:none;transition:border-color .2s}
+.form-group input:focus{border-color:var(--verde)}
+.btn-login{width:100%;padding:14px;background:var(--verde);color:#fff;border:none;
+  border-radius:100px;font-family:'Outfit',sans-serif;font-size:1rem;font-weight:700;
+  cursor:pointer;transition:all .25s}
+.btn-login:hover{background:var(--verde-dark)}
+.login-error{margin-top:12px;padding:10px 14px;background:#fdecea;color:#9b1c1c;
+  border-radius:8px;font-size:.85rem;display:none}
+.tricolore{height:4px;background:linear-gradient(90deg,var(--verde) 33.3%,#fff 33.3% 66.6%,var(--rosso) 66.6%)}
+
+/* APP */
+.topbar{background:var(--blu);height:60px;display:flex;align-items:center;
+  justify-content:space-between;padding:0 5vw;position:sticky;top:0;z-index:50;
+  box-shadow:0 2px 16px rgba(0,0,0,.2)}
+.topbar-brand{font-family:'Cormorant Garamond',serif;font-size:1.15rem;font-weight:600;color:#fff}
+.topbar-brand span{color:#4dbb7a}
+.topbar-user{font-size:.85rem;color:rgba(255,255,255,.7)}
+.topbar-logout{font-size:.8rem;color:rgba(255,255,255,.5);cursor:pointer;
+  background:none;border:1px solid rgba(255,255,255,.2);padding:5px 12px;
+  border-radius:100px;margin-left:12px;font-family:'Outfit',sans-serif;transition:all .2s}
+.topbar-logout:hover{background:rgba(255,255,255,.1);color:#fff}
+
+.main{max-width:1000px;margin:0 auto;padding:36px 5vw 80px}
+
+/* KPI */
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:32px}
+.kpi{background:#fff;border-radius:14px;padding:20px;text-align:center;box-shadow:var(--shadow)}
+.kpi-icon{font-size:28px;margin-bottom:8px}
+.kpi-val{font-family:'Cormorant Garamond',serif;font-size:1.8rem;font-weight:700;
+  color:var(--blu);line-height:1}
+.kpi-label{font-size:.75rem;color:var(--grigio);margin-top:4px}
+.kpi.verde .kpi-val{color:var(--verde)}
+.kpi.oro .kpi-val{color:var(--oro)}
+
+/* TABS */
+.tabs{display:flex;gap:8px;margin-bottom:28px;flex-wrap:wrap}
+.tab{padding:9px 22px;border-radius:100px;font-size:.875rem;font-weight:600;
+  cursor:pointer;border:2px solid transparent;transition:all .2s;
+  background:#fff;color:var(--grigio)}
+.tab.active{border-color:var(--verde);color:var(--verde);background:var(--verde-pale)}
+.tab-content{display:none}
+.tab-content.active{display:block}
+
+/* CARDS */
+.card{background:#fff;border-radius:14px;padding:24px;margin-bottom:20px;box-shadow:var(--shadow)}
+.card h3{font-family:'Cormorant Garamond',serif;font-size:1.25rem;font-weight:600;
+  color:var(--blu);margin-bottom:16px;padding-bottom:10px;
+  border-bottom:2px solid var(--verde-pale)}
+
+/* SLOTS */
+.days-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:8px;margin-bottom:20px}
+.day-header{text-align:center;font-size:.7rem;font-weight:700;
+  text-transform:uppercase;color:var(--grigio);padding:6px 0}
+.time-select{width:100%;padding:8px;border:1.5px solid #d0d8d0;border-radius:8px;
+  font-family:'Outfit',sans-serif;font-size:.825rem;outline:none;margin-bottom:6px}
+.time-select:focus{border-color:var(--verde)}
+.btn-add-slot{padding:7px 14px;background:var(--verde);color:#fff;border:none;
+  border-radius:8px;font-family:'Outfit',sans-serif;font-size:.8rem;font-weight:600;
+  cursor:pointer;width:100%;margin-top:4px;transition:background .2s}
+.btn-add-slot:hover{background:var(--verde-dark)}
+.slot-list{display:flex;flex-direction:column;gap:8px}
+.slot-item{display:flex;align-items:center;justify-content:space-between;
+  padding:10px 14px;background:var(--crema);border-radius:10px;
+  border:1px solid rgba(0,146,70,.1)}
+.slot-item-label{font-size:.875rem;font-weight:600;color:var(--blu)}
+.slot-item-time{font-size:.8rem;color:var(--grigio)}
+.btn-del{background:none;border:1px solid rgba(206,43,55,.3);color:var(--rosso);
+  padding:4px 10px;border-radius:6px;font-size:.75rem;cursor:pointer;
+  font-family:'Outfit',sans-serif;transition:all .2s}
+.btn-del:hover{background:var(--rosso);color:#fff}
+
+/* TABLE */
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:.85rem}
+th{background:var(--verde);color:#fff;padding:10px 12px;text-align:left;font-weight:600}
+td{padding:10px 12px;border-bottom:1px solid #f0f0f0;color:#333;vertical-align:top}
+tr:hover td{background:#f8fff8}
+.badge{display:inline-block;padding:3px 10px;border-radius:100px;font-size:.72rem;font-weight:700}
+.badge-paid{background:#e8f8ed;color:#1a6b35}
+.badge-confirmed{background:#e8eef8;color:var(--blu)}
+.badge-completed{background:var(--verde-pale);color:var(--verde-dark)}
+.badge-cancelled{background:#fdecea;color:#9b1c1c}
+.badge-pending{background:#fff9e6;color:#856404}
+
+/* PROFILE */
+.profile-form{display:grid;gap:16px}
+.profile-form label{font-size:.8rem;font-weight:600;color:#444;margin-bottom:5px;display:block}
+.profile-form input, .profile-form textarea{
+  width:100%;padding:10px 14px;border:1.5px solid #d0d8d0;border-radius:10px;
+  font-family:'Outfit',sans-serif;font-size:.9rem;outline:none;transition:border-color .2s}
+.profile-form input:focus, .profile-form textarea:focus{border-color:var(--verde)}
+.profile-form textarea{min-height:100px;resize:vertical}
+.btn-save{padding:12px 28px;background:var(--verde);color:#fff;border:none;
+  border-radius:100px;font-family:'Outfit',sans-serif;font-size:.9rem;font-weight:700;
+  cursor:pointer;transition:all .25s}
+.btn-save:hover{background:var(--verde-dark)}
+.photo-preview{width:80px;height:80px;border-radius:50%;object-fit:cover;
+  border:3px solid var(--verde-pale);margin-bottom:10px}
+.alert{padding:12px 16px;border-radius:8px;font-size:.85rem;margin-bottom:12px}
+.alert-success{background:#e8f8ed;color:#1a6b35;border:1px solid #a8dfb9}
+.alert-error{background:#fdecea;color:#9b1c1c;border:1px solid #f5b7b1}
+.spinner{display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,.4);
+  border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media(max-width:700px){.kpis{grid-template-columns:repeat(2,1fr)}.days-grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="tricolore"></div>
+
+<!-- LOGIN -->
+<div id="loginWrap" class="login-wrap">
+  <div class="login-card">
+    <div class="login-logo">
+      <img src="OminiLOGO_Saam40_ItalianVoice.png" alt="SAAM 4.0" onerror="this.style.display='none'">
+    </div>
+    <h2 class="login-title">Area Docenti</h2>
+    <p class="login-sub">SAAM 4.0 Italian Voice — Dashboard Docente</p>
+    <div class="form-group">
+      <label>Email</label>
+      <input type="email" id="loginEmail" placeholder="tuaemail@esempio.it" autocomplete="email">
+    </div>
+    <div class="form-group">
+      <label>Password</label>
+      <input type="password" id="loginPassword" placeholder="••••••••">
+    </div>
+    <button class="btn-login" onclick="doLogin()">Accedi</button>
+    <div class="login-error" id="loginError"></div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="appWrap" style="display:none">
+  <div class="topbar">
+    <span class="topbar-brand">SAAM 4.0 <span>Docente</span></span>
+    <div style="display:flex;align-items:center">
+      <span class="topbar-user" id="topbarName"></span>
+      <button class="topbar-logout" onclick="logout()">Esci</button>
+    </div>
+  </div>
+
+  <div class="main">
+    <!-- KPI -->
+    <div class="kpis">
+      <div class="kpi verde">
+        <div class="kpi-icon">📅</div>
+        <div class="kpi-val" id="kUpcoming">—</div>
+        <div class="kpi-label">Prossime lezioni</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-icon">✅</div>
+        <div class="kpi-val" id="kCompleted">—</div>
+        <div class="kpi-label">Lezioni completate</div>
+      </div>
+      <div class="kpi verde">
+        <div class="kpi-icon">💰</div>
+        <div class="kpi-val" id="kEarned">—</div>
+        <div class="kpi-label">Totale guadagnato</div>
+      </div>
+      <div class="kpi oro">
+        <div class="kpi-icon">⏳</div>
+        <div class="kpi-val" id="kPending">—</div>
+        <div class="kpi-label">In attesa pag.</div>
+      </div>
+    </div>
+
+    <!-- TABS -->
+    <div class="tabs">
+      <div class="tab active" onclick="showTab('tabLezioni',this)">📅 Le Mie Lezioni</div>
+      <div class="tab" onclick="showTab('tabDisponibilita',this)">🗓️ Disponibilità</div>
+      <div class="tab" onclick="showTab('tabProfilo',this)">👤 Profilo</div>
+    </div>
+
+    <!-- TAB LEZIONI -->
+    <div class="tab-content active" id="tabLezioni">
+      <div class="card">
+        <h3>Prossime Lezioni Prenotate</h3>
+        <div class="table-wrap">
+          <table id="upcomingTable">
+            <thead><tr><th>Data e ora</th><th>Studente</th><th>Link Zoom</th><th>Stato</th><th>Compenso</th></tr></thead>
+            <tbody id="upcomingBody"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="card">
+        <h3>Storico Lezioni</h3>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Data</th><th>Studente</th><th>Stato</th><th>Compenso</th><th>Liquidato</th></tr></thead>
+            <tbody id="historyBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB DISPONIBILITA -->
+    <div class="tab-content" id="tabDisponibilita">
+      <div class="card">
+        <h3>I Miei Slot Settimanali Ricorrenti</h3>
+        <p style="font-size:.85rem;color:var(--grigio);margin-bottom:20px">
+          Aggiungi i giorni e gli orari in cui sei disponibile ogni settimana. Gli studenti potranno prenotare questi slot nelle prossime 4 settimane.
+        </p>
+        <div class="days-grid" id="daysGrid"></div>
+        <div class="slot-list" id="slotList"></div>
+      </div>
+    </div>
+
+    <!-- TAB PROFILO -->
+    <div class="tab-content" id="tabProfilo">
+      <div class="card">
+        <h3>Il Mio Profilo Pubblico</h3>
+        <p style="font-size:.85rem;color:var(--grigio);margin-bottom:20px">
+          Queste informazioni saranno visibili agli studenti nella pagina di prenotazione.
+        </p>
+        <div id="profileAlert"></div>
+        <img id="photoPreview" class="photo-preview" src="" alt="Foto" style="display:none">
+        <div class="profile-form">
+          <div>
+            <label>URL Foto (link a immagine online)</label>
+            <input type="url" id="photoUrl" placeholder="https://..." oninput="previewPhoto()">
+          </div>
+          <div>
+            <label>Presentazione (bio pubblica)</label>
+            <textarea id="bioInput" placeholder="Descrivi il tuo approccio didattico, le tue specializzazioni, i tuoi punti di forza..."></textarea>
+          </div>
+          <div>
+            <label>Materie / Livelli insegnati</label>
+            <input type="text" id="subjectsInput" placeholder="Es: A1-B2, Certificazioni CILS, Italiano per il lavoro">
+          </div>
+          <div>
+            <label>Link Zoom (Personal Meeting Room) *</label>
+            <input type="url" id="zoomLink" placeholder="https://zoom.us/j/...">
+          </div>
+          <div>
+            <label>Telefono (visibile solo all'admin)</label>
+            <input type="tel" id="phoneInput" placeholder="+39 ...">
+          </div>
+          <button class="btn-save" onclick="saveProfile()">Salva Profilo</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="tricolore"></div>
+
+<script>
+const API = 'https://italian-learning-platform.onrender.com';
+const DAYS = ['Dom','Lun','Mar','Mer','Gio','Ven','Sab'];
+let teacherToken = localStorage.getItem('teacher_token');
+let dashData = null;
+
+if (teacherToken) loadDashboard();
+
+async function doLogin() {
+  const email    = document.getElementById('loginEmail').value.trim();
+  const password = document.getElementById('loginPassword').value;
+  const errEl    = document.getElementById('loginError');
+  errEl.style.display = 'none';
+  if (!email || !password) { showLoginError('Inserisci email e password'); return; }
+  try {
+    const r = await fetch(API + '/api/teacher/login', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({email, password})
+    });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error || 'Credenziali non valide');
+    teacherToken = d.token;
+    localStorage.setItem('teacher_token', d.token);
+    loadDashboard();
+  } catch(e) { showLoginError(e.message); }
+}
+
+function showLoginError(msg) {
+  const el = document.getElementById('loginError');
+  el.textContent = msg; el.style.display = 'block';
+}
+
+async function loadDashboard() {
+  try {
+    const r = await fetch(API + '/api/teacher/dashboard', {
+      headers: { Authorization: 'Bearer ' + teacherToken }
+    });
+    if (r.status === 401) { logout(); return; }
+    const d = await r.json();
+    dashData = d;
+    renderApp(d);
+  } catch(e) {
+    showLoginError('Errore di connessione. Riprova.');
+  }
+}
+
+function renderApp(d) {
+  document.getElementById('loginWrap').style.display = 'none';
+  document.getElementById('appWrap').style.display   = 'block';
+  document.getElementById('topbarName').textContent  = d.teacher.name;
+
+  // KPI
+  document.getElementById('kUpcoming').textContent  = d.stats.upcoming;
+  document.getElementById('kCompleted').textContent = d.stats.total_lessons;
+  document.getElementById('kEarned').textContent    = '€' + parseFloat(d.stats.total_earned_eur).toFixed(2);
+  document.getElementById('kPending').textContent   = '€' + parseFloat(d.stats.pending_payout_eur).toFixed(2);
+
+  // Lezioni prossime
+  const upcoming = d.bookings.filter(b => ['paid','confirmed'].includes(b.status) && new Date(b.lesson_at) > new Date());
+  const tbody = document.getElementById('upcomingBody');
+  tbody.innerHTML = upcoming.length ? upcoming.map(b => {
+    const dt = new Date(b.lesson_at).toLocaleString('it-IT',{weekday:'long',day:'2-digit',month:'long',hour:'2-digit',minute:'2-digit'});
+    return `<tr>
+      <td><strong>${dt}</strong></td>
+      <td>${b.student_name}<br><small style="color:var(--grigio)">${b.student_email}</small></td>
+      <td><a href="${b.zoom_link}" target="_blank" style="color:var(--verde);font-weight:600">🔗 Entra in Zoom</a></td>
+      <td><span class="badge badge-${b.status}">${b.status}</span></td>
+      <td style="color:var(--verde);font-weight:700">€${parseFloat(b.teacher_share_eur).toFixed(2)}</td>
+    </tr>`;
+  }).join('') : '<tr><td colspan="5" style="text-align:center;color:var(--grigio);padding:24px">Nessuna lezione in programma</td></tr>';
+
+  // Storico
+  const history = d.bookings.filter(b => ['completed','cancelled','paid','confirmed'].includes(b.status));
+  document.getElementById('historyBody').innerHTML = history.map(b => {
+    const dt = new Date(b.lesson_at).toLocaleString('it-IT',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
+    return `<tr>
+      <td>${dt}</td>
+      <td>${b.student_name}</td>
+      <td><span class="badge badge-${b.status}">${b.status}</span></td>
+      <td style="color:var(--verde);font-weight:600">€${parseFloat(b.teacher_share_eur).toFixed(2)}</td>
+      <td>${b.paid_to_center ? '✅ Sì' : '⏳ No'}</td>
+    </tr>`;
+  }).join('') || '<tr><td colspan="5" style="text-align:center;color:var(--grigio);padding:24px">Nessuna lezione</td></tr>';
+
+  // Disponibilità
+  renderDaysGrid(d.slots);
+
+  // Profilo
+  document.getElementById('photoUrl').value    = d.teacher.photo_url || '';
+  document.getElementById('bioInput').value    = d.teacher.bio || '';
+  document.getElementById('subjectsInput').value = d.teacher.subjects || '';
+  document.getElementById('zoomLink').value    = d.teacher.zoom_link || '';
+  document.getElementById('phoneInput').value  = d.teacher.phone || '';
+  previewPhoto();
+}
+
+function renderDaysGrid(slots) {
+  const times = ['08:00','09:00','10:00','11:00','12:00','14:00','15:00','16:00','17:00','18:00','19:00','20:00','21:00'];
+  const grid = document.getElementById('daysGrid');
+  grid.innerHTML = DAYS.map((day, dow) => `
+    <div>
+      <div class="day-header">${day}</div>
+      <select class="time-select" id="sel_${dow}">
+        <option value="">Orario</option>
+        ${times.map(t => `<option value="${t}">${t}</option>`).join('')}
+      </select>
+      <button class="btn-add-slot" onclick="addSlot(${dow})">+ Aggiungi</button>
+    </div>`).join('');
+
+  const list = document.getElementById('slotList');
+  list.innerHTML = slots.length ? slots.map(s => `
+    <div class="slot-item">
+      <div>
+        <span class="slot-item-label">${DAYS[s.day_of_week]}</span>
+        <span class="slot-item-time"> · ${s.start_time.slice(0,5)} – ${s.end_time.slice(0,5)}</span>
+      </div>
+      <button class="btn-del" onclick="deleteSlot(${s.id}, this)">Rimuovi</button>
+    </div>`).join('') : '<p style="font-size:.85rem;color:var(--grigio);text-align:center;padding:16px">Nessuno slot configurato. Aggiungi la tua disponibilità.</p>';
+}
+
+async function addSlot(dow) {
+  const sel = document.getElementById('sel_' + dow);
+  const time = sel.value;
+  if (!time) { alert('Seleziona un orario'); return; }
+  try {
+    const r = await fetch(API + '/api/teacher/slots', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json', Authorization: 'Bearer ' + teacherToken},
+      body: JSON.stringify({ day_of_week: dow, start_time: time })
+    });
+    if (!r.ok) throw new Error((await r.json()).error);
+    sel.value = '';
+    loadDashboard();
+  } catch(e) { alert('Errore: ' + e.message); }
+}
+
+async function deleteSlot(id, btn) {
+  btn.textContent = '...'; btn.disabled = true;
+  try {
+    await fetch(`${API}/api/teacher/slots/${id}`, {
+      method: 'DELETE',
+      headers: { Authorization: 'Bearer ' + teacherToken }
+    });
+    loadDashboard();
+  } catch(e) { btn.textContent = 'Rimuovi'; btn.disabled = false; }
+}
+
+async function saveProfile() {
+  const alertEl = document.getElementById('profileAlert');
+  const zoom = document.getElementById('zoomLink').value.trim();
+  if (!zoom) { alertEl.innerHTML = '<div class="alert alert-error">Il link Zoom è obbligatorio</div>'; return; }
+  try {
+    const r = await fetch(API + '/api/teacher/profile', {
+      method: 'PUT',
+      headers: {'Content-Type':'application/json', Authorization: 'Bearer ' + teacherToken},
+      body: JSON.stringify({
+        bio:       document.getElementById('bioInput').value.trim(),
+        photo_url: document.getElementById('photoUrl').value.trim(),
+        zoom_link: zoom,
+        subjects:  document.getElementById('subjectsInput').value.trim(),
+        phone:     document.getElementById('phoneInput').value.trim(),
+      })
+    });
+    if (!r.ok) throw new Error((await r.json()).error);
+    alertEl.innerHTML = '<div class="alert alert-success">✅ Profilo aggiornato con successo!</div>';
+    setTimeout(() => alertEl.innerHTML = '', 3000);
+  } catch(e) {
+    alertEl.innerHTML = `<div class="alert alert-error">⚠️ ${e.message}</div>`;
+  }
+}
+
+function previewPhoto() {
+  const url = document.getElementById('photoUrl').value.trim();
+  const img = document.getElementById('photoPreview');
+  if (url) { img.src = url; img.style.display = 'block'; }
+  else { img.style.display = 'none'; }
+}
+
+function showTab(id, btn) {
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  btn.classList.add('active');
+}
+
+function logout() {
+  localStorage.removeItem('teacher_token');
+  teacherToken = null;
+  document.getElementById('appWrap').style.display  = 'none';
+  document.getElementById('loginWrap').style.display = 'flex';
+}
+</script>
+</body>
+</html>
