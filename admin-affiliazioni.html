@@ -313,8 +313,8 @@
                                 <input id="tPhone" type="tel" placeholder="+39 333 1234567" style="width:100%;border:1.5px solid var(--grigio-200);border-radius:10px;padding:10px 14px;font-family:Lato,sans-serif;font-size:.9rem;outline:none">
                             </div>
                             <div>
-                                <label style="display:block;font-size:.75rem;font-weight:700;color:var(--grigio-700);margin-bottom:5px;text-transform:uppercase">Link Zoom (Personal Meeting Room) *</label>
-                                <input id="tZoom" type="url" placeholder="https://zoom.us/j/..." style="width:100%;border:1.5px solid var(--grigio-200);border-radius:10px;padding:10px 14px;font-family:Lato,sans-serif;font-size:.9rem;outline:none">
+                                <label style="display:block;font-size:.75rem;font-weight:700;color:var(--grigio-700);margin-bottom:5px;text-transform:uppercase">Link Google Meet *</label>
+                                <input id="tMeetLink" type="url" placeholder="https://meet.google.com/..." style="width:100%;border:1.5px solid var(--grigio-200);border-radius:10px;padding:10px 14px;font-family:Lato,sans-serif;font-size:.9rem;outline:none">
                             </div>
                             <div>
                                 <label style="display:block;font-size:.75rem;font-weight:700;color:var(--grigio-700);margin-bottom:5px;text-transform:uppercase">Materie / Livelli</label>
@@ -934,22 +934,22 @@ async function createTeacher() {
     const name      = document.getElementById('tName').value.trim();
     const email     = document.getElementById('tEmail').value.trim();
     const affId     = document.getElementById('tAffiliate').value;
-    const zoom      = document.getElementById('tZoom').value.trim();
+    const meet_link = document.getElementById('tMeetLink').value.trim();
     const phone     = document.getElementById('tPhone').value.trim();
     const subjects  = document.getElementById('tSubjects').value.trim();
     const bio       = document.getElementById('tBio').value.trim();
     const photo_url = document.getElementById('tPhoto').value.trim();
     const alertEl   = document.getElementById('teacherFormAlert');
 
-    if (!name || !email || !affId || !zoom) {
-        alertEl.innerHTML = '<div style="background:#fdecea;color:#9b1c1c;padding:10px 14px;border-radius:8px;margin-bottom:12px;font-size:.875rem">⚠️ Nome, email, centro affiliato e link Zoom sono obbligatori.</div>';
+    if (!name || !email || !affId || !meet_link) {
+        alertEl.innerHTML = '<div style="background:#fdecea;color:#9b1c1c;padding:10px 14px;border-radius:8px;margin-bottom:12px;font-size:.875rem">⚠️ Nome, email, centro affiliato e link Google Meet sono obbligatori.</div>';
         return;
     }
 
     try {
         const r = await apiFetch('/api/admin/teachers', {
             method: 'POST',
-            body: JSON.stringify({ affiliate_id: parseInt(affId), name, email, phone, bio, photo_url, zoom_link: zoom, subjects })
+            body: JSON.stringify({ affiliate_id: parseInt(affId), name, email, phone, bio, photo_url, meet_link, subjects })
         });
         const d = await r.json();
         if (!r.ok) throw new Error(d.error);
@@ -961,7 +961,7 @@ async function createTeacher() {
         </div>`;
 
         // Reset form
-        ['tName','tEmail','tPhone','tZoom','tSubjects','tBio','tPhoto'].forEach(id => {
+        ['tName','tEmail','tPhone','tGoogle Meet','tSubjects','tBio','tPhoto'].forEach(id => {
             document.getElementById(id).value = '';
         });
         document.getElementById('tAffiliate').value = '';
