@@ -1,0 +1,1902 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SAAM 4.0 Italian Voice — Impara l'Italiano con l'Intelligenza Artificiale</title>
+<meta name="description" content="La prima piattaforma AI dedicata all'apprendimento della lingua italiana. Tutor conversazionali disponibili 24/7. Per studenti e centri di formazione.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="icon" type="image/x-icon" href="favicon.ico">
+<link rel="apple-touch-icon" href="OminiLOGO_Saam40.png">
+<meta property="og:image" content="OminiLOGO_Saam40.png">
+<meta property="og:title" content="SAAM 4.0 Italian Voice — Impara l'Italiano con l'AI">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;0,700;1,300;1,400;1,600&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+/* ═══════════════════════════════════════════════════════
+   VARIABILI & RESET
+═══════════════════════════════════════════════════════ */
+:root {
+  --verde:      #009246;
+  --verde-deep: #006830;
+  --verde-pale: #e8f5ee;
+  --rosso:      #ce2b37;
+  --rosso-deep: #9e1f29;
+  --oro:        #c9a84c;
+  --oro-light:  #f0e0a0;
+  --crema:      #faf7f2;
+  --crema-dark: #f0ebe2;
+  --blu-notte:  #0d1f3c;
+  --blu-medio:  #1a3a5c;
+  --testo:      #1a1a2e;
+  --grigio:     #6b7280;
+  --bianco:     #ffffff;
+  --serif:      'Cormorant Garamond', Georgia, serif;
+  --sans:       'Outfit', system-ui, sans-serif;
+  --shadow-lg:  0 24px 64px rgba(13,31,60,.14);
+  --shadow-card:0 8px 32px rgba(13,31,60,.10);
+  --r:          16px;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; font-size: 16px; }
+body {
+  font-family: var(--sans);
+  background: var(--crema);
+  color: var(--testo);
+  overflow-x: hidden;
+  line-height: 1.6;
+}
+img { max-width: 100%; display: block; }
+a { text-decoration: none; color: inherit; }
+
+/* ═══════════════════════════════════════════════════════
+   SCROLL REVEAL
+═══════════════════════════════════════════════════════ */
+.reveal {
+  opacity: 0;
+  transform: translateY(36px);
+  transition: opacity .75s cubic-bezier(.22,1,.36,1), transform .75s cubic-bezier(.22,1,.36,1);
+}
+.reveal.visible { opacity: 1; transform: none; }
+.reveal-delay-1 { transition-delay: .1s; }
+.reveal-delay-2 { transition-delay: .2s; }
+.reveal-delay-3 { transition-delay: .3s; }
+.reveal-delay-4 { transition-delay: .4s; }
+.reveal-delay-5 { transition-delay: .5s; }
+
+/* ═══════════════════════════════════════════════════════
+   NAVBAR
+═══════════════════════════════════════════════════════ */
+.nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  padding: 0 5vw;
+  display: flex; align-items: center; justify-content: space-between;
+  height: 72px;
+  transition: background .4s, box-shadow .4s;
+}
+.nav.scrolled {
+  background: rgba(250,247,242,.94);
+  backdrop-filter: blur(12px);
+  box-shadow: 0 2px 24px rgba(13,31,60,.08);
+}
+.nav-logo {
+  display: flex; align-items: center; gap: 10px;
+}
+.nav-logo-icon {
+  width: 38px; height: 38px; border-radius: 10px;
+  background: linear-gradient(135deg, var(--verde), var(--verde-deep));
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px;
+}
+.nav-logo-text {
+  font-family: var(--serif);
+  font-size: 1.25rem; font-weight: 600;
+  letter-spacing: -.01em;
+  color: var(--blu-notte);
+}
+.nav-logo-text span { color: var(--verde); }
+.nav-links {
+  display: flex; align-items: center; gap: 2.5rem;
+  list-style: none;
+}
+.nav-links a {
+  font-size: .875rem; font-weight: 500; color: var(--blu-notte);
+  opacity: .75; transition: opacity .2s;
+}
+.nav-links a:hover { opacity: 1; }
+.nav-cta {
+  display: flex; gap: 12px;
+}
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  padding: 11px 24px;
+  border-radius: 100px;
+  font-family: var(--sans); font-size: .875rem; font-weight: 600;
+  cursor: pointer; border: none; transition: all .25s;
+  white-space: nowrap;
+}
+.btn-outline {
+  background: transparent;
+  border: 1.5px solid rgba(13,31,60,.2);
+  color: var(--blu-notte);
+}
+.btn-outline:hover { border-color: var(--verde); color: var(--verde); }
+.btn-verde {
+  background: var(--verde);
+  color: #fff;
+  box-shadow: 0 4px 16px rgba(0,146,70,.3);
+}
+.btn-verde:hover {
+  background: var(--verde-deep);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0,146,70,.4);
+}
+.btn-rosso {
+  background: var(--rosso);
+  color: #fff;
+  box-shadow: 0 4px 16px rgba(206,43,55,.3);
+}
+.btn-rosso:hover {
+  background: var(--rosso-deep);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(206,43,55,.4);
+}
+.btn-lg { padding: 16px 36px; font-size: 1rem; border-radius: 100px; }
+.btn-xl { padding: 20px 48px; font-size: 1.1rem; border-radius: 100px; }
+
+/* ═══════════════════════════════════════════════════════
+   HERO
+═══════════════════════════════════════════════════════ */
+.hero {
+  min-height: 100vh;
+  position: relative;
+  display: flex; flex-direction: column; justify-content: center;
+  overflow: hidden;
+  padding: 120px 5vw 80px;
+}
+.hero-bg {
+  position: absolute; inset: 0; z-index: 0;
+  background:
+    radial-gradient(ellipse 80% 60% at 70% 40%, rgba(0,146,70,.08) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 50% at 20% 80%, rgba(206,43,55,.06) 0%, transparent 60%),
+    radial-gradient(ellipse 100% 80% at 50% 0%, rgba(201,168,76,.06) 0%, transparent 50%),
+    var(--crema);
+}
+/* Decorative Italian flag stripe */
+.hero-stripe {
+  position: absolute; top: 0; left: 0; right: 0; height: 4px; z-index: 2;
+  background: linear-gradient(90deg, var(--verde) 33.3%, #fff 33.3% 66.6%, var(--rosso) 66.6%);
+}
+/* Floating circle decorations */
+.hero-deco {
+  position: absolute; border-radius: 50%;
+  pointer-events: none; z-index: 0;
+}
+.hero-deco-1 {
+  width: 600px; height: 600px;
+  right: -100px; top: -100px;
+  background: radial-gradient(circle, rgba(0,146,70,.06) 0%, transparent 70%);
+  animation: float1 8s ease-in-out infinite;
+}
+.hero-deco-2 {
+  width: 400px; height: 400px;
+  left: -80px; bottom: 0;
+  background: radial-gradient(circle, rgba(206,43,55,.05) 0%, transparent 70%);
+  animation: float2 10s ease-in-out infinite;
+}
+.hero-deco-3 {
+  width: 200px; height: 200px;
+  right: 20%; top: 30%;
+  border: 1px solid rgba(201,168,76,.15);
+  animation: float3 12s ease-in-out infinite;
+}
+@keyframes float1 { 0%,100%{transform:translate(0,0)} 50%{transform:translate(-20px,20px)} }
+@keyframes float2 { 0%,100%{transform:translate(0,0)} 50%{transform:translate(20px,-15px)} }
+@keyframes float3 { 0%,100%{transform:translate(0,0) rotate(0deg)} 50%{transform:translate(10px,10px) rotate(45deg)} }
+
+.hero-content {
+  position: relative; z-index: 2;
+  max-width: 720px;
+}
+.hero-badge {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: rgba(0,146,70,.1);
+  border: 1px solid rgba(0,146,70,.2);
+  color: var(--verde-deep);
+  padding: 6px 16px; border-radius: 100px;
+  font-size: .8rem; font-weight: 600; letter-spacing: .04em;
+  text-transform: uppercase; margin-bottom: 28px;
+}
+.hero-badge-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--verde);
+  animation: pulse 2s ease-in-out infinite;
+}
+@keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.5;transform:scale(.8)} }
+.hero-title {
+  font-family: var(--serif);
+  font-size: clamp(2.8rem, 6vw, 5.5rem);
+  font-weight: 300;
+  line-height: 1.1;
+  letter-spacing: -.02em;
+  color: var(--blu-notte);
+  margin-bottom: 12px;
+}
+.hero-title em {
+  font-style: italic;
+  color: var(--verde);
+}
+.hero-title .accent { color: var(--rosso); }
+.hero-subtitle {
+  font-family: var(--serif);
+  font-size: clamp(1.1rem, 2vw, 1.5rem);
+  font-weight: 300; font-style: italic;
+  color: var(--grigio);
+  margin-bottom: 28px;
+  line-height: 1.5;
+}
+.hero-desc {
+  font-size: 1.05rem; color: #4a5568;
+  max-width: 560px; margin-bottom: 44px;
+  line-height: 1.75;
+}
+.hero-actions {
+  display: flex; flex-wrap: wrap; gap: 14px; align-items: center;
+  margin-bottom: 56px;
+}
+.hero-stats {
+  display: flex; flex-wrap: wrap; gap: 32px;
+}
+.hero-stat-item { display: flex; flex-direction: column; gap: 2px; }
+.hero-stat-num {
+  font-family: var(--serif);
+  font-size: 1.8rem; font-weight: 600;
+  color: var(--blu-notte); line-height: 1;
+}
+.hero-stat-label {
+  font-size: .75rem; font-weight: 500;
+  color: var(--grigio); text-transform: uppercase; letter-spacing: .06em;
+}
+
+/* Hero visual - right side */
+.hero-visual {
+  position: absolute; right: 5vw; top: 50%; transform: translateY(-50%);
+  z-index: 1;
+  display: flex; flex-direction: column; gap: 16px;
+  pointer-events: none;
+}
+.hero-card {
+  background: var(--bianco);
+  border-radius: 20px;
+  padding: 20px 24px;
+  box-shadow: var(--shadow-card);
+  border: 1px solid rgba(255,255,255,.8);
+  backdrop-filter: blur(8px);
+  animation: floatCard 6s ease-in-out infinite;
+  max-width: 300px;
+}
+.hero-card:nth-child(2) { animation-delay: -2s; margin-left: 40px; }
+.hero-card:nth-child(3) { animation-delay: -4s; }
+@keyframes floatCard { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
+.hero-card-header {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 12px;
+}
+.hero-card-avatar {
+  width: 38px; height: 38px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; flex-shrink: 0;
+}
+.avatar-sofia { background: linear-gradient(135deg, #ffd6e0, #ffb3c6); }
+.avatar-marco { background: linear-gradient(135deg, #d6e8ff, #b3d0ff); }
+.hero-card-name { font-weight: 600; font-size: .875rem; color: var(--blu-notte); }
+.hero-card-role { font-size: .75rem; color: var(--grigio); }
+.hero-card-msg {
+  font-size: .825rem; color: #4a5568; line-height: 1.5;
+  background: var(--crema); border-radius: 12px; padding: 10px 14px;
+}
+.hero-card-stat {
+  display: flex; justify-content: space-between; align-items: center;
+  padding-top: 12px; margin-top: 12px;
+  border-top: 1px solid var(--crema-dark);
+}
+.hero-card-stat-val {
+  font-family: var(--serif); font-size: 1.5rem; font-weight: 600;
+  color: var(--verde);
+}
+.hero-card-stat-label { font-size: .75rem; color: var(--grigio); }
+
+/* ═══════════════════════════════════════════════════════
+   SEZIONE COMUNE
+═══════════════════════════════════════════════════════ */
+section { padding: 100px 5vw; }
+.section-label {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-size: .75rem; font-weight: 600; letter-spacing: .1em;
+  text-transform: uppercase; color: var(--verde);
+  margin-bottom: 20px;
+}
+.section-label::before {
+  content: ''; display: block;
+  width: 24px; height: 2px; background: var(--verde);
+}
+.section-title {
+  font-family: var(--serif);
+  font-size: clamp(2rem, 4vw, 3.5rem);
+  font-weight: 300; line-height: 1.15;
+  letter-spacing: -.02em;
+  color: var(--blu-notte);
+  margin-bottom: 20px;
+}
+.section-title em { font-style: italic; color: var(--verde); }
+.section-title .red { color: var(--rosso); }
+.section-desc {
+  font-size: 1.05rem; color: #4a5568;
+  max-width: 560px; line-height: 1.75;
+  margin-bottom: 60px;
+}
+
+/* ═══════════════════════════════════════════════════════
+   SEZIONE STUDENTI
+═══════════════════════════════════════════════════════ */
+.studenti { background: var(--bianco); }
+.features-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 24px; margin-bottom: 60px;
+}
+.feature-card {
+  padding: 36px 32px;
+  border-radius: var(--r);
+  border: 1px solid rgba(13,31,60,.07);
+  background: var(--crema);
+  transition: all .3s;
+  position: relative; overflow: hidden;
+}
+.feature-card::after {
+  content: '';
+  position: absolute; bottom: 0; left: 0; right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--verde), var(--oro));
+  transform: scaleX(0); transform-origin: left;
+  transition: transform .3s;
+}
+.feature-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-card); }
+.feature-card:hover::after { transform: scaleX(1); }
+.feature-icon {
+  width: 56px; height: 56px; border-radius: 16px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 26px; margin-bottom: 20px;
+}
+.feature-title {
+  font-family: var(--serif);
+  font-size: 1.3rem; font-weight: 600;
+  color: var(--blu-notte); margin-bottom: 10px;
+}
+.feature-desc { font-size: .9rem; color: #4a5568; line-height: 1.65; }
+
+/* Tutor section */
+.tutors-wrap {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 28px;
+  margin-bottom: 60px;
+}
+.tutor-card {
+  border-radius: 24px; padding: 40px 36px;
+  position: relative; overflow: hidden;
+}
+.tutor-sofia { background: linear-gradient(135deg, #fff0f5, #ffe4ed); }
+.tutor-marco { background: linear-gradient(135deg, #f0f5ff, #e4edff); }
+.tutor-emoji {
+  font-size: 56px; margin-bottom: 16px;
+  display: block;
+  animation: tutor-bob 4s ease-in-out infinite;
+}
+.tutor-marco .tutor-emoji { animation-delay: -2s; }
+@keyframes tutor-bob { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} }
+.tutor-name {
+  font-family: var(--serif); font-size: 2rem; font-weight: 600;
+  margin-bottom: 6px;
+}
+.tutor-sofia .tutor-name { color: #c44569; }
+.tutor-marco .tutor-name { color: #2c5282; }
+.tutor-role { font-size: .875rem; font-weight: 500; color: var(--grigio); margin-bottom: 20px; }
+.tutor-desc { font-size: .925rem; color: #4a5568; line-height: 1.65; margin-bottom: 24px; }
+.tutor-tags { display: flex; flex-wrap: wrap; gap: 8px; }
+.tutor-tag {
+  padding: 4px 14px; border-radius: 100px;
+  font-size: .75rem; font-weight: 600;
+}
+.tutor-sofia .tutor-tag { background: rgba(196,69,105,.1); color: #c44569; }
+.tutor-marco .tutor-tag { background: rgba(44,82,130,.1); color: #2c5282; }
+
+/* Livelli */
+.livelli-grid {
+  display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px;
+  margin-bottom: 60px;
+}
+.livello-card {
+  padding: 20px 16px; border-radius: 16px; text-align: center;
+  border: 1.5px solid transparent; transition: all .25s; cursor: default;
+}
+.livello-card:hover { transform: translateY(-4px); }
+.livello-code {
+  font-family: var(--serif); font-size: 1.6rem; font-weight: 700;
+  display: block; margin-bottom: 4px;
+}
+.livello-name { font-size: .75rem; font-weight: 600; margin-bottom: 6px; display: block; }
+.livello-desc { font-size: .7rem; color: var(--grigio); line-height: 1.4; }
+.l-a1 { background:#f0fff4; border-color:#b2f0c8; }
+.l-a1 .livello-code { color:#276749; }
+.l-a2 { background:#f0fff4; border-color:#86e8a9; }
+.l-a2 .livello-code { color:#1a5e36; }
+.l-b1 { background:#fffbf0; border-color:#f6d860; }
+.l-b1 .livello-code { color:#8a6d00; }
+.l-b2 { background:#fffbf0; border-color:#f0c040; }
+.l-b2 .livello-code { color:#7a5d00; }
+.l-c1 { background:#fff5f0; border-color:#f4a87a; }
+.l-c1 .livello-code { color:#92400e; }
+.l-c2 { background:#fff0f0; border-color:#f4776a; }
+.l-c2 .livello-code { color:#9b1c1c; }
+
+/* ═══════════════════════════════════════════════════════
+   PRICING
+═══════════════════════════════════════════════════════ */
+.pricing { background: var(--blu-notte); position: relative; overflow: hidden; }
+.pricing::before {
+  content: '';
+  position: absolute; inset: 0;
+  background:
+    radial-gradient(ellipse 60% 50% at 20% 50%, rgba(0,146,70,.15), transparent),
+    radial-gradient(ellipse 50% 60% at 80% 50%, rgba(206,43,55,.1), transparent);
+}
+.pricing .section-label { color: var(--oro); }
+.pricing .section-label::before { background: var(--oro); }
+.pricing .section-title { color: var(--bianco); }
+.pricing .section-desc { color: rgba(255,255,255,.6); }
+.pricing-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px;
+  position: relative; z-index: 1;
+}
+.pricing-card {
+  border-radius: 24px; padding: 40px 32px;
+  background: rgba(255,255,255,.06);
+  border: 1px solid rgba(255,255,255,.1);
+  backdrop-filter: blur(8px);
+  position: relative; transition: all .3s;
+}
+.pricing-card:hover { transform: translateY(-6px); background: rgba(255,255,255,.1); }
+.pricing-card.featured {
+  background: var(--bianco);
+  border-color: transparent;
+  box-shadow: var(--shadow-lg);
+}
+.pricing-card.featured:hover { transform: translateY(-8px); }
+.pricing-badge {
+  position: absolute; top: -14px; left: 50%; transform: translateX(-50%);
+  background: var(--oro);
+  color: var(--blu-notte);
+  font-size: .7rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+  padding: 5px 18px; border-radius: 100px;
+  white-space: nowrap;
+}
+.pricing-name {
+  font-family: var(--serif); font-size: 1.5rem; font-weight: 600;
+  color: rgba(255,255,255,.9); margin-bottom: 8px;
+}
+.pricing-card.featured .pricing-name { color: var(--blu-notte); }
+.pricing-tagline { font-size: .825rem; color: rgba(255,255,255,.5); margin-bottom: 28px; }
+.pricing-card.featured .pricing-tagline { color: var(--grigio); }
+.pricing-price {
+  margin-bottom: 28px; display: flex; align-items: flex-end; gap: 4px;
+}
+.pricing-price-eur {
+  font-family: var(--serif); font-size: 3rem; font-weight: 600;
+  line-height: 1; color: var(--bianco);
+}
+.pricing-card.featured .pricing-price-eur { color: var(--blu-notte); }
+.pricing-price-per {
+  font-size: .825rem; color: rgba(255,255,255,.4); padding-bottom: 6px;
+}
+.pricing-card.featured .pricing-price-per { color: var(--grigio); }
+.pricing-features { list-style: none; margin-bottom: 32px; display: flex; flex-direction: column; gap: 12px; }
+.pricing-features li {
+  display: flex; align-items: center; gap: 10px;
+  font-size: .875rem; color: rgba(255,255,255,.7);
+}
+.pricing-card.featured .pricing-features li { color: #4a5568; }
+.pricing-features li::before {
+  content: '✓';
+  width: 20px; height: 20px; border-radius: 50%;
+  background: rgba(0,146,70,.2);
+  color: #4dbb7a;
+  display: flex; align-items: center; justify-content: center;
+  font-size: .7rem; font-weight: 700; flex-shrink: 0;
+}
+.pricing-card.featured .pricing-features li::before { background: var(--verde-pale); color: var(--verde); }
+.pricing-cta {
+  display: block; text-align: center;
+  padding: 13px; border-radius: 100px;
+  font-weight: 600; font-size: .9rem;
+  background: rgba(255,255,255,.1);
+  color: var(--bianco); border: 1.5px solid rgba(255,255,255,.2);
+  transition: all .25s;
+}
+.pricing-cta:hover { background: rgba(255,255,255,.2); }
+.pricing-card.featured .pricing-cta {
+  background: var(--verde); color: #fff; border-color: transparent;
+  box-shadow: 0 4px 16px rgba(0,146,70,.3);
+}
+.pricing-card.featured .pricing-cta:hover { background: var(--verde-deep); }
+
+/* ═══════════════════════════════════════════════════════
+   CENTRI AFFILIATI
+═══════════════════════════════════════════════════════ */
+.centri { background: var(--crema); position: relative; overflow: hidden; }
+.centri-inner {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 80px; align-items: start;
+}
+.centri-benefits { display: flex; flex-direction: column; gap: 24px; }
+.benefit-item {
+  display: flex; gap: 20px; align-items: flex-start;
+  padding: 28px; border-radius: 16px;
+  background: var(--bianco); border: 1px solid rgba(13,31,60,.07);
+  transition: all .3s;
+}
+.benefit-item:hover { box-shadow: var(--shadow-card); transform: translateX(6px); }
+.benefit-icon-wrap {
+  width: 52px; height: 52px; border-radius: 14px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center; font-size: 24px;
+}
+.benefit-title {
+  font-family: var(--serif); font-size: 1.15rem; font-weight: 600;
+  color: var(--blu-notte); margin-bottom: 6px;
+}
+.benefit-desc { font-size: .875rem; color: #4a5568; line-height: 1.65; }
+
+/* Revenue box */
+.revenue-box {
+  background: linear-gradient(135deg, var(--blu-notte), var(--blu-medio));
+  border-radius: 28px; padding: 44px 40px;
+  color: var(--bianco); position: sticky; top: 100px;
+  overflow: hidden;
+}
+.revenue-box::before {
+  content: '';
+  position: absolute; top: -40%; right: -20%;
+  width: 300px; height: 300px; border-radius: 50%;
+  background: rgba(0,146,70,.15);
+}
+.revenue-box-title {
+  font-family: var(--serif); font-size: 1.8rem; font-weight: 300;
+  margin-bottom: 8px; position: relative; z-index: 1;
+}
+.revenue-box-sub {
+  font-size: .875rem; color: rgba(255,255,255,.6);
+  margin-bottom: 36px; position: relative; z-index: 1;
+}
+.revenue-slider-wrap { position: relative; z-index: 1; margin-bottom: 32px; }
+.revenue-slider-label {
+  display: flex; justify-content: space-between;
+  font-size: .8rem; color: rgba(255,255,255,.6); margin-bottom: 10px;
+}
+.revenue-slider {
+  width: 100%; -webkit-appearance: none; appearance: none;
+  height: 6px; background: rgba(255,255,255,.15);
+  border-radius: 3px; cursor: pointer; outline: none;
+}
+.revenue-slider::-webkit-slider-thumb {
+  -webkit-appearance: none; width: 22px; height: 22px; border-radius: 50%;
+  background: var(--verde); border: 3px solid var(--bianco);
+  box-shadow: 0 2px 8px rgba(0,0,0,.3); cursor: pointer;
+}
+.revenue-result {
+  background: rgba(255,255,255,.08);
+  border-radius: 16px; padding: 24px;
+  position: relative; z-index: 1; margin-bottom: 24px;
+}
+.revenue-plans { display: flex; flex-direction: column; gap: 10px; }
+.revenue-plan-row {
+  display: flex; justify-content: space-between; align-items: center;
+  font-size: .875rem; color: rgba(255,255,255,.7); padding: 8px 0;
+  border-bottom: 1px solid rgba(255,255,255,.08);
+}
+.revenue-plan-row:last-child { border-bottom: none; }
+.revenue-plan-row .val {
+  font-family: var(--serif); font-size: 1.1rem; font-weight: 600;
+  color: var(--bianco);
+}
+.revenue-total-row {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-top: 16px; padding-top: 16px;
+  border-top: 2px solid rgba(255,255,255,.15);
+}
+.revenue-total-label {
+  font-size: .875rem; font-weight: 600; color: rgba(255,255,255,.8);
+}
+.revenue-total-val {
+  font-family: var(--serif); font-size: 2rem; font-weight: 700;
+  color: var(--oro);
+}
+.revenue-disclaimer {
+  font-size: .75rem; color: rgba(255,255,255,.4); line-height: 1.5;
+  position: relative; z-index: 1;
+}
+
+/* Piani affiliazione */
+.piani-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 60px;
+}
+.piano-card {
+  border-radius: 24px; padding: 36px 32px; position: relative;
+  overflow: hidden; transition: all .3s;
+}
+.piano-standard {
+  background: var(--bianco); border: 2px solid rgba(13,31,60,.1);
+}
+.piano-premium {
+  background: linear-gradient(135deg, var(--blu-notte), #1e3a5f);
+  border: 2px solid var(--oro);
+}
+.piano-card:hover { transform: translateY(-6px); box-shadow: var(--shadow-lg); }
+.piano-badge {
+  display: inline-block; padding: 4px 14px; border-radius: 100px;
+  font-size: .7rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+  margin-bottom: 16px;
+}
+.piano-standard .piano-badge { background: var(--verde-pale); color: var(--verde-deep); }
+.piano-premium .piano-badge { background: var(--oro); color: var(--blu-notte); }
+.piano-name {
+  font-family: var(--serif); font-size: 2rem; font-weight: 600;
+  margin-bottom: 6px;
+}
+.piano-standard .piano-name { color: var(--blu-notte); }
+.piano-premium .piano-name { color: var(--bianco); }
+.piano-prezzo {
+  display: flex; align-items: flex-end; gap: 4px; margin-bottom: 24px;
+}
+.piano-prezzo-val {
+  font-family: var(--serif); font-size: 2.5rem; font-weight: 700; line-height: 1;
+}
+.piano-standard .piano-prezzo-val { color: var(--blu-notte); }
+.piano-premium .piano-prezzo-val { color: var(--oro); }
+.piano-prezzo-per { font-size: .825rem; color: var(--grigio); padding-bottom: 4px; }
+.piano-premium .piano-prezzo-per { color: rgba(255,255,255,.5); }
+.piano-commissioni {
+  display: flex; align-items: center; gap: 10px;
+  background: rgba(0,146,70,.1); border-radius: 12px; padding: 12px 16px;
+  margin-bottom: 24px;
+}
+.piano-premium .piano-commissioni { background: rgba(201,168,76,.15); }
+.piano-comm-perc {
+  font-family: var(--serif); font-size: 2rem; font-weight: 700; color: var(--verde);
+}
+.piano-premium .piano-comm-perc { color: var(--oro); }
+.piano-comm-text { font-size: .825rem; color: #4a5568; line-height: 1.4; }
+.piano-premium .piano-comm-text { color: rgba(255,255,255,.6); }
+.piano-features { list-style: none; display: flex; flex-direction: column; gap: 10px; margin-bottom: 32px; }
+.piano-features li { display: flex; align-items: center; gap: 10px; font-size: .875rem; }
+.piano-standard .piano-features li { color: #4a5568; }
+.piano-premium .piano-features li { color: rgba(255,255,255,.75); }
+.piano-features li::before {
+  content: '✓'; width: 18px; height: 18px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: .65rem; font-weight: 700; flex-shrink: 0;
+}
+.piano-standard .piano-features li::before { background: var(--verde-pale); color: var(--verde); }
+.piano-premium .piano-features li::before { background: rgba(201,168,76,.2); color: var(--oro); }
+
+/* ═══════════════════════════════════════════════════════
+   CERTIFICAZIONI (USP block)
+═══════════════════════════════════════════════════════ */
+.certificazioni {
+  background: linear-gradient(135deg, var(--verde-deep), #005a26);
+  position: relative; overflow: hidden;
+}
+.certificazioni::before {
+  content: 'CILS CELI PLIDA DITALS';
+  position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);
+  font-family: var(--serif); font-size: clamp(5rem, 12vw, 14rem);
+  font-weight: 700; color: rgba(255,255,255,.04);
+  white-space: nowrap; pointer-events: none; letter-spacing: -.02em;
+}
+.cert-inner {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 80px; align-items: center;
+  position: relative; z-index: 1;
+}
+.cert-content .section-label { color: var(--oro); }
+.cert-content .section-label::before { background: var(--oro); }
+.cert-content .section-title { color: var(--bianco); }
+.cert-content .section-desc { color: rgba(255,255,255,.7); margin-bottom: 40px; }
+.cert-logos {
+  display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px;
+}
+.cert-logo-card {
+  background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.12);
+  border-radius: 16px; padding: 24px; text-align: center;
+  transition: all .3s; cursor: default;
+}
+.cert-logo-card:hover { background: rgba(255,255,255,.14); transform: scale(1.03); }
+.cert-logo-name {
+  font-family: var(--serif); font-size: 1.8rem; font-weight: 700;
+  color: var(--bianco); display: block; margin-bottom: 4px;
+}
+.cert-logo-desc { font-size: .75rem; color: rgba(255,255,255,.5); }
+.cert-usp-list { list-style: none; display: flex; flex-direction: column; gap: 16px; }
+.cert-usp-list li {
+  display: flex; align-items: flex-start; gap: 14px;
+  font-size: .95rem; color: rgba(255,255,255,.8); line-height: 1.6;
+}
+.cert-usp-icon {
+  width: 32px; height: 32px; border-radius: 10px;
+  background: rgba(201,168,76,.2); flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center; font-size: 16px;
+}
+
+/* ═══════════════════════════════════════════════════════
+   TRACCIABILITA'
+═══════════════════════════════════════════════════════ */
+.tracciabilita { background: var(--bianco); }
+.tracciabilita-grid {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px;
+}
+.track-card {
+  padding: 32px 24px; border-radius: 20px; text-align: center;
+  border: 1.5px solid rgba(13,31,60,.08); transition: all .3s;
+  background: var(--crema);
+}
+.track-card:hover { border-color: var(--verde); transform: translateY(-4px); box-shadow: var(--shadow-card); }
+.track-icon { font-size: 40px; margin-bottom: 16px; display: block; }
+.track-title {
+  font-family: var(--serif); font-size: 1.15rem; font-weight: 600;
+  color: var(--blu-notte); margin-bottom: 8px;
+}
+.track-desc { font-size: .85rem; color: var(--grigio); line-height: 1.6; }
+
+/* ═══════════════════════════════════════════════════════
+   COME FUNZIONA
+═══════════════════════════════════════════════════════ */
+.come-funziona { background: var(--crema-dark); }
+.steps-tabs {
+  display: flex; gap: 12px; margin-bottom: 48px; flex-wrap: wrap;
+}
+.step-tab {
+  padding: 10px 24px; border-radius: 100px;
+  font-size: .875rem; font-weight: 600; cursor: pointer;
+  border: 2px solid transparent; transition: all .25s;
+  background: var(--bianco); color: var(--grigio);
+}
+.step-tab.active { border-color: var(--verde); color: var(--verde); background: var(--verde-pale); }
+.steps-content { display: none; }
+.steps-content.active { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; }
+.step-card {
+  background: var(--bianco); border-radius: 20px; padding: 32px 28px;
+  position: relative; border: 1px solid rgba(13,31,60,.07);
+}
+.step-num {
+  position: absolute; top: -14px; left: 28px;
+  width: 28px; height: 28px; border-radius: 50%;
+  background: var(--verde); color: #fff;
+  font-size: .75rem; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+}
+.step-icon { font-size: 32px; margin-bottom: 14px; display: block; }
+.step-title {
+  font-family: var(--serif); font-size: 1.1rem; font-weight: 600;
+  color: var(--blu-notte); margin-bottom: 8px;
+}
+.step-desc { font-size: .85rem; color: var(--grigio); line-height: 1.6; }
+
+/* ═══════════════════════════════════════════════════════
+   NUMERI / SOCIAL PROOF
+═══════════════════════════════════════════════════════ */
+.numeri {
+  background: var(--bianco);
+  text-align: center;
+}
+.numeri-grid {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 2px;
+  background: rgba(13,31,60,.07); border-radius: 24px; overflow: hidden;
+  margin-bottom: 60px;
+}
+.numero-item {
+  background: var(--crema); padding: 44px 32px;
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+  transition: background .25s;
+}
+.numero-item:hover { background: var(--bianco); }
+.numero-val {
+  font-family: var(--serif); font-size: clamp(2.2rem, 4vw, 3.5rem);
+  font-weight: 700; color: var(--verde); line-height: 1;
+}
+.numero-label {
+  font-size: .875rem; font-weight: 500; color: var(--grigio);
+  text-align: center;
+}
+
+/* ═══════════════════════════════════════════════════════
+   CTA FINALE STUDENTI
+═══════════════════════════════════════════════════════ */
+.cta-studenti {
+  position: relative; overflow: hidden; padding: 120px 5vw;
+  background: linear-gradient(135deg, #e8f5ee, #faf7f2, #fff0f0);
+}
+.cta-studenti::before {
+  content: '🇮🇹';
+  position: absolute; right: 8%; top: 50%; transform: translateY(-50%);
+  font-size: clamp(120px, 20vw, 240px);
+  opacity: .08; pointer-events: none;
+}
+.cta-inner { max-width: 680px; position: relative; z-index: 1; }
+
+/* ═══════════════════════════════════════════════════════
+   CTA FINALE CENTRI
+═══════════════════════════════════════════════════════ */
+.cta-centri {
+  background: var(--blu-notte);
+  position: relative; overflow: hidden; padding: 120px 5vw;
+}
+.cta-centri::before {
+  content: '';
+  position: absolute; inset: 0;
+  background:
+    radial-gradient(ellipse 60% 80% at 0% 50%, rgba(0,146,70,.2), transparent),
+    radial-gradient(ellipse 50% 60% at 100% 50%, rgba(201,168,76,.15), transparent);
+}
+.cta-centri-inner {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 60px; align-items: center;
+  position: relative; z-index: 1;
+}
+.cta-centri-content .section-title { color: var(--bianco); }
+.cta-centri-content .section-desc { color: rgba(255,255,255,.65); margin-bottom: 36px; }
+.cta-centri-visual {
+  background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.1);
+  border-radius: 24px; padding: 32px;
+}
+.cta-check-list { list-style: none; display: flex; flex-direction: column; gap: 14px; }
+.cta-check-list li {
+  display: flex; align-items: center; gap: 14px;
+  font-size: .95rem; color: rgba(255,255,255,.8);
+}
+.cta-check-list li .ck {
+  width: 24px; height: 24px; border-radius: 50%; flex-shrink: 0;
+  background: rgba(0,146,70,.25); color: #4dbb7a;
+  display: flex; align-items: center; justify-content: center;
+  font-size: .65rem; font-weight: 700;
+}
+
+/* ═══════════════════════════════════════════════════════
+   FAQ
+═══════════════════════════════════════════════════════ */
+.faq { background: var(--crema); }
+.faq-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.faq-item {
+  background: var(--bianco); border-radius: 16px; overflow: hidden;
+  border: 1px solid rgba(13,31,60,.07);
+}
+.faq-question {
+  padding: 20px 24px; cursor: pointer;
+  display: flex; justify-content: space-between; align-items: center;
+  font-weight: 600; font-size: .925rem; color: var(--blu-notte);
+  transition: background .2s;
+  user-select: none;
+}
+.faq-question:hover { background: var(--crema); }
+.faq-toggle {
+  width: 28px; height: 28px; border-radius: 50%;
+  background: var(--verde-pale); color: var(--verde);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.1rem; font-weight: 300; flex-shrink: 0;
+  transition: transform .3s;
+}
+.faq-item.open .faq-toggle { transform: rotate(45deg); background: var(--verde); color: #fff; }
+.faq-answer {
+  max-height: 0; overflow: hidden;
+  transition: max-height .4s cubic-bezier(.22,1,.36,1);
+  font-size: .875rem; color: #4a5568; line-height: 1.7;
+}
+.faq-item.open .faq-answer { max-height: 300px; }
+.faq-answer-inner { padding: 0 24px 20px; }
+
+/* ═══════════════════════════════════════════════════════
+   FOOTER
+═══════════════════════════════════════════════════════ */
+footer {
+  background: var(--blu-notte);
+  padding: 80px 5vw 40px;
+}
+.footer-top {
+  display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 60px;
+  margin-bottom: 60px; padding-bottom: 60px;
+  border-bottom: 1px solid rgba(255,255,255,.08);
+}
+.footer-brand-name {
+  font-family: var(--serif); font-size: 1.5rem; font-weight: 600;
+  color: var(--bianco); margin-bottom: 12px;
+}
+.footer-brand-name span { color: var(--verde); }
+.footer-brand-desc {
+  font-size: .875rem; color: rgba(255,255,255,.45);
+  line-height: 1.7; margin-bottom: 24px;
+}
+.footer-flag {
+  display: flex; height: 4px; border-radius: 2px; overflow: hidden; width: 48px;
+}
+.footer-flag div { flex: 1; }
+.f-verde { background: var(--verde); }
+.f-bianco { background: #FFFFFF; }
+.f-rosso { background: var(--rosso); }
+.footer-col-title {
+  font-size: .75rem; font-weight: 700; letter-spacing: .1em;
+  text-transform: uppercase; color: rgba(255,255,255,.4);
+  margin-bottom: 20px;
+}
+.footer-links { list-style: none; display: flex; flex-direction: column; gap: 12px; }
+.footer-links a {
+  font-size: .875rem; color: rgba(255,255,255,.6);
+  transition: color .2s;
+}
+.footer-links a:hover { color: var(--bianco); }
+.footer-bottom {
+  display: flex; justify-content: space-between; align-items: center;
+  flex-wrap: wrap; gap: 16px;
+}
+.footer-copy {
+  font-size: .8rem; color: rgba(255,255,255,.3);
+}
+.footer-legal {
+  display: flex; gap: 24px;
+}
+.footer-legal a { font-size: .8rem; color: rgba(255,255,255,.3); transition: color .2s; }
+.footer-legal a:hover { color: rgba(255,255,255,.6); }
+
+/* Tricolore bar bottom */
+.tricolore-bar {
+  height: 4px;
+  background: linear-gradient(90deg, var(--verde) 33.3%, #fff 33.3% 66.6%, var(--rosso) 66.6%);
+}
+
+/* ═══════════════════════════════════════════════════════
+   MOBILE
+═══════════════════════════════════════════════════════ */
+@media (max-width: 1024px) {
+  .hero-visual { display: none; }
+  .centri-inner { grid-template-columns: 1fr; }
+  .cert-inner { grid-template-columns: 1fr; }
+  .cta-centri-inner { grid-template-columns: 1fr; }
+  .footer-top { grid-template-columns: 1fr 1fr; }
+  .tutors-wrap { grid-template-columns: 1fr; }
+}
+/* ── Hamburger ── */
+.nav-hamburger {
+  display: none;
+  flex-direction: column; justify-content: center; align-items: center;
+  gap: 5px; width: 40px; height: 40px;
+  cursor: pointer; background: transparent; border: none;
+  padding: 4px; border-radius: 8px; transition: background .2s; z-index: 200;
+}
+.nav-hamburger:hover { background: rgba(0,146,70,.08); }
+.nav-hamburger span {
+  display: block; width: 22px; height: 2px;
+  background: var(--blu-notte); border-radius: 2px;
+  transition: all .3s cubic-bezier(.22,1,.36,1);
+  transform-origin: center;
+}
+.nav-hamburger.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+.nav-hamburger.open span:nth-child(2) { opacity: 0; transform: scaleX(0); }
+.nav-hamburger.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+/* ── Mobile Drawer ── */
+.nav-drawer {
+  display: none;
+  position: fixed; top: 72px; left: 0; right: 0; bottom: 0;
+  background: rgba(250,247,242,.97);
+  backdrop-filter: blur(16px);
+  z-index: 99; padding: 32px 6vw 48px;
+  flex-direction: column; overflow-y: auto;
+  opacity: 0; transform: translateY(-8px);
+  transition: transform .35s cubic-bezier(.22,1,.36,1), opacity .35s;
+}
+.nav-drawer.open { display: flex; opacity: 1; transform: translateY(0); }
+.nav-drawer-links {
+  list-style: none;
+  border-bottom: 1px solid rgba(13,31,60,.08);
+  padding-bottom: 24px; margin-bottom: 28px;
+}
+.nav-drawer-links li a {
+  display: block; padding: 15px 0;
+  font-size: 1.15rem; font-weight: 600; color: var(--blu-notte);
+  border-bottom: 1px solid rgba(13,31,60,.06);
+  text-decoration: none; transition: color .2s;
+}
+.nav-drawer-links li:last-child a { border-bottom: none; }
+.nav-drawer-links li a:hover { color: var(--verde); }
+.nav-drawer-cta { display: flex; flex-direction: column; gap: 14px; }
+.nav-drawer-cta .btn {
+  width: 100%; text-align: center;
+  padding: 16px; font-size: 1rem; border-radius: 12px;
+}
+@media (max-width: 768px) {
+  section { padding: 72px 5vw; }
+  .nav-links { display: none; }
+  .nav-cta { display: none; }
+  .nav-hamburger { display: flex; }
+  .nav-logo-text { font-size: 1rem; }
+  .pricing-grid { grid-template-columns: 1fr; }
+  .piani-grid { grid-template-columns: 1fr; }
+  .livelli-grid { grid-template-columns: repeat(3,1fr); }
+  .tracciabilita-grid { grid-template-columns: 1fr 1fr; }
+  .numeri-grid { grid-template-columns: 1fr 1fr; }
+  .faq-grid { grid-template-columns: 1fr; }
+  .footer-top { grid-template-columns: 1fr; gap: 32px; }
+  .hero-actions { flex-direction: column; align-items: flex-start; }
+}
+@media (max-width: 480px) {
+  .livelli-grid { grid-template-columns: repeat(2,1fr); }
+  .tracciabilita-grid { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<!-- NAVBAR -->
+<nav class="nav" id="mainNav">
+  <div class="nav-logo">
+    <img src="OminiLOGO_Saam40.png" alt="SAAM 4.0" style="height:70px;width:70px;object-fit:contain;border-radius:50%">
+    <span class="nav-logo-text">SAAM 4.0 <span>Italian Voice</span></span>
+  </div>
+  <ul class="nav-links">
+    <li><a href="#studenti">Per Studenti</a></li>
+    <li><a href="#centri">Per Centri</a></li>
+    <li><a href="#certificazioni">Certificazioni</a></li>
+    <li><a href="#come-funziona">Come Funziona</a></li>
+    <li><a href="#faq">FAQ</a></li>
+  </ul>
+  <div class="nav-cta">
+    <a href="https://italianlearning.angelopagliara.it/affiliati-form.html" class="btn btn-outline">Diventa Partner</a>
+    <a href="https://italianlearning.angelopagliara.it/registrazione-studente.html" class="btn btn-verde">Inizia a Imparare →</a>
+  </div>
+  <button class="nav-hamburger" id="hamburger" aria-label="Apri menu">
+    <span></span><span></span><span></span>
+  </button>
+</nav>
+
+<!-- DRAWER MOBILE -->
+<div class="nav-drawer" id="navDrawer">
+  <ul class="nav-drawer-links">
+    <li><a href="#studenti">Per Studenti</a></li>
+    <li><a href="#centri">Per Centri</a></li>
+    <li><a href="#certificazioni">Certificazioni</a></li>
+    <li><a href="#come-funziona">Come Funziona</a></li>
+    <li><a href="#abbonamenti">Prezzi</a></li>
+    <li><a href="#faq">FAQ</a></li>
+  </ul>
+  <div class="nav-drawer-cta">
+    <a href="https://italianlearning.angelopagliara.it/affiliati-form.html"
+       class="btn btn-outline btn-lg">🏢 Diventa Partner</a>
+    <a href="https://italianlearning.angelopagliara.it/registrazione-studente.html"
+       class="btn btn-verde btn-lg">Inizia a Imparare →</a>
+  </div>
+</div>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-stripe"></div>
+  <div aria-hidden="true" style="position:absolute;bottom:24px;right:4vw;z-index:0;opacity:.05;pointer-events:none;width:min(420px,38vw)"><img src="OminiLOGO_Saam40.png" alt="" style="width:100%;border-radius:12px"></div>
+  <div class="hero-bg"></div>
+  <div class="hero-deco hero-deco-1"></div>
+  <div class="hero-deco hero-deco-2"></div>
+  <div class="hero-deco hero-deco-3"></div>
+
+  <div class="hero-content">
+    <div class="hero-badge reveal">
+      <div class="hero-badge-dot"></div>
+      Piattaforma AI · Prima nel suo genere in Italia
+    </div>
+    <h1 class="hero-title reveal reveal-delay-1">
+      Parla <em>Italiano</em><br>
+      con l'<span class="accent">Intelligenza</span><br>
+      Artificiale
+    </h1>
+    <p class="hero-subtitle reveal reveal-delay-2">
+      Il tutor di lingua italiana disponibile 24 ore su 24, 7 giorni su 7.
+    </p>
+    <p class="hero-desc reveal reveal-delay-3">
+      SAAM 4.0 Italian Voice è la prima piattaforma AI dedicata interamente all'apprendimento della lingua italiana. Conversazioni reali, correzioni immediate, progressi concreti — per ogni livello, ovunque tu sia nel mondo.
+    </p>
+    <div class="hero-actions reveal reveal-delay-4">
+      <a href="https://italianlearning.angelopagliara.it/registrazione-studente.html" class="btn btn-verde btn-xl">
+        Inizia a Imparare →
+      </a>
+      <a href="https://italianlearning.angelopagliara.it/affiliati-form.html" class="btn btn-outline btn-lg">
+        Sei un Centro di Formazione?
+      </a>
+    </div>
+    <div class="hero-stats reveal reveal-delay-5">
+      <div class="hero-stat-item">
+        <span class="hero-stat-num">24/7</span>
+        <span class="hero-stat-label">Disponibilità</span>
+      </div>
+      <div class="hero-stat-item">
+        <span class="hero-stat-num">6</span>
+        <span class="hero-stat-label">Livelli QCER</span>
+      </div>
+      <div class="hero-stat-item">
+        <span class="hero-stat-num">2</span>
+        <span class="hero-stat-label">Tutor AI</span>
+      </div>
+      <div class="hero-stat-item">
+        <span class="hero-stat-num">€9,70</span>
+        <span class="hero-stat-label">Da / mese</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Hero visual cards -->
+  <div class="hero-visual">
+    <div class="hero-card">
+      <div class="hero-card-header">    
+
+<div class="hero-card-avatar avatar-sofia">👩‍🏫</div>
+        <div>
+          <div class="hero-card-name">Sofia</div>
+          <div class="hero-card-role">Tutor Accademica</div>
+        </div>
+      </div>
+      <div class="hero-card-msg">
+        "Buongiorno! Oggi lavoriamo sul congiuntivo presente. È fondamentale per le certificazioni CILS e CELI."
+      </div>
+    </div>
+    <div class="hero-card">
+      <div class="hero-card-header">
+        <div class="hero-card-avatar avatar-marco">👨‍💼</div>
+        <div>
+          <div class="hero-card-name">Marco</div>
+          <div class="hero-card-role">Tutor Conversazionale</div>
+        </div>
+      </div>
+      <div class="hero-card-msg">
+        "Ciao! Parliamo come amici italiani. Ti racconto della mia giornata a Roma — e tu mi corrigi se sbaglio!"
+      </div>
+    </div>
+    <div class="hero-card">
+      <div class="hero-card-stat">
+        <div>
+          <div class="hero-card-stat-val">+47%</div>
+          <div class="hero-card-stat-label">Velocità apprendimento</div>
+        </div>
+        <div style="font-size:28px">📈</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SEZIONE STUDENTI -->
+<section class="studenti" id="studenti">
+  <div class="section-label reveal">Per gli Studenti</div>
+  <h2 class="section-title reveal reveal-delay-1">
+    Un modo <em>unico</em> di imparare<br>l'italiano
+  </h2>
+  <p class="section-desc reveal reveal-delay-2">
+    Nessuno offre al mondo quello che SAAM 4.0 offre ai tuoi studenti: un tutor AI personalizzato, disponibile sempre, che si adatta al loro ritmo e ai loro obiettivi.
+  </p>
+
+  <div class="features-grid">
+    <div class="feature-card reveal reveal-delay-1">
+      <div class="feature-icon" style="background:#e8f5ee">🤖</div>
+      <h3 class="feature-title">Tutor AI Conversazionale</h3>
+      <p class="feature-desc">Non esercizi meccanici, ma vere conversazioni in italiano. L'AI risponde, corregge, spiega e incoraggia — proprio come farebbe un insegnante madrelingua dedicato.</p>
+    </div>
+    <div class="feature-card reveal reveal-delay-2">
+      <div class="feature-icon" style="background:#fff3e0">🎯</div>
+      <h3 class="feature-title">Adattivo al Tuo Livello</h3>
+      <p class="feature-desc">Il sistema rileva automaticamente le lacune grammaticali e lessicali e calibra ogni sessione sul livello reale dello studente, dal principiante assoluto alla padronanza C2.</p>
+    </div>
+    <div class="feature-card reveal reveal-delay-3">
+      <div class="feature-icon" style="background:#f0f5ff">🗣️</div>
+      <h3 class="feature-title">Voce Naturale HD</h3>
+      <p class="feature-desc">Audio generato con le migliori tecnologie TTS di Google e OpenAI. Lo studente sente l'italiano con la pronuncia corretta, l'intonazione autentica, i ritmi della lingua parlata.</p>
+    </div>
+    <div class="feature-card reveal reveal-delay-1">
+      <div class="feature-icon" style="background:#fff0f5">⏰</div>
+      <h3 class="feature-title">Disponibile 24 ore su 24</h3>
+      <p class="feature-desc">L'apprendimento non ha orari. Che sia alle 7 di mattina prima del lavoro o alle 23 dopo cena, il tutor è sempre lì — mai stanco, mai impaziente.</p>
+    </div>
+    <div class="feature-card reveal reveal-delay-2">
+      <div class="feature-icon" style="background:#f0fff4">📊</div>
+      <h3 class="feature-title">Monitoraggio dei Progressi</h3>
+      <p class="feature-desc">Dashboard personale con statistiche dettagliate: minuti di pratica, sessioni completate, argomenti trattati. Lo studente vede i propri progressi crescere giorno dopo giorno.</p>
+    </div>
+    <div class="feature-card reveal reveal-delay-3">
+      <div class="feature-icon" style="background:#faf0ff">🌍</div>
+      <h3 class="feature-title">Accessibile Ovunque</h3>
+      <p class="feature-desc">Nessuna app da installare. Funziona direttamente nel browser, su qualsiasi dispositivo — smartphone, tablet, computer. L'italiano si impara da Berlino, Tokyo o Buenos Aires.</p>
+    </div>
+  </div>
+
+  <!-- I Tutor -->
+  <div class="section-label reveal" style="margin-top:80px">I Tutor</div>
+  <h3 class="section-title reveal reveal-delay-1">Incontra <em>Sofia</em> e <em>Marco</em></h3>
+  <p class="section-desc reveal reveal-delay-2">Due personalità distinte per due approcci complementari all'italiano. Lo studente sceglie, o passa dall'uno all'altro a seconda dell'umore.</p>
+
+  <div class="tutors-wrap">
+    <div class="tutor-card tutor-sofia reveal reveal-delay-1">
+<div style="text-align:center;margin-bottom:52px;position:relative;z-index:1" class="reveal"><img src="AvatarSOFIA.png" alt="SAAM 4.0 Academy School" style="max-width:150px;width:100%;border-radius:16px;box-shadow:0 8px 40px rgba(0,0,0,.5)"></div>
+
+
+            <h3 class="tutor-name">Sofia</h3>
+      <p class="tutor-role">Tutor Accademica · Approccio Strutturato</p>
+      <p class="tutor-desc">Sofia guida con precisione e metodo. Lavora sulla grammatica, sulla sintassi, sulla preparazione alle certificazioni ufficiali. Con lei non si improvvisa: ogni conversazione è un esercizio consapevole verso l'eccellenza linguistica.</p>
+      <div class="tutor-tags">
+        <span class="tutor-tag">Grammatica</span>
+        <span class="tutor-tag">Certificazioni</span>
+        <span class="tutor-tag">Scrittura</span>
+        <span class="tutor-tag">Vocabolario</span>
+      </div>
+    </div>
+    <div class="tutor-card tutor-marco reveal reveal-delay-2">
+
+<div style="text-align:center;margin-bottom:52px;position:relative;z-index:1" class="reveal"><img src="AvatarMARCO.png" alt="SAAM 4.0 Academy School" style="max-width:150px;width:100%;border-radius:16px;box-shadow:0 8px 40px rgba(0,0,0,.5)"></div>
+
+      
+      <h3 class="tutor-name">Marco</h3>
+      <p class="tutor-role">Tutor Conversazionale · Approccio Naturale</p>
+      <p class="tutor-desc">Marco insegna l'italiano come si parla davvero — con le espressioni quotidiane, i modi di dire, i dialetti regionali. Con lui ci si sente subito a proprio agio, come parlare con un amico italiano di lunga data.</p>
+      <div class="tutor-tags">
+        <span class="tutor-tag">Conversazione</span>
+        <span class="tutor-tag">Vita Quotidiana</span>
+        <span class="tutor-tag">Espressioni</span>
+        <span class="tutor-tag">Cultura</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Livelli -->
+  <div class="section-label reveal" style="margin-top:80px">Livelli</div>
+  <h3 class="section-title reveal reveal-delay-1">Tutti i livelli <em>QCER</em></h3>
+  <p class="section-desc reveal reveal-delay-2">Da chi non ha mai studiato italiano a chi aspira alla padronanza assoluta della lingua. SAAM 4.0 copre l'intero spettro del Quadro Comune Europeo di Riferimento.</p>
+
+  <div class="livelli-grid">
+    <div class="livello-card l-a1 reveal reveal-delay-1">
+      <span class="livello-code">A1</span>
+      <span class="livello-name">Principiante</span>
+      <span class="livello-desc">Primi passi, saluti, numeri, presentazioni</span>
+    </div>
+    <div class="livello-card l-a2 reveal reveal-delay-2">
+      <span class="livello-code">A2</span>
+      <span class="livello-name">Elementare</span>
+      <span class="livello-desc">Vita quotidiana, negozi, trasporti</span>
+    </div>
+    <div class="livello-card l-b1 reveal reveal-delay-3">
+      <span class="livello-code">B1</span>
+      <span class="livello-name">Intermedio</span>
+      <span class="livello-desc">Argomenti familiari, opinioni, viaggi</span>
+    </div>
+    <div class="livello-card l-b2 reveal reveal-delay-4">
+      <span class="livello-code">B2</span>
+      <span class="livello-name">Avanzato</span>
+      <span class="livello-desc">Testi complessi, dibattiti, lavoro</span>
+    </div>
+    <div class="livello-card l-c1 reveal reveal-delay-5">
+      <span class="livello-code">C1</span>
+      <span class="livello-name">Superiore</span>
+      <span class="livello-desc">Espressione spontanea, ambiti professionali</span>
+    </div>
+    <div class="livello-card l-c2 reveal" style="transition-delay:.6s">
+      <span class="livello-code">C2</span>
+      <span class="livello-name">Padronanza</span>
+      <span class="livello-desc">Competenza nativa, linguaggio specialistico</span>
+    </div>
+  </div>
+</section>
+
+<!-- PRICING -->
+<section class="pricing" id="abbonamenti">
+  <div class="section-label reveal">Abbonamenti Studenti</div>
+  <h2 class="section-title reveal reveal-delay-1">Semplice. <em>Flessibile.</em> Conveniente.</h2>
+  <p class="section-desc reveal reveal-delay-2">Tre piani chiari, nessun costo nascosto. Lo studente sceglie quello più adatto ai propri obiettivi e può cambiarlo in qualsiasi momento.</p>
+
+  <div class="pricing-grid">
+    <div class="pricing-card reveal reveal-delay-1">
+      <p class="pricing-name">Basic</p>
+      <p class="pricing-tagline">Per iniziare il percorso</p>
+      <div class="pricing-price">
+        <span class="pricing-price-eur">€9,70</span>
+        <span class="pricing-price-per">/mese</span>
+      </div>
+      <ul class="pricing-features">
+        <li>30 minuti di pratica al giorno</li>
+        <li>900 minuti totali al mese</li>
+        <li>Accesso a Sofia e Marco</li>
+        <li>Tutti i livelli A1–C2</li>
+        <li>Dashboard progressi</li>
+      </ul>
+      <a href="https://italianlearning.angelopagliara.it/registrazione-studente.html" class="pricing-cta">Inizia Ora</a>
+    </div>
+    <div class="pricing-card featured reveal reveal-delay-2">
+      <div class="pricing-badge">⭐ Più Scelto</div>
+      <p class="pricing-name">Advanced</p>
+      <p class="pricing-tagline">Il più popolare tra i nostri studenti</p>
+      <div class="pricing-price">
+        <span class="pricing-price-eur">€16,70</span>
+        <span class="pricing-price-per">/mese</span>
+      </div>
+      <ul class="pricing-features">
+        <li>60 minuti di pratica al giorno</li>
+        <li>1.800 minuti totali al mese</li>
+        <li>Accesso a Sofia e Marco</li>
+        <li>Tutti i livelli A1–C2</li>
+        <li>Dashboard progressi avanzata</li>
+        <li>Supporto prioritario</li>
+      </ul>
+      <a href="https://italianlearning.angelopagliara.it/registrazione-studente.html" class="pricing-cta">Inizia Ora</a>
+    </div>
+    <div class="pricing-card reveal reveal-delay-3">
+      <p class="pricing-name">Gold</p>
+      <p class="pricing-tagline">Per chi vuole il massimo</p>
+      <div class="pricing-price">
+        <span class="pricing-price-eur">€27,70</span>
+        <span class="pricing-price-per">/mese</span>
+      </div>
+      <ul class="pricing-features">
+        <li>120 minuti di pratica al giorno</li>
+        <li>3.600 minuti totali al mese</li>
+        <li>Accesso illimitato a Sofia e Marco</li>
+        <li>Tutti i livelli A1–C2</li>
+        <li>Dashboard completa + analytics</li>
+        <li>Priorità assoluta nel supporto</li>
+        <li>Preparazione certificazioni dedicata</li>
+      </ul>
+      <a href="https://italianlearning.angelopagliara.it/registrazione-studente.html" class="pricing-cta">Inizia Ora</a>
+    </div>
+  </div>
+</section>
+
+<!-- CERTIFICAZIONI -->
+<section class="certificazioni" id="certificazioni">
+  <div style="text-align:center;margin-bottom:52px;position:relative;z-index:1" class="reveal"><img src="LOGO_Saam40_ItalianVoice250.png" alt="SAAM 4.0 Academy School" style="max-width:200px;width:100%;border-radius:16px;box-shadow:0 8px 40px rgba(0,0,0,.5)"></div>
+  <div class="cert-inner">
+    <div class="cert-content">
+      <div class="section-label reveal">Per le Certificazioni</div>
+      <h2 class="section-title reveal reveal-delay-1">
+        Preparazione <em>certificata</em><br>all'italiano ufficiale
+      </h2>
+      <p class="section-desc reveal reveal-delay-2">
+        SAAM 4.0 Italian Voice è lo strumento ideale per i centri di formazione che preparano studenti stranieri alle principali certificazioni di italiano come lingua straniera. Un supporto quotidiano che potenzia l'efficacia delle lezioni tradizionali.
+      </p>
+      <ul class="cert-usp-list reveal reveal-delay-3">
+        <li>
+          <div class="cert-usp-icon">📚</div>
+          Percorsi strutturati allineati ai criteri QCER per ogni certificazione
+        </li>
+        <li>
+          <div class="cert-usp-icon">🎙️</div>
+          Esercizi di ascolto e produzione orale con feedback immediato dell'AI
+        </li>
+        <li>
+          <div class="cert-usp-icon">✍️</div>
+          Pratica intensiva su grammatica, sintassi e lessico certificativo
+        </li>
+        <li>
+          <div class="cert-usp-icon">🔄</div>
+          Possibilità illimitata di ripetere gli esercizi fino alla padronanza
+        </li>
+      </ul>
+    </div>
+    <div class="cert-logos reveal reveal-delay-2">
+      <div class="cert-logo-card">
+        <span class="cert-logo-name">CILS</span>
+        <span class="cert-logo-desc">Certificazione di Italiano come Lingua Straniera — Università per Stranieri di Siena</span>
+      </div>
+      <div class="cert-logo-card">
+        <span class="cert-logo-name">CELI</span>
+        <span class="cert-logo-desc">Certificato di Conoscenza della Lingua Italiana — Università per Stranieri di Perugia</span>
+      </div>
+      <div class="cert-logo-card">
+        <span class="cert-logo-name">PLIDA</span>
+        <span class="cert-logo-desc">Progetto Lingua Italiana Dante Alighieri — Società Dante Alighieri</span>
+      </div>
+      <div class="cert-logo-card">
+        <span class="cert-logo-name">DITALS</span>
+        <span class="cert-logo-desc">Didattica dell'Italiano a Stranieri — Università per Stranieri di Siena</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CENTRI AFFILIATI -->
+<section class="centri" id="centri">
+  <div class="centri-inner">
+    <div>
+      <div class="section-label reveal">Per i Centri di Formazione</div>
+      <h2 class="section-title reveal reveal-delay-1">
+        Il tuo centro<br><em>guadagna</em> mentre<br>i tuoi studenti <span class="red">crescono</span>
+      </h2>
+      <p class="section-desc reveal reveal-delay-2">
+        SAAM 4.0 Italian Voice offre ai centri linguistici un programma di affiliazione unico: uno strumento didattico all'avanguardia da offrire ai propri studenti, e una fonte di reddito ricorrente su ogni abbonamento sottoscritto.
+      </p>
+      <div class="centri-benefits">
+        <div class="benefit-item reveal reveal-delay-1">
+          <div class="benefit-icon-wrap" style="background:#e8f5ee">💰</div>
+          <div>
+            <h4 class="benefit-title">Commissioni Ricorrenti ogni Mese</h4>
+            <p class="benefit-desc">Guadagna fino al 30% su ogni abbonamento attivo dei tuoi studenti. Il reddito cresce con il numero di iscritti e non si ferma mai: finché lo studente è abbonato, tu percepisci la commissione.</p>
+          </div>
+        </div>
+        <div class="benefit-item reveal reveal-delay-2">
+          <div class="benefit-icon-wrap" style="background:#fff3e0">🔗</div>
+          <div>
+            <h4 class="benefit-title">Codice Referral Personale</h4>
+            <p class="benefit-desc">Ogni centro riceve un codice univoco da condividere con i propri studenti. Ogni iscrizione tramite quel codice è automaticamente tracciata e associata al centro — senza manualità, senza errori.</p>
+          </div>
+        </div>
+        <div class="benefit-item reveal reveal-delay-3">
+          <div class="benefit-icon-wrap" style="background:#f0f5ff">📊</div>
+          <div>
+            <h4 class="benefit-title">Dashboard Partner Completa</h4>
+            <p class="benefit-desc">Una dashboard dedicata con: panoramica studenti attivi, MRR, commissioni maturate, monitoraggio minuti per studente, reportistica mensile e proiezione ricavi. Hai sempre il controllo totale.</p>
+          </div>
+        </div>
+        <div class="benefit-item reveal reveal-delay-4">
+          <div class="benefit-icon-wrap" style="background:#fff0f5">🎓</div>
+          <div>
+            <h4 class="benefit-title">Valore Aggiunto Unico</h4>
+            <p class="benefit-desc">Offri ai tuoi studenti qualcosa che nessun altro centro offre ancora: un tutor AI in italiano disponibile sempre. Un vantaggio competitivo reale che differenzia la tua offerta formativa sul mercato.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Revenue Calculator -->
+    <div>
+      <div class="revenue-box reveal reveal-delay-2">
+        <h3 class="revenue-box-title">Calcola il tuo guadagno</h3>
+        <p class="revenue-box-sub">Stima le commissioni mensili in base ai tuoi studenti</p>
+
+        <div class="revenue-slider-wrap">
+          <div class="revenue-slider-label">
+            <span>Studenti attivi</span>
+            <span id="studentCount">20 studenti</span>
+          </div>
+          <input type="range" class="revenue-slider" id="studentSlider" min="5" max="100" value="20" step="5">
+        </div>
+
+        <div class="revenue-result">
+          <div class="revenue-plans" id="revenuePlans"></div>
+          <div class="revenue-total-row">
+            <span class="revenue-total-label">Commissioni mensili stimate</span>
+            <span class="revenue-total-val" id="revenueTotal">€0</span>
+          </div>
+        </div>
+        <p class="revenue-disclaimer">
+          * Calcolo esemplificativo con piano Premium (30%). Distribuzione stimata: 40% Basic, 40% Advanced, 20% Gold. Le commissioni reali dipendono dagli abbonamenti effettivi.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Piani Affiliazione -->
+  <div style="margin-top:80px">
+    <div class="section-label reveal">Piani Affiliazione</div>
+    <h3 class="section-title reveal reveal-delay-1">Scegli il piano <em>giusto</em> per il tuo centro</h3>
+    <p class="section-desc reveal reveal-delay-2">Due piani pensati per ogni dimensione — dalla piccola scuola privata al centro linguistico strutturato.</p>
+
+    <div class="piani-grid">
+      <div class="piano-card piano-standard reveal reveal-delay-1">
+        <span class="piano-badge">Standard</span>
+        <h3 class="piano-name">Standard</h3>
+        <div class="piano-prezzo">
+          <span class="piano-prezzo-val">€97</span>
+          <span class="piano-prezzo-per">/anno</span>
+        </div>
+        <div class="piano-commissioni">
+          <span class="piano-comm-perc">20%</span>
+          <span class="piano-comm-text">su ogni abbonamento<br>dei tuoi studenti</span>
+        </div>
+        <ul class="piano-features">
+          <li>Dashboard Partner completa</li>
+          <li>Codice referral personale</li>
+          <li>1 account trial/settimana</li>
+          <li>Reportistica mensile</li>
+          <li>Supporto via email 48h</li>
+        </ul>
+        <a href="https://italianlearning.angelopagliara.it/affiliati-form.html" class="btn btn-verde btn-lg" style="display:block;text-align:center">Inizia come Partner →</a>
+      </div>
+      <div class="piano-card piano-premium reveal reveal-delay-2">
+        <span class="piano-badge">Premium</span>
+        <h3 class="piano-name">Premium</h3>
+        <div class="piano-prezzo">
+          <span class="piano-prezzo-val">€197</span>
+          <span class="piano-prezzo-per">/anno</span>
+        </div>
+        <div class="piano-commissioni">
+          <span class="piano-comm-perc">30%</span>
+          <span class="piano-comm-text">su ogni abbonamento<br>dei tuoi studenti</span>
+        </div>
+        <ul class="piano-features">
+          <li>Tutto il piano Standard +</li>
+          <li>Commissioni al 30% (10% in più)</li>
+          <li>Proiezione ricavi avanzata</li>
+          <li>Badge "Centro Accreditato Premium"</li>
+          <li>Materiali marketing dedicati</li>
+          <li>Supporto prioritario 24h</li>
+        </ul>
+        <a href="https://italianlearning.angelopagliara.it/affiliati-form.html" class="btn btn-xl" style="display:block;text-align:center;background:var(--oro);color:var(--blu-notte);border-radius:100px;font-weight:700">Diventa Partner Premium →</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- TRACCIABILITA' -->
+<section class="tracciabilita">
+  <div class="section-label reveal">Tracciabilità</div>
+  <h2 class="section-title reveal reveal-delay-1">
+    I tuoi studenti restano <em>tuoi</em>
+  </h2>
+  <p class="section-desc reveal reveal-delay-2">
+    Il centro affiliato ha visibilità completa su ogni studente iscritto tramite il proprio codice. Nessuna opacità, nessuna sorpresa. Dati chiari, relazioni trasparenti.
+  </p>
+  <div class="tracciabilita-grid">
+    <div class="track-card reveal reveal-delay-1">
+      <span class="track-icon">👤</span>
+      <h4 class="track-title">Anagrafica Studente</h4>
+      <p class="track-desc">Nome, email, data di iscrizione e piano attivo per ogni studente registrato tramite il tuo codice.</p>
+    </div>
+    <div class="track-card reveal reveal-delay-2">
+      <span class="track-icon">⏱️</span>
+      <h4 class="track-title">Minuti Utilizzati</h4>
+      <p class="track-desc">Monitora quanti minuti ha utilizzato ogni studente nel mese corrente e il trend storico di utilizzo.</p>
+    </div>
+    <div class="track-card reveal reveal-delay-3">
+      <span class="track-icon">💳</span>
+      <h4 class="track-title">Stato Abbonamento</h4>
+      <p class="track-desc">Visualizza in tempo reale se l'abbonamento è attivo, in scadenza o cancellato — per ogni singolo studente.</p>
+    </div>
+    <div class="track-card reveal reveal-delay-4">
+      <span class="track-icon">📈</span>
+      <h4 class="track-title">MRR & Commissioni</h4>
+      <p class="track-desc">Il tuo MRR (Monthly Recurring Revenue) calcolato in tempo reale, con storico delle commissioni pagate e in attesa.</p>
+    </div>
+  </div>
+</section>
+
+<!-- COME FUNZIONA -->
+<section class="come-funziona" id="come-funziona">
+  <div class="section-label reveal">Come Funziona</div>
+  <h2 class="section-title reveal reveal-delay-1">Inizia in <em>pochi minuti</em></h2>
+
+  <div class="steps-tabs reveal reveal-delay-2">
+    <button class="step-tab active" onclick="switchTab('studenti-steps', this)">Per gli Studenti</button>
+    <button class="step-tab" onclick="switchTab('centri-steps', this)">Per i Centri</button>
+  </div>
+
+  <div class="steps-content active" id="studenti-steps">
+    <div class="step-card reveal reveal-delay-1">
+      <div class="step-num">1</div>
+      <span class="step-icon">📝</span>
+      <h4 class="step-title">Registrati</h4>
+      <p class="step-desc">Crea il tuo account in 2 minuti con nome, email e scelta del piano. Se hai il codice di un centro affiliato, inseriscilo per accedere a eventuali vantaggi dedicati.</p>
+    </div>
+    <div class="step-card reveal reveal-delay-2">
+      <div class="step-num">2</div>
+      <span class="step-icon">🎯</span>
+      <h4 class="step-title">Scegli il Livello</h4>
+      <p class="step-desc">Seleziona il tuo livello di partenza (A1–C2) e scegli il tutor preferito tra Sofia e Marco. Potrai sempre cambiare idea.</p>
+    </div>
+    <div class="step-card reveal reveal-delay-3">
+      <div class="step-num">3</div>
+      <span class="step-icon">💬</span>
+      <h4 class="step-title">Inizia a Parlare</h4>
+      <p class="step-desc">Avvia la conversazione. Il tutor AI ti parlerà in italiano, correggerà i tuoi errori e ti guiderà verso la fluidità. Ogni sessione è diversa.</p>
+    </div>
+    <div class="step-card reveal reveal-delay-4">
+      <div class="step-num">4</div>
+      <span class="step-icon">📊</span>
+      <h4 class="step-title">Monitora i Progressi</h4>
+      <p class="step-desc">Dalla tua dashboard tieni traccia delle ore di pratica, degli argomenti trattati e del tuo miglioramento nel tempo.</p>
+    </div>
+  </div>
+
+  <div class="steps-content" id="centri-steps">
+    <div class="step-card reveal reveal-delay-1">
+      <div class="step-num">1</div>
+      <span class="step-icon">🏢</span>
+      <h4 class="step-title">Richiedi l'Accreditamento</h4>
+      <p class="step-desc">Compila il form di richiesta con i dati del tuo centro. Il team SAAM 4.0 valuta la candidatura e risponde entro 48 ore lavorative.</p>
+    </div>
+    <div class="step-card reveal reveal-delay-2">
+      <div class="step-num">2</div>
+      <span class="step-icon">✍️</span>
+      <h4 class="step-title">Firma il Contratto</h4>
+      <p class="step-desc">Ricevi il contratto di affiliazione pre-compilato con i tuoi dati. Firma digitalmente e scegli il piano Standard o Premium.</p>
+    </div>
+    <div class="step-card reveal reveal-delay-3">
+      <div class="step-num">3</div>
+      <span class="step-icon">🔑</span>
+      <h4 class="step-title">Accedi alla Dashboard</h4>
+      <p class="step-desc">Ricevi le credenziali della Dashboard Partner. Trova il tuo codice referral personale e tutte le statistiche dei tuoi studenti.</p>
+    </div>
+    <div class="step-card reveal reveal-delay-4">
+      <div class="step-num">4</div>
+      <span class="step-icon">💰</span>
+      <h4 class="step-title">Inizia a Guadagnare</h4>
+      <p class="step-desc">Condividi il codice con i tuoi studenti. Le commissioni si accumulano automaticamente ogni mese e vengono liquidate entro il 15 del mese successivo.</p>
+    </div>
+  </div>
+</section>
+
+<!-- NUMERI -->
+<section class="numeri">
+  <div class="section-label reveal" style="justify-content:center">La Differenza</div>
+  <h2 class="section-title reveal reveal-delay-1" style="text-align:center">Perché scegliere <em>SAAM 4.0</em></h2>
+  <div class="numeri-grid">
+    <div class="numero-item reveal reveal-delay-1">
+      <span class="numero-val">24/7</span>
+      <span class="numero-label">Disponibilità del tutor — sempre</span>
+    </div>
+    <div class="numero-item reveal reveal-delay-2">
+      <span class="numero-val">+47%</span>
+      <span class="numero-label">Velocità di apprendimento stimata vs metodo tradizionale</span>
+    </div>
+    <div class="numero-item reveal reveal-delay-3">
+      <span class="numero-val">30%</span>
+      <span class="numero-label">Commissioni massime per i centri Partner Premium</span>
+    </div>
+    <div class="numero-item reveal reveal-delay-4">
+      <span class="numero-val">0€</span>
+      <span class="numero-label">Costo per attivare un account di prova trial</span>
+    </div>
+  </div>
+</section>
+
+<!-- CTA STUDENTI -->
+<section class="cta-studenti">
+  <div class="cta-inner">
+    <div class="section-label reveal">Inizia Oggi</div>
+    <h2 class="section-title reveal reveal-delay-1">
+      Il tuo <em>primo passo</em><br>verso l'italiano
+    </h2>
+    <p class="section-desc reveal reveal-delay-2">
+      Unisciti a migliaia di studenti che stanno imparando l'italiano con Sofia e Marco. Il tuo tutor AI è pronto — in attesa solo di conoscerti.
+    </p>
+    <div style="display:flex;flex-wrap:wrap;gap:14px" class="reveal reveal-delay-3">
+      <a href="https://italianlearning.angelopagliara.it/registrazione-studente.html" class="btn btn-verde btn-xl">
+        Registrati Ora →
+      </a>
+      <a href="#abbonamenti" class="btn btn-outline btn-lg">Vedi i Prezzi</a>
+    </div>
+    <p class="reveal reveal-delay-4" style="margin-top:20px;font-size:.85rem;color:var(--grigio)">
+      ✓ Nessun vincolo &nbsp;·&nbsp; ✓ Disdici quando vuoi &nbsp;·&nbsp; ✓ Supporto incluso
+    </p>
+  </div>
+</section>
+
+<!-- CTA CENTRI -->
+<section class="cta-centri">
+  <div class="cta-centri-inner">
+    <div class="cta-centri-content">
+      <div class="section-label reveal" style="color:var(--oro)">
+        <span style="background:var(--oro);width:24px;height:2px;display:inline-block"></span>
+        Partner Program
+      </div>
+      <h2 class="section-title reveal reveal-delay-1">
+        Trasforma il tuo centro<br>in un <em style="color:var(--oro)">hub digitale</em><br>dell'italiano
+      </h2>
+      <p class="section-desc reveal reveal-delay-2">
+        Non aspettare che lo faccia la concorrenza. Offri ai tuoi studenti la tecnologia più avanzata disponibile per imparare l'italiano — e guadagnaci ogni mese.
+      </p>
+      <div style="display:flex;flex-wrap:wrap;gap:14px" class="reveal reveal-delay-3">
+        <a href="https://italianlearning.angelopagliara.it/affiliati-form.html" class="btn btn-xl" style="background:var(--oro);color:var(--blu-notte)">
+          Richiedi l'Accreditamento →
+        </a>
+        <a href="#centri" class="btn btn-outline btn-lg" style="border-color:rgba(255,255,255,.3);color:#fff">Scopri il Programma</a>
+      </div>
+    </div>
+    <div class="cta-centri-visual reveal reveal-delay-2">
+      <ul class="cta-check-list">
+        <li><span class="ck">✓</span> Reddito passivo ricorrente ogni mese</li>
+        <li><span class="ck">✓</span> Strumento didattico all'avanguardia</li>
+        <li><span class="ck">✓</span> Dashboard partner con dati in tempo reale</li>
+        <li><span class="ck">✓</span> Contratto trasparente, commissioni certe</li>
+        <li><span class="ck">✓</span> Badge "Centro Accreditato SAAM 4.0"</li>
+        <li><span class="ck">✓</span> Nessun costo tecnologico aggiuntivo</li>
+        <li><span class="ck">✓</span> Supporto dedicato al tuo centro</li>
+        <li><span class="ck">✓</span> Tracciabilità totale dei tuoi studenti</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section class="faq" id="faq">
+  <div class="section-label reveal">Domande Frequenti</div>
+  <h2 class="section-title reveal reveal-delay-1">Hai <em>domande</em>? Abbiamo risposte.</h2>
+  <div class="faq-grid reveal reveal-delay-2">
+    <div class="faq-item">
+      <div class="faq-question" onclick="toggleFaq(this)">
+        <span>L'AI è davvero efficace come un insegnante umano?</span>
+        <span class="faq-toggle">+</span>
+      </div>
+      <div class="faq-answer"><div class="faq-answer-inner">SAAM 4.0 non sostituisce il docente umano — lo potenzia. Il vantaggio è la disponibilità illimitata: lo studente può esercitarsi alle 23 di domenica, senza aspettare la lezione di martedì. Le conversazioni sono autentiche, le correzioni immediate. Ricerche sull'apprendimento assistito da AI mostrano miglioramenti significativi nella fluidità e nella velocità di acquisizione.</div></div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-question" onclick="toggleFaq(this)">
+        <span>Cosa succede se uno studente vuole disdire?</span>
+        <span class="faq-toggle">+</span>
+      </div>
+      <div class="faq-answer"><div class="faq-answer-inner">Lo studente può cancellare l'abbonamento in qualsiasi momento dalla propria dashboard. L'accesso rimane attivo fino alla fine del periodo pagato. Non ci sono penali, non ci sono costi nascosti. La trasparenza è uno dei nostri valori fondanti.</div></div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-question" onclick="toggleFaq(this)">
+        <span>Come vengono calcolate e pagate le commissioni?</span>
+        <span class="faq-toggle">+</span>
+      </div>
+      <div class="faq-answer"><div class="faq-answer-inner">Le commissioni vengono calcolate il 5 di ogni mese sul totale degli abbonamenti attivi degli studenti del centro. Il pagamento avviene entro il 15 del mese tramite bonifico bancario all'IBAN comunicato. Ogni dettaglio è visibile in tempo reale nella Dashboard Partner.</div></div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-question" onclick="toggleFaq(this)">
+        <span>Il centro può attivare account di prova per i propri studenti?</span>
+        <span class="faq-toggle">+</span>
+      </div>
+      <div class="faq-answer"><div class="faq-answer-inner">Sì. Ogni centro affiliato ha diritto ad attivare 1 account di prova gratuito a settimana, valido per 7 giorni con un limite di 30 minuti. È lo strumento perfetto per mostrare la piattaforma a potenziali nuovi studenti durante i colloqui di orientamento.</div></div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-question" onclick="toggleFaq(this)">
+        <span>La piattaforma funziona su smartphone e tablet?</span>
+        <span class="faq-toggle">+</span>
+      </div>
+      <div class="faq-answer"><div class="faq-answer-inner">Assolutamente sì. SAAM 4.0 è un'applicazione web completamente responsive che funziona su qualsiasi dispositivo dotato di browser moderno — Chrome, Firefox, Safari, Edge. Non è necessario scaricare nessuna app. Basta aprire il browser e iniziare.</div></div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-question" onclick="toggleFaq(this)">
+        <span>Posso vedere quanti minuti usa ogni singolo studente?</span>
+        <span class="faq-toggle">+</span>
+      </div>
+      <div class="faq-answer"><div class="faq-answer-inner">Sì. La Dashboard Partner mostra per ogni studente iscritto tramite il tuo codice: piano attivo, minuti utilizzati nel mese corrente, data di iscrizione, stato dell'abbonamento. Hai visibilità completa senza violare la privacy dei dati degli studenti.</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-top">
+    <div>
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px"><img src="OminiLOGO_Saam40.png" alt="SAAM 4.0" style="height:48px;width:48px;object-fit:contain;border-radius:50%;flex-shrink:0"><p class="footer-brand-name" style="margin-bottom:0">SAAM 4.0 <span>Italian Voice</span></p></div>
+      <p class="footer-brand-desc">La prima piattaforma AI dedicata all'apprendimento della lingua italiana. Tecnologia all'avanguardia al servizio della cultura italiana nel mondo.</p>
+      <div class="footer-flag">
+        <div class="f-verde"></div>
+        <div class="f-bianco"></div>
+        <div class="f-rosso"></div>
+      </div>
+    </div>
+    <div>
+      <p class="footer-col-title">Studenti</p>
+      <ul class="footer-links">
+        <li><a href="https://italianlearning.angelopagliara.it/registrazione-studente.html">Registrati</a></li>
+        <li><a href="https://italianlearning.angelopagliara.it/tutor-italiano.html">Accedi</a></li>
+        <li><a href="#abbonamenti">Piani e Prezzi</a></li>
+        <li><a href="#certificazioni">Certificazioni</a></li>
+      </ul>
+    </div>
+    <div>
+      <p class="footer-col-title">Centri Partner</p>
+      <ul class="footer-links">
+        <li><a href="https://italianlearning.angelopagliara.it/affiliati-form.html">Diventa Partner</a></li>
+        <li><a href="https://italianlearning.angelopagliara.it/dashboard-affiliati.html">Dashboard Partner</a></li>
+        <li><a href="#centri">Programma Affiliazione</a></li>
+        <li><a href="#faq">FAQ</a></li>
+      </ul>
+    </div>
+    <div>
+      <p class="footer-col-title">Contatti</p>
+      <ul class="footer-links">
+        <li><a href="/cdn-cgi/l/email-protection#a5d1d7c4cccbcccbc2e5c4cbc2c0c9cad5c4c2c9ccc4d7c48bccd1"><span class="__cf_email__" data-cfemail="f68284979f989f9891b6979891939a998697919a9f978497d89f82">[email&#160;protected]</span></a></li>
+        <li><a href="/cdn-cgi/l/email-protection#02636c65676e6d7263656e6b637063426f7b7267612c6777">PEC</a></li>
+        <li><a href="https://www.angelopagliara.it">www.angelopagliara.it</a></li>
+        <li><a href="https://www.saam40.net">www.saam40.net</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <p class="footer-copy">© 2026 SAAM 4.0 Academy School · Angelo Pagliara · P.IVA 02490040744 · Via Dott. Cosimo Argentieri, 24 · 72022 Latiano (BR)</p>
+    <div class="footer-legal">
+      <a href="https://italianlearning.angelopagliara.it/privacy.html">Privacy Policy</a>
+      <a href="https://italianlearning.angelopagliara.it/cookie.html">Cookie Policy</a>
+      <a href="https://italianlearning.angelopagliara.it/termini.html">Termini di Servizio</a>
+    </div>
+  </div>
+</footer>
+<div class="tricolore-bar"></div>
+
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
+/* ── NAVBAR SCROLL ── */
+const nav = document.getElementById('mainNav');
+window.addEventListener('scroll', () => {
+  nav.classList.toggle('scrolled', window.scrollY > 40);
+});
+
+/* ── SCROLL REVEAL ── */
+const revealEls = document.querySelectorAll('.reveal');
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); } });
+}, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
+revealEls.forEach(el => observer.observe(el));
+
+/* ── REVENUE CALCULATOR ── */
+const slider = document.getElementById('studentSlider');
+const countEl = document.getElementById('studentCount');
+const totalEl = document.getElementById('revenueTotal');
+const plansEl = document.getElementById('revenuePlans');
+
+function calcRevenue(n) {
+  const cr = 0.30;
+  const dist = { basic: 0.40, advanced: 0.40, gold: 0.20 };
+  const prices = { basic: 9.70, advanced: 16.70, gold: 27.70 };
+  const labels = { basic: 'Basic', advanced: 'Advanced', gold: 'Gold' };
+  let total = 0;
+  let html = '';
+  for (const [plan, pct] of Object.entries(dist)) {
+    const students = Math.round(n * pct);
+    const comm = students * prices[plan] * cr;
+    total += comm;
+    html += `<div class="revenue-plan-row">
+      <span>${labels[plan]} (${students} studenti × €${prices[plan]})</span>
+      <span class="val">€${comm.toFixed(2)}</span>
+    </div>`;
+  }
+  plansEl.innerHTML = html;
+  totalEl.textContent = '€' + total.toFixed(2);
+}
+
+slider.addEventListener('input', () => {
+  const n = parseInt(slider.value);
+  countEl.textContent = n + ' studenti';
+  calcRevenue(n);
+});
+calcRevenue(20);
+
+/* ── STEPS TABS ── */
+function switchTab(id, btn) {
+  document.querySelectorAll('.steps-content').forEach(c => c.classList.remove('active'));
+  document.querySelectorAll('.step-tab').forEach(b => b.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  btn.classList.add('active');
+}
+
+/* ── FAQ ── */
+function toggleFaq(el) {
+  const item = el.parentElement;
+  const isOpen = item.classList.contains('open');
+  document.querySelectorAll('.faq-item.open').forEach(i => i.classList.remove('open'));
+  if (!isOpen) item.classList.add('open');
+}
+
+/* ── HAMBURGER MENU ── */
+(function() {
+  var btn    = document.getElementById('hamburger');
+  var drawer = document.getElementById('navDrawer');
+  if (!btn || !drawer) return;
+  btn.addEventListener('click', function() {
+    var isOpen = btn.classList.contains('open');
+    btn.classList.toggle('open', !isOpen);
+    drawer.classList.toggle('open', !isOpen);
+    document.body.style.overflow = isOpen ? '' : 'hidden';
+  });
+  // Chiudi cliccando i link del drawer
+  drawer.querySelectorAll('a').forEach(function(a) {
+    a.addEventListener('click', function() {
+      btn.classList.remove('open');
+      drawer.classList.remove('open');
+      document.body.style.overflow = '';
+    });
+  });
+  // Chiudi su resize desktop
+  window.addEventListener('resize', function() {
+    if (window.innerWidth > 768) {
+      btn.classList.remove('open');
+      drawer.classList.remove('open');
+      document.body.style.overflow = '';
+    }
+  });
+})();
+</script>
+</body>
+</html>
