@@ -1460,7 +1460,7 @@ router.get('/public/teachers', async (req, res) => {
     try {
         const { rows } = await pool.query(`
             SELECT t.id, t.name, t.bio, t.photo_url, t.subjects,
-                   t.price_per_hour, t.zoom_link,
+                   t.price_per_hour, t.meet_link,
                    a.organization_name AS center_name, a.city AS center_city
             FROM teachers t
             JOIN affiliates a ON a.id = t.affiliate_id
@@ -1527,11 +1527,11 @@ router.post('/lessons/checkout', authMiddleware, async (req, res) => {
         const bookRow = await pool.query(
             `INSERT INTO bookings
              (student_id, teacher_id, affiliate_id, lesson_at, amount_eur,
-              teacher_share_eur, platform_share_eur, zoom_link, notes, status)
+              teacher_share_eur, platform_share_eur, meet_link, notes, status)
              VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,'pending') RETURNING id`,
             [user.id, teacher_id, teacher.aff_id, lessonDate,
              LESSON_PRICE, shares.teacher, shares.platform,
-             teacher.zoom_link, notes || null]
+             teacher.meet_link, notes || null]
         );
         const bookingId = bookRow.rows[0].id;
 
@@ -1550,7 +1550,7 @@ router.post('/lessons/checkout', authMiddleware, async (req, res) => {
                     unit_amount: Math.round(LESSON_PRICE * 100),
                     product_data: {
                         name: `Lezione personalizzata con ${teacher.name}`,
-                        description: `${dateLabel} · 60 minuti · via Zoom`,
+                        description: `${dateLabel} · 60 minuti · via Google Meet`,
                     }
                 },
                 quantity: 1,
@@ -1592,7 +1592,7 @@ router.get('/public/lessons/verify/:sessionId', async (req, res) => {
         // Dati studente e docente per le email
         const [stuRow, tchRow] = await Promise.all([
             pool.query('SELECT name, email FROM users WHERE id=$1', [booking.student_id]),
-            pool.query(`SELECT t.name, t.email, t.zoom_link,
+            pool.query(`SELECT t.name, t.email, t.meet_link,
                                a.organization_name AS center_name
                         FROM teachers t JOIN affiliates a ON a.id=t.affiliate_id
                         WHERE t.id=$1`, [booking.teacher_id]),
@@ -1614,7 +1614,7 @@ router.get('/public/lessons/verify/:sessionId', async (req, res) => {
                   <tr><td style="padding:8px;background:#f0f7f2;font-weight:700">Docente</td><td style="padding:8px">${tch?.name} — ${tch?.center_name}</td></tr>
                   <tr><td style="padding:8px;background:#f0f7f2;font-weight:700">Data e ora</td><td style="padding:8px">${dateLabel}</td></tr>
                   <tr><td style="padding:8px;background:#f0f7f2;font-weight:700">Durata</td><td style="padding:8px">60 minuti</td></tr>
-                  <tr><td style="padding:8px;background:#f0f7f2;font-weight:700">Link Zoom</td><td style="padding:8px"><a href="${booking.zoom_link}">${booking.zoom_link}</a></td></tr>
+                  <tr><td style="padding:8px;background:#f0f7f2;font-weight:700">Link Google Meet</td><td style="padding:8px"><a href="${booking.meet_link}">${booking.meet_link}</a></td></tr>
                   <tr><td style="padding:8px;background:#f0f7f2;font-weight:700">Importo pagato</td><td style="padding:8px">€${booking.amount_eur}</td></tr>
                 </table>
                 <p style="font-size:12px;color:#888">SAAM 4.0 Academy School — training@angelopagliara.it</p>`
@@ -1630,7 +1630,7 @@ router.get('/public/lessons/verify/:sessionId', async (req, res) => {
                 <table style="border-collapse:collapse;width:100%;margin:16px 0">
                   <tr><td style="padding:8px;background:#f0f7f2;font-weight:700">Studente</td><td style="padding:8px">${stu?.name}</td></tr>
                   <tr><td style="padding:8px;background:#f0f7f2;font-weight:700">Data e ora</td><td style="padding:8px">${dateLabel}</td></tr>
-                  <tr><td style="padding:8px;background:#f0f7f2;font-weight:700">Il tuo link Zoom</td><td style="padding:8px"><a href="${booking.zoom_link}">${booking.zoom_link}</a></td></tr>
+                  <tr><td style="padding:8px;background:#f0f7f2;font-weight:700">Il tuo link Google Meet</td><td style="padding:8px"><a href="${booking.meet_link}">${booking.meet_link}</a></td></tr>
                   <tr><td style="padding:8px;background:#f0f7f2;font-weight:700">Il tuo compenso</td><td style="padding:8px">€${booking.teacher_share_eur} (liquidazione mensile)</td></tr>
                 </table>
                 <p style="font-size:12px;color:#888">SAAM 4.0 Academy School — training@angelopagliara.it</p>`
@@ -1658,7 +1658,7 @@ router.get('/public/lessons/verify-booking/:bookingId', async (req, res) => {
     if (isNaN(bookingId)) return res.status(400).json({ error: 'ID non valido' });
     try {
         const { rows } = await pool.query(
-            `SELECT b.id, b.status, b.lesson_at, b.zoom_link, b.amount_eur,
+            `SELECT b.id, b.status, b.lesson_at, b.meet_link, b.amount_eur,
                     t.name AS teacher_name, a.organization_name AS center_name
              FROM bookings b
              JOIN teachers t ON t.id=b.teacher_id
@@ -1674,7 +1674,7 @@ router.get('/public/lessons/verify-booking/:bookingId', async (req, res) => {
 router.get('/lessons/my-bookings', authMiddleware, async (req, res) => {
     try {
         const { rows } = await pool.query(`
-            SELECT b.id, b.lesson_at, b.status, b.amount_eur, b.zoom_link, b.notes,
+            SELECT b.id, b.lesson_at, b.status, b.amount_eur, b.meet_link, b.notes,
                    t.name AS teacher_name, t.photo_url AS teacher_photo,
                    a.organization_name AS center_name
             FROM bookings b
@@ -1704,7 +1704,7 @@ router.post('/teacher/login', async (req, res) => {
         );
         res.json({ token, teacher: {
             id: rows[0].id, name: rows[0].name, email: rows[0].email,
-            bio: rows[0].bio, photo_url: rows[0].photo_url, zoom_link: rows[0].zoom_link
+            bio: rows[0].bio, photo_url: rows[0].photo_url, meet_link: rows[0].meet_link
         }});
     } catch(err) { res.status(500).json({ error: err.message }); }
 });
@@ -1732,7 +1732,7 @@ router.get('/teacher/dashboard', teacherAuth, async (req, res) => {
                 [req.teacher.teacherId]),
             pool.query(
                 `SELECT b.id, b.lesson_at, b.status, b.amount_eur, b.teacher_share_eur,
-                        b.zoom_link, b.notes, b.paid_to_center,
+                        b.meet_link, b.notes, b.paid_to_center,
                         u.name AS student_name, u.email AS student_email
                  FROM bookings b JOIN users u ON u.id=b.student_id
                  WHERE b.teacher_id=$1
@@ -1793,13 +1793,13 @@ router.delete('/teacher/slots/:id', teacherAuth, async (req, res) => {
 
 // ── TEACHER: aggiorna profilo ────────────────────────────────
 router.put('/teacher/profile', teacherAuth, async (req, res) => {
-    const { bio, photo_url, zoom_link, subjects, phone } = req.body;
-    if (!zoom_link) return res.status(400).json({ error: 'Il link Zoom è obbligatorio' });
+    const { bio, photo_url, meet_link, subjects, phone } = req.body;
+    if (!meet_link) return res.status(400).json({ error: 'Il link Google Meet è obbligatorio' });
     try {
         const { rows } = await pool.query(
-            `UPDATE teachers SET bio=$1, photo_url=$2, zoom_link=$3, subjects=$4, phone=$5
+            `UPDATE teachers SET bio=$1, photo_url=$2, meet_link=$3, subjects=$4, phone=$5
              WHERE id=$6 RETURNING *`,
-            [bio||null, photo_url||null, zoom_link, subjects||null, phone||null, req.teacher.teacherId]
+            [bio||null, photo_url||null, meet_link, subjects||null, phone||null, req.teacher.teacherId]
         );
         res.json({ teacher: rows[0] });
     } catch(err) { res.status(500).json({ error: err.message }); }
@@ -1841,17 +1841,17 @@ router.put('/admin/teachers/:id/status', authMiddleware, adminOnly, async (req, 
 
 // ── ADMIN: crea docente ───────────────────────────────────────
 router.post('/admin/teachers', authMiddleware, adminOnly, async (req, res) => {
-    const { affiliate_id, name, email, phone, bio, photo_url, zoom_link, subjects } = req.body;
-    if (!affiliate_id || !name || !email || !zoom_link)
-        return res.status(400).json({ error: 'affiliate_id, name, email, zoom_link obbligatori' });
+    const { affiliate_id, name, email, phone, bio, photo_url, meet_link, subjects } = req.body;
+    if (!affiliate_id || !name || !email || !meet_link)
+        return res.status(400).json({ error: 'affiliate_id, name, email, meet_link obbligatori' });
     try {
         // Password temporanea hashata
         const tempPwd = Math.random().toString(36).slice(-8);
         const hash = await bcrypt.hash(tempPwd, 12);
         const { rows } = await pool.query(
-            `INSERT INTO teachers (affiliate_id, name, email, phone, bio, photo_url, zoom_link, subjects, password_hash)
+            `INSERT INTO teachers (affiliate_id, name, email, phone, bio, photo_url, meet_link, subjects, password_hash)
              VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *`,
-            [affiliate_id, name, email, phone||null, bio||null, photo_url||null, zoom_link, subjects||null, hash]
+            [affiliate_id, name, email, phone||null, bio||null, photo_url||null, meet_link, subjects||null, hash]
         );
         res.json({ success: true, teacher: rows[0], temp_password: tempPwd });
     } catch(err) { res.status(500).json({ error: err.message }); }
