@@ -205,7 +205,7 @@ tr:hover td{background:#f8fff8}
         <h3>Prossime Lezioni Prenotate</h3>
         <div class="table-wrap">
           <table id="upcomingTable">
-            <thead><tr><th>Data e ora</th><th>Studente</th><th>Link Zoom</th><th>Stato</th><th>Compenso</th></tr></thead>
+            <thead><tr><th>Data e ora</th><th>Studente</th><th>Link Google Meet</th><th>Stato</th><th>Compenso</th></tr></thead>
             <tbody id="upcomingBody"></tbody>
           </table>
         </div>
@@ -256,8 +256,8 @@ tr:hover td{background:#f8fff8}
             <input type="text" id="subjectsInput" placeholder="Es: A1-B2, Certificazioni CILS, Italiano per il lavoro">
           </div>
           <div>
-            <label>Link Zoom (Personal Meeting Room) *</label>
-            <input type="url" id="zoomLink" placeholder="https://zoom.us/j/...">
+            <label>Link Google Meet *</label>
+            <input type="url" id="meetLink" placeholder="https://meet.google.com/...">
           </div>
           <div>
             <label>Telefono (visibile solo all'admin)</label>
@@ -337,7 +337,7 @@ function renderApp(d) {
     return `<tr>
       <td><strong>${dt}</strong></td>
       <td>${b.student_name}<br><small style="color:var(--grigio)">${b.student_email}</small></td>
-      <td><a href="${b.zoom_link}" target="_blank" style="color:var(--verde);font-weight:600">🔗 Entra in Zoom</a></td>
+      <td><a href="${b.meet_link}" target="_blank" style="color:var(--verde);font-weight:600">🔗 Entra in Google Meet</a></td>
       <td><span class="badge badge-${b.status}">${b.status}</span></td>
       <td style="color:var(--verde);font-weight:700">€${parseFloat(b.teacher_share_eur).toFixed(2)}</td>
     </tr>`;
@@ -363,7 +363,7 @@ function renderApp(d) {
   document.getElementById('photoUrl').value    = d.teacher.photo_url || '';
   document.getElementById('bioInput').value    = d.teacher.bio || '';
   document.getElementById('subjectsInput').value = d.teacher.subjects || '';
-  document.getElementById('zoomLink').value    = d.teacher.zoom_link || '';
+  document.getElementById('meetLink').value    = d.teacher.meet_link || '';
   document.getElementById('phoneInput').value  = d.teacher.phone || '';
   previewPhoto();
 }
@@ -421,8 +421,8 @@ async function deleteSlot(id, btn) {
 
 async function saveProfile() {
   const alertEl = document.getElementById('profileAlert');
-  const zoom = document.getElementById('zoomLink').value.trim();
-  if (!zoom) { alertEl.innerHTML = '<div class="alert alert-error">Il link Zoom è obbligatorio</div>'; return; }
+  const meet = document.getElementById('meetLink').value.trim();
+  if (!meet) { alertEl.innerHTML = '<div class="alert alert-error">Il link Google Meet è obbligatorio</div>'; return; }
   try {
     const r = await fetch(API + '/api/teacher/profile', {
       method: 'PUT',
@@ -430,7 +430,7 @@ async function saveProfile() {
       body: JSON.stringify({
         bio:       document.getElementById('bioInput').value.trim(),
         photo_url: document.getElementById('photoUrl').value.trim(),
-        zoom_link: zoom,
+        meet_link: meet,
         subjects:  document.getElementById('subjectsInput').value.trim(),
         phone:     document.getElementById('phoneInput').value.trim(),
       })
