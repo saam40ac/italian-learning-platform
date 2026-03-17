@@ -153,7 +153,29 @@ tr:hover td{background:#f8fff8}
       <input type="password" id="loginPassword" placeholder="••••••••">
     </div>
     <button class="btn-login" onclick="doLogin()">Accedi</button>
+    <p style="text-align:center;margin-top:14px">
+      <a href="#" onclick="showForgotPassword()" style="font-size:.825rem;color:var(--verde);text-decoration:none;font-weight:600">
+        Password dimenticata?
+      </a>
+    </p>
     <div class="login-error" id="loginError"></div>
+
+    <!-- Form recupero password (nascosto di default) -->
+    <div id="forgotForm" style="display:none;margin-top:16px;padding-top:16px;border-top:1px solid #eee">
+      <p style="font-size:.825rem;color:#555;margin-bottom:12px;text-align:center">
+        Inserisci la tua email — ti invieremo il link per reimpostare la password.
+      </p>
+      <input type="email" id="forgotEmail" placeholder="La tua email docente"
+        style="width:100%;padding:10px 14px;border:1.5px solid #d0d8d0;border-radius:10px;
+               font-family:'Outfit',sans-serif;font-size:.9rem;outline:none;margin-bottom:10px">
+      <button onclick="sendForgotPassword()"
+        style="width:100%;padding:12px;background:var(--blu);color:#fff;border:none;
+               border-radius:10px;font-family:'Outfit',sans-serif;font-size:.9rem;
+               font-weight:700;cursor:pointer">
+        📧 Invia link di recupero
+      </button>
+      <div id="forgotResult" style="margin-top:10px;font-size:.825rem;text-align:center"></div>
+    </div>
   </div>
 </div>
 
@@ -202,6 +224,7 @@ tr:hover td{background:#f8fff8}
       <div class="tab active" onclick="showTab('tabLezioni',this)">📅 Le Mie Lezioni</div>
       <div class="tab" onclick="showTab('tabDisponibilita',this)">🗓️ Disponibilità</div>
       <div class="tab" onclick="showTab('tabProfilo',this)">👤 Profilo</div>
+      <div class="tab" onclick="showTab('tabPassword',this)">🔑 Password</div>
     </div>
 
     <!-- TAB LEZIONI -->
@@ -235,6 +258,32 @@ tr:hover td{background:#f8fff8}
         </p>
         <div class="days-grid" id="daysGrid"></div>
         <div class="slot-list" id="slotList"></div>
+      </div>
+    </div>
+
+    <!-- TAB PASSWORD -->
+    <div class="tab-content" id="tabPassword">
+      <div class="card">
+        <h3>🔑 Cambia Password</h3>
+        <p style="font-size:.85rem;color:var(--grigio);margin-bottom:20px">
+          Imposta una password personale sicura. Minimo 8 caratteri.
+        </p>
+        <div id="pwdAlert"></div>
+        <div class="profile-form" style="max-width:420px">
+          <div>
+            <label>Password attuale *</label>
+            <input type="password" id="currentPwd" placeholder="••••••••" autocomplete="current-password">
+          </div>
+          <div>
+            <label>Nuova password *</label>
+            <input type="password" id="newPwd" placeholder="Minimo 8 caratteri" autocomplete="new-password">
+          </div>
+          <div>
+            <label>Conferma nuova password *</label>
+            <input type="password" id="confirmPwd" placeholder="Ripeti la nuova password" autocomplete="new-password">
+          </div>
+          <button class="btn-save" onclick="changePassword()">Salva Nuova Password</button>
+        </div>
       </div>
     </div>
 
@@ -489,6 +538,64 @@ function showTab(id, btn) {
   document.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
   document.getElementById(id).classList.add('active');
   btn.classList.add('active');
+}
+
+async function changePassword() {
+  const alertEl  = document.getElementById('pwdAlert');
+  const current  = document.getElementById('currentPwd').value;
+  const newPwd   = document.getElementById('newPwd').value;
+  const confirm  = document.getElementById('confirmPwd').value;
+  alertEl.innerHTML = '';
+  if (!current || !newPwd || !confirm) {
+    alertEl.innerHTML = '<div class="alert alert-error">⚠️ Compila tutti i campi.</div>'; return;
+  }
+  if (newPwd.length < 8) {
+    alertEl.innerHTML = '<div class="alert alert-error">⚠️ La nuova password deve avere almeno 8 caratteri.</div>'; return;
+  }
+  if (newPwd !== confirm) {
+    alertEl.innerHTML = '<div class="alert alert-error">⚠️ Le password non coincidono.</div>'; return;
+  }
+  try {
+    const r = await fetch(API + '/api/teacher/change-password', {
+      method: 'PUT',
+      headers: { 'Content-Type':'application/json', Authorization: 'Bearer ' + teacherToken },
+      body: JSON.stringify({ current_password: current, new_password: newPwd })
+    });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error);
+    alertEl.innerHTML = '<div class="alert alert-success">✅ Password aggiornata con successo!</div>';
+    document.getElementById('currentPwd').value = '';
+    document.getElementById('newPwd').value = '';
+    document.getElementById('confirmPwd').value = '';
+    setTimeout(() => alertEl.innerHTML = '', 4000);
+  } catch(e) {
+    alertEl.innerHTML = `<div class="alert alert-error">⚠️ ${e.message}</div>`;
+  }
+}
+
+function showForgotPassword() {
+  const form = document.getElementById('forgotForm');
+  form.style.display = form.style.display === 'none' ? 'block' : 'none';
+}
+
+async function sendForgotPassword() {
+  const email   = document.getElementById('forgotEmail').value.trim();
+  const resultEl = document.getElementById('forgotResult');
+  if (!email) { resultEl.textContent = '⚠️ Inserisci la tua email.'; resultEl.style.color='#9b1c1c'; return; }
+  try {
+    const r = await fetch(API + '/api/public/teacher/forgot-password', {
+      method: 'POST',
+      headers: { 'Content-Type':'application/json' },
+      body: JSON.stringify({ email })
+    });
+    const d = await r.json();
+    resultEl.textContent = '✅ ' + (d.message || 'Email inviata!');
+    resultEl.style.color = '#1a6b35';
+    document.getElementById('forgotEmail').value = '';
+  } catch(e) {
+    resultEl.textContent = '❌ Errore. Riprova.';
+    resultEl.style.color = '#9b1c1c';
+  }
 }
 
 function logout() {
