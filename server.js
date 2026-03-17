@@ -437,6 +437,7 @@ app.get('/api/user/profile', authenticate, async (req, res) => {
     try {
         const result = await client.query(
             `SELECT u.id, u.email, u.name, u.role, u.minutes_limit, u.created_at,
+                    COALESCE(u.package, 'basic') as package,
                     sl.level, sl.topics, sl.target_voice, sl.learning_goals
              FROM users u
              LEFT JOIN student_levels sl ON u.id = sl.user_id
