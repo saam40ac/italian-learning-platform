@@ -962,7 +962,7 @@ async function createTeacher() {
         if (!r.ok) throw new Error(d.error);
 
         alertEl.innerHTML = `<div style="background:#e8f8ed;color:#1a6b35;border:1px solid #a8dfb9;padding:10px 14px;border-radius:8px;margin-bottom:12px;font-size:.875rem">✅ Docente <strong>${d.teacher.name}</strong> creato con successo!</div>`;
-        showPasswordModal(d.temp_password, d.teacher.name, d.teacher.email);
+        showPasswordModal(d.temp_password, d.teacher.name, d.teacher.email, d.teacher.id);
 
         // Reset form
         ['tName','tEmail','tPhone','tMeetLink','tSubjects','tBio','tPhoto'].forEach(id => {
@@ -1003,7 +1003,7 @@ async function resetTeacherPassword(id, name) {
         const d = await r.json();
         if (!r.ok) throw new Error(d.error);
 
-        showPasswordModal(d.temp_password, d.name, d.email);
+        showPasswordModal(d.temp_password, d.name, d.email, id);
     } catch(e) { alert('❌ Errore: ' + e.message); }
 }
 
