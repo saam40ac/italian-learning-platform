@@ -197,6 +197,16 @@
                     <div class="kpi-card oro"><div class="kpi-icon">💶</div><div class="kpi-val" id="ovMrr">—</div><div class="kpi-lbl">MRR affiliati</div></div>
                     <div class="kpi-card rosso"><div class="kpi-icon">🏦</div><div class="kpi-val" id="ovPend">—</div><div class="kpi-lbl">Da pagare</div></div>
                 </div>
+                <!-- KPI Docenti e Lezioni -->
+                <div style="margin-top:20px">
+                    <div style="font-size:.7rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--grigio-400);margin-bottom:12px">🎓 Docenti &amp; Lezioni Live</div>
+                    <div class="kpi-grid">
+                        <div class="kpi-card verde"><div class="kpi-icon">🎓</div><div class="kpi-val" id="ovTeachersActive">—</div><div class="kpi-lbl">Docenti attivi</div></div>
+                        <div class="kpi-card blu"><div class="kpi-icon">📅</div><div class="kpi-val" id="ovBookingsMonth">—</div><div class="kpi-lbl">Prenotazioni mese</div></div>
+                        <div class="kpi-card oro"><div class="kpi-icon">💰</div><div class="kpi-val" id="ovLessonsRevenue">—</div><div class="kpi-lbl">Incasso lezioni</div></div>
+                        <div class="kpi-card rosso"><div class="kpi-icon">⏳</div><div class="kpi-val" id="ovLessonsPending">—</div><div class="kpi-lbl">Da liquidare docenti</div></div>
+                    </div>
+                </div>
                 <div class="panel">
                     <div class="panel-header"><span class="panel-title">Top 10 Centri Affiliati</span></div>
                     <div style="overflow-x:auto"><table>
@@ -555,6 +565,8 @@ async function loadSummary() {
     document.getElementById('ovStu').textContent  = d.totals.total_students;
     document.getElementById('ovMrr').textContent  = '€'+parseFloat(d.totals.total_mrr).toFixed(2);
     document.getElementById('ovPend').textContent = '€'+parseFloat(d.totals.total_pending_commissions).toFixed(2);
+    // Dati docenti — caricati in parallelo
+    loadTeachersOverview();
 
     // Top affiliates table
     const tB = document.getElementById('topAffTable');
@@ -889,6 +901,34 @@ async function populateAffiliateSelect() {
         sel.innerHTML = '<option value="">Seleziona centro...</option>' +
             active.map(a => `<option value="${a.id}">${a.organization_name} — ${a.city||''}</option>`).join('');
     } catch(e) {}
+}
+
+async function loadTeachersOverview() {
+    try {
+        // Docenti attivi
+        const rT = await apiFetch('/api/admin/teachers');
+        const dT = await rT.json();
+        const teachers = dT.teachers || [];
+        const activeCount = teachers.filter(t => t.is_active && t.approved_at).length;
+        document.getElementById('ovTeachersActive').textContent = activeCount;
+        // Calcola da liquidare docenti
+        const pendingPayout = teachers.reduce((s, t) => s + parseFloat(t.pending_payout || 0), 0);
+        document.getElementById('ovLessonsPending').textContent = '€' + pendingPayout.toFixed(2);
+
+        // Prenotazioni del mese corrente
+        const now   = new Date();
+        const from  = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+        const to    = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59).toISOString();
+        const rB = await apiFetch(`/api/admin/bookings?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`);
+        const dB = await rB.json();
+        const bookings = dB.bookings || [];
+        const paidBookings = bookings.filter(b => ['paid','confirmed','completed'].includes(b.status));
+        document.getElementById('ovBookingsMonth').textContent = paidBookings.length;
+        const revenue = paidBookings.reduce((s, b) => s + parseFloat(b.amount_eur || 0), 0);
+        document.getElementById('ovLessonsRevenue').textContent = '€' + revenue.toFixed(2);
+    } catch(e) {
+        console.error('loadTeachersOverview:', e);
+    }
 }
 
 async function loadTeachers() {
