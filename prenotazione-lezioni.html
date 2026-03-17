@@ -287,7 +287,7 @@ body{font-family:'Outfit',sans-serif;background:var(--crema);color:var(--testo);
           </div>
           <div class="booking-summary-row">
             <span>Totale</span>
-            <span class="val">€ 30,00</span>
+            <span class="val" id="summaryPrice">€ 30,00</span>
           </div>
         </div>
 
@@ -456,6 +456,11 @@ function selectSlot(el, datetime, dayLabel, date, time) {
 
   // Mostra riepilogo
   document.getElementById('bookingDetail').style.display = 'block';
+  // Aggiorna prezzo nel riepilogo
+  const price = parseFloat(selectedTeacher.price_per_hour) || 30;
+  const priceLabel = '€ ' + price.toFixed(2).replace('.', ',');
+  document.getElementById('summaryPrice').textContent = priceLabel;
+  document.getElementById('btnBook').textContent = '💳 Paga e Conferma — ' + priceLabel;
   document.getElementById('selectedTeacherCard').innerHTML = `
     ${selectedTeacher.photo_url
       ? `<img class="booking-teacher-photo" src="${selectedTeacher.photo_url}" alt="${selectedTeacher.name}">`
