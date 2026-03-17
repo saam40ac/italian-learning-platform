@@ -1519,7 +1519,9 @@ router.post('/lessons/checkout', authMiddleware, async (req, res) => {
         );
         if (conflictRow.rows[0]) return res.status(409).json({ error: 'Slot non più disponibile.' });
 
-        const shares = lessonShares(LESSON_PRICE);
+        // Usa il prezzo personalizzato del docente (default 30€)
+        const lessonPrice = parseFloat(teacher.price_per_hour) || LESSON_PRICE;
+        const shares = lessonShares(lessonPrice);
         const stripe = getStripe();
         const feUrl  = process.env.FRONTEND_URL || 'https://italian-learning-platform.onrender.com';
 
@@ -1530,7 +1532,7 @@ router.post('/lessons/checkout', authMiddleware, async (req, res) => {
               teacher_share_eur, platform_share_eur, meet_link, notes, status)
              VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,'pending') RETURNING id`,
             [user.id, teacher_id, teacher.aff_id, lessonDate,
-             LESSON_PRICE, shares.teacher, shares.platform,
+             lessonPrice, shares.teacher, shares.platform,
              teacher.meet_link, notes || null]
         );
         const bookingId = bookRow.rows[0].id;
@@ -1547,10 +1549,10 @@ router.post('/lessons/checkout', authMiddleware, async (req, res) => {
             line_items: [{
                 price_data: {
                     currency: 'eur',
-                    unit_amount: Math.round(LESSON_PRICE * 100),
+                    unit_amount: Math.round(lessonPrice * 100),
                     product_data: {
                         name: `Lezione personalizzata con ${teacher.name}`,
-                        description: `${dateLabel} · 60 minuti · via Google Meet`,
+                        description: `${dateLabel} · 60 minuti · via Google Meet · €${lessonPrice.toFixed(2)}`,
                     }
                 },
                 quantity: 1,
