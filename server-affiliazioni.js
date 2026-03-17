@@ -1869,6 +1869,79 @@ router.post('/admin/teachers/:id/reset-password', authMiddleware, adminOnly, asy
     } catch(err) { res.status(500).json({ error: err.message }); }
 });
 
+// ── ADMIN: elimina docente ───────────────────────────────────
+router.delete('/admin/teachers/:id', authMiddleware, adminOnly, async (req, res) => {
+    try {
+        const { rows } = await pool.query('SELECT name FROM teachers WHERE id=$1', [req.params.id]);
+        if (!rows[0]) return res.status(404).json({ error: 'Docente non trovato' });
+        // Verifica che non abbia prenotazioni attive future
+        const { rows: active } = await pool.query(
+            `SELECT id FROM bookings WHERE teacher_id=$1 AND lesson_at>NOW()
+             AND status IN ('paid','confirmed')`, [req.params.id]
+        );
+        if (active.length > 0)
+            return res.status(400).json({ error: `Impossibile eliminare: il docente ha ${active.length} lezioni future confermate.` });
+        await pool.query('DELETE FROM teacher_slots WHERE teacher_id=$1', [req.params.id]);
+        await pool.query('DELETE FROM teachers WHERE id=$1', [req.params.id]);
+        res.json({ success: true });
+    } catch(err) { res.status(500).json({ error: err.message }); }
+});
+
+// ── ADMIN: invia credenziali via email al docente ─────────────
+router.post('/admin/teachers/:id/send-credentials', authMiddleware, adminOnly, async (req, res) => {
+    const { temp_password } = req.body;
+    if (!temp_password) return res.status(400).json({ error: 'Password mancante' });
+    try {
+        const { rows } = await pool.query(
+            `SELECT t.name, t.email, a.organization_name AS center_name
+             FROM teachers t JOIN affiliates a ON a.id=t.affiliate_id
+             WHERE t.id=$1`, [req.params.id]
+        );
+        if (!rows[0]) return res.status(404).json({ error: 'Docente non trovato' });
+        const t = rows[0];
+        const feUrl = process.env.FRONTEND_URL || 'https://italian-learning-platform.onrender.com';
+        const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><style>
+body{font-family:Arial,sans-serif;background:#f4f7f4;margin:0}
+.w{max-width:600px;margin:32px auto;background:#fff;border-radius:10px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.08)}
+.t{background:#009246;padding:22px 32px;color:#fff}.t h1{margin:0;font-size:20px}
+.b{padding:26px 32px}.r{display:flex;border-bottom:1px solid #eee;padding:9px 0}.r:last-child{border-bottom:none}
+.l{width:160px;font-size:12px;font-weight:700;color:#555;flex-shrink:0}.v{font-size:12px;color:#222}
+.box{background:#f0f7f2;border:1.5px solid #a8dfb9;border-radius:10px;padding:18px;margin:16px 0;text-align:center}
+.pwd{font-family:monospace;font-size:1.4rem;font-weight:700;color:#1A3A5C;letter-spacing:.1em}
+.btn{display:inline-block;margin:16px 0;background:#009246;color:#fff;padding:13px 28px;border-radius:8px;text-decoration:none;font-weight:700;font-size:14px}
+.f{background:#f0f7f2;padding:14px 32px;font-size:11px;color:#888;text-align:center}
+</style></head><body><div class="w">
+<div class="t"><h1>🎓 Benvenuto nella Dashboard Docente — SAAM 4.0</h1></div>
+<div class="b">
+<p style="font-size:14px;color:#333;margin-bottom:16px">Ciao <strong>${t.name}</strong>,</p>
+<p style="font-size:14px;color:#333;margin-bottom:16px">
+  Sei stato accreditato come docente su <strong>SAAM 4.0 Italian Voice</strong> per conto del centro <strong>${t.center_name}</strong>.<br>
+  Ecco le tue credenziali per accedere alla Dashboard Docente.
+</p>
+<div class="r"><div class="l">Email di accesso</div><div class="v">${t.email}</div></div>
+<div class="r"><div class="l">Password temporanea</div><div class="v"><strong>${temp_password}</strong></div></div>
+<div class="r"><div class="l">URL Dashboard</div><div class="v"><a href="${feUrl}/dashboard-docente.html" style="color:#009246">${feUrl}/dashboard-docente.html</a></div></div>
+<div class="box">
+  <div style="font-size:11px;font-weight:700;color:#555;margin-bottom:6px">PASSWORD TEMPORANEA</div>
+  <div class="pwd">${temp_password}</div>
+</div>
+<a href="${feUrl}/dashboard-docente.html" class="btn">Accedi alla Dashboard →</a>
+<p style="font-size:13px;color:#555;margin-top:16px"><strong>Cosa fare dopo l'accesso:</strong></p>
+<ol style="font-size:13px;color:#555;padding-left:20px;line-height:1.8">
+  <li>Vai nella sezione <strong>Profilo</strong> e aggiorna la tua bio, foto e link Google Meet</li>
+  <li>Vai nella sezione <strong>Disponibilità</strong> e imposta i giorni e gli orari in cui sei disponibile</li>
+  <li>Attendi l'approvazione del tuo profilo da parte dell'amministratore</li>
+  <li>Una volta approvato, il tuo profilo sarà visibile agli studenti nella pagina di prenotazione</li>
+</ol>
+<p style="font-size:12px;color:#999;margin-top:16px">Per assistenza: <a href="mailto:training@angelopagliara.it" style="color:#009246">training@angelopagliara.it</a></p>
+</div>
+<div class="f">SAAM 4.0 Academy School — training@angelopagliara.it — angelopagliara@mypec.eu</div>
+</div></body></html>`;
+        await _brevoSendAff(t.email, '🎓 Benvenuto in SAAM 4.0 — Le tue credenziali di accesso', html);
+        res.json({ success: true });
+    } catch(err) { res.status(500).json({ error: err.message }); }
+});
+
 // ── ADMIN: tutte le prenotazioni (con filtro stato) ──────────
 router.get('/admin/bookings', authMiddleware, adminOnly, async (req, res) => {
     const { status, from, to } = req.query;
