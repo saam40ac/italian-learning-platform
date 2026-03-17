@@ -1730,7 +1730,7 @@ router.get('/teacher/dashboard', teacherAuth, async (req, res) => {
                  FROM teachers t JOIN affiliates a ON a.id=t.affiliate_id
                  WHERE t.id=$1`, [req.teacher.teacherId]),
             pool.query(
-                'SELECT * FROM teacher_slots WHERE teacher_id=$1 ORDER BY day_of_week, start_time',
+                'SELECT * FROM teacher_slots WHERE teacher_id=$1 AND is_active=true ORDER BY day_of_week, start_time',
                 [req.teacher.teacherId]),
             pool.query(
                 `SELECT b.id, b.lesson_at, b.status, b.amount_eur, b.teacher_share_eur,
@@ -1789,6 +1789,82 @@ router.delete('/teacher/slots/:id', teacherAuth, async (req, res) => {
             'UPDATE teacher_slots SET is_active=false WHERE id=$1 AND teacher_id=$2',
             [req.params.id, req.teacher.teacherId]
         );
+        res.json({ success: true });
+    } catch(err) { res.status(500).json({ error: err.message }); }
+});
+
+// ── TEACHER: cambia password (autenticato, dentro dashboard) ───
+router.put('/teacher/change-password', teacherAuth, async (req, res) => {
+    const { current_password, new_password } = req.body;
+    if (!current_password || !new_password)
+        return res.status(400).json({ error: 'Dati mancanti' });
+    if (new_password.length < 8)
+        return res.status(400).json({ error: 'La nuova password deve avere almeno 8 caratteri' });
+    try {
+        const { rows } = await pool.query(
+            'SELECT password_hash FROM teachers WHERE id=$1', [req.teacher.teacherId]
+        );
+        if (!rows[0]) return res.status(404).json({ error: 'Docente non trovato' });
+        const valid = await bcrypt.compare(current_password, rows[0].password_hash || '');
+        if (!valid) return res.status(401).json({ error: 'Password attuale non corretta' });
+        const hash = await bcrypt.hash(new_password, 12);
+        await pool.query('UPDATE teachers SET password_hash=$1 WHERE id=$2', [hash, req.teacher.teacherId]);
+        res.json({ success: true });
+    } catch(err) { res.status(500).json({ error: err.message }); }
+});
+
+// ── PUBLIC: recupero password docente (email) ────────────────
+router.post('/public/teacher/forgot-password', async (req, res) => {
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ error: 'Email richiesta' });
+    try {
+        const { rows } = await pool.query(
+            'SELECT id, name FROM teachers WHERE email=$1 AND is_active=true', [email]
+        );
+        // Risposta identica sia che l'email esista o no (sicurezza)
+        if (!rows[0]) return res.json({ success: true, message: "Se l'email è registrata riceverai le istruzioni." });
+        const token   = require('crypto').randomBytes(32).toString('hex');
+        const expires = new Date(Date.now() + 60 * 60 * 1000); // 1 ora
+        // Salviamo in password_resets con type='teacher'
+        await pool.query(
+            `INSERT INTO password_resets (user_id, token, expires_at, used, type)
+             VALUES ($1, $2, $3, false, 'teacher')
+             ON CONFLICT DO NOTHING`,
+            [rows[0].id, token, expires]
+        );
+        const feUrl = process.env.FRONTEND_URL || 'https://italian-learning-platform.onrender.com';
+        const link  = `${feUrl}/reset-password.html?type=teacher&token=${token}`;
+        const html  = `<!DOCTYPE html><html><body style="font-family:Arial,sans-serif;background:#f4f7f4">
+<div style="max-width:520px;margin:32px auto;background:#fff;border-radius:10px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.08)">
+<div style="background:#009246;padding:20px 28px"><h2 style="color:#fff;margin:0;font-size:18px">🔑 Recupero Password — SAAM 4.0 Docente</h2></div>
+<div style="padding:24px 28px">
+<p style="font-size:14px;color:#333">Ciao <strong>${rows[0].name}</strong>,</p>
+<p style="font-size:14px;color:#333;margin:12px 0">Hai richiesto il recupero della tua password. Clicca il pulsante qui sotto per impostarne una nuova.</p>
+<a href="${link}" style="display:inline-block;background:#009246;color:#fff;padding:13px 28px;border-radius:8px;text-decoration:none;font-weight:700;font-size:14px;margin:8px 0">Reimposta Password →</a>
+<p style="font-size:12px;color:#888;margin-top:16px">Il link è valido per 1 ora. Se non hai richiesto il recupero, ignora questa email.</p>
+</div>
+<div style="background:#f0f7f2;padding:12px 28px;font-size:11px;color:#888;text-align:center">SAAM 4.0 Academy School — training@angelopagliara.it</div>
+</div></body></html>`;
+        await _brevoSendAff(email, '🔑 Recupero Password — SAAM 4.0 Docente', html);
+        res.json({ success: true, message: "Se l'email è registrata riceverai le istruzioni." });
+    } catch(err) { res.status(500).json({ error: err.message }); }
+});
+
+// ── PUBLIC: reset password docente tramite token ─────────────
+router.post('/public/teacher/reset-password', async (req, res) => {
+    const { token, password } = req.body;
+    if (!token || !password) return res.status(400).json({ error: 'Dati mancanti' });
+    if (password.length < 8) return res.status(400).json({ error: 'Password minimo 8 caratteri' });
+    try {
+        const { rows } = await pool.query(
+            `SELECT user_id FROM password_resets
+             WHERE token=$1 AND used=false AND expires_at>NOW() AND type='teacher'`,
+            [token]
+        );
+        if (!rows[0]) return res.status(400).json({ error: 'Link non valido o scaduto' });
+        const hash = await bcrypt.hash(password, 12);
+        await pool.query('UPDATE teachers SET password_hash=$1 WHERE id=$2', [hash, rows[0].user_id]);
+        await pool.query("UPDATE password_resets SET used=true WHERE token=$1", [token]);
         res.json({ success: true });
     } catch(err) { res.status(500).json({ error: err.message }); }
 });
