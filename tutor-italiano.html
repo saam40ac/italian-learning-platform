@@ -457,6 +457,25 @@
                 </div>
             </div>
 
+            <!-- CARD LEZIONI LIVE — visibile solo per Advanced e Gold -->
+            <div class="sidebar-section" id="lezioniCard" style="display:none">
+                <h3>🎓 Lezioni Live</h3>
+                <div style="background:linear-gradient(135deg,#e8f5ee,#f0faf4);border:1.5px solid rgba(0,146,70,.2);border-radius:12px;padding:14px;margin-bottom:10px">
+                    <p style="font-size:.8rem;color:#1a4a2e;line-height:1.5;margin-bottom:10px">
+                        <strong>Prenota una lezione 1:1</strong> con un docente madrelingua via Google Meet.<br>
+                        <span style="color:#009246;font-weight:600">€ 30,00 / 60 minuti</span>
+                    </p>
+                    <button onclick="goToLezioni()"
+                        style="width:100%;padding:10px;background:#009246;color:#fff;border:none;
+                               border-radius:8px;font-family:'Lato',sans-serif;font-size:.85rem;
+                               font-weight:700;cursor:pointer;transition:background .2s"
+                        onmouseover="this.style.background='#007A38'"
+                        onmouseout="this.style.background='#009246'">
+                        📅 Prenota una Lezione →
+                    </button>
+                </div>
+            </div>
+
         </div>
 
         <div class="chat-area">
@@ -632,12 +651,12 @@ async function initApp() {
     // Carica sempre il profilo aggiornato
     try { state.user = (await api('/api/user/profile')).user; }
     catch { logout(); return; }
-    // Pulsante Lezioni Live — solo Advanced e Gold
+    // Pulsante + card Lezioni Live — solo Advanced e Gold
+    const isAdvGold = ['advanced','gold'].includes(state.user?.package);
     const btnLezioni = document.getElementById('btnLezioni');
-    if (btnLezioni) {
-        btnLezioni.style.display = ['advanced','gold'].includes(state.user?.package)
-            ? 'inline-block' : 'none';
-    }
+    const lezioniCard = document.getElementById('lezioniCard');
+    if (btnLezioni)   btnLezioni.style.display   = isAdvGold ? 'inline-block' : 'none';
+    if (lezioniCard)  lezioniCard.style.display   = isAdvGold ? 'block' : 'none';
     if (state.user.role === 'admin') {
         showToast('Accesso admin — reindirizzo...', 'success');
         setTimeout(() => window.location.href = 'admin-dashboard.html', 1500);
