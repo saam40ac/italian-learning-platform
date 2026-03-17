@@ -160,7 +160,12 @@ tr:hover td{background:#f8fff8}
 <!-- APP -->
 <div id="appWrap" style="display:none">
   <div class="topbar">
-    <span class="topbar-brand">SAAM 4.0 <span>Docente</span></span>
+    <div style="display:flex;align-items:center;gap:10px">
+      <img src="OminiLOGO_Saam40_ItalianVoice.png" alt="SAAM 4.0"
+           style="height:38px;width:38px;border-radius:50%;object-fit:contain"
+           onerror="this.style.display='none'">
+      <span class="topbar-brand">SAAM 4.0 <span>Italian Voice</span></span>
+    </div>
     <div style="display:flex;align-items:center">
       <span class="topbar-user" id="topbarName"></span>
       <button class="topbar-logout" onclick="logout()">Esci</button>
@@ -321,7 +326,7 @@ async function loadDashboard() {
 function renderApp(d) {
   document.getElementById('loginWrap').style.display = 'none';
   document.getElementById('appWrap').style.display   = 'block';
-  document.getElementById('topbarName').textContent  = d.teacher.name;
+  document.getElementById('topbarName').innerHTML = d.teacher.name + ' <span style="background:rgba(0,146,70,.2);color:#4dbb7a;font-size:.72rem;padding:2px 10px;border-radius:100px;font-weight:700;margin-left:6px">✅ Docente Accreditato</span>';
 
   // KPI
   document.getElementById('kUpcoming').textContent  = d.stats.upcoming;
@@ -364,6 +369,7 @@ function renderApp(d) {
   document.getElementById('bioInput').value    = d.teacher.bio || '';
   document.getElementById('subjectsInput').value = d.teacher.subjects || '';
   document.getElementById('meetLink').value    = d.teacher.meet_link || '';
+  document.getElementById('priceInput').value  = parseFloat(d.teacher.price_per_hour || 30).toFixed(2);
   document.getElementById('phoneInput').value  = d.teacher.phone || '';
   previewPhoto();
 }
