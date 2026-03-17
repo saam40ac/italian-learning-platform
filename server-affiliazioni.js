@@ -1793,13 +1793,15 @@ router.delete('/teacher/slots/:id', teacherAuth, async (req, res) => {
 
 // ── TEACHER: aggiorna profilo ────────────────────────────────
 router.put('/teacher/profile', teacherAuth, async (req, res) => {
-    const { bio, photo_url, meet_link, subjects, phone } = req.body;
+    const { bio, photo_url, meet_link, subjects, phone, price_per_hour } = req.body;
     if (!meet_link) return res.status(400).json({ error: 'Il link Google Meet è obbligatorio' });
+    const price = price_per_hour ? Math.max(10, Math.min(200, parseFloat(price_per_hour))) : 30;
     try {
         const { rows } = await pool.query(
-            `UPDATE teachers SET bio=$1, photo_url=$2, meet_link=$3, subjects=$4, phone=$5
-             WHERE id=$6 RETURNING *`,
-            [bio||null, photo_url||null, meet_link, subjects||null, phone||null, req.teacher.teacherId]
+            `UPDATE teachers SET bio=$1, photo_url=$2, meet_link=$3, subjects=$4, phone=$5,
+             price_per_hour=$7 WHERE id=$6 RETURNING *`,
+            [bio||null, photo_url||null, meet_link, subjects||null, phone||null,
+             req.teacher.teacherId, price]
         );
         res.json({ teacher: rows[0] });
     } catch(err) { res.status(500).json({ error: err.message }); }
