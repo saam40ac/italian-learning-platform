@@ -421,14 +421,35 @@ async function addSlot(dow) {
 }
 
 async function deleteSlot(id, btn) {
-  btn.textContent = '...'; btn.disabled = true;
+  const slotItem = btn.closest('.slot-item');
+  btn.textContent = '⏳'; btn.disabled = true;
   try {
-    await fetch(`${API}/api/teacher/slots/${id}`, {
+    const r = await fetch(`${API}/api/teacher/slots/${id}`, {
       method: 'DELETE',
       headers: { Authorization: 'Bearer ' + teacherToken }
     });
+    if (!r.ok) {
+      const d = await r.json().catch(() => ({}));
+      throw new Error(d.error || `Errore HTTP ${r.status}`);
+    }
+    // Rimuovi lo slot dalla lista immediatamente (senza attendere reload)
+    if (slotItem) {
+      slotItem.style.opacity = '0';
+      slotItem.style.transition = 'opacity .25s';
+      setTimeout(() => { slotItem.remove(); }, 260);
+    }
+    // Ricarica in background
     loadDashboard();
-  } catch(e) { btn.textContent = 'Rimuovi'; btn.disabled = false; }
+  } catch(e) {
+    btn.textContent = 'Rimuovi';
+    btn.disabled = false;
+    // Mostra errore vicino al pulsante
+    const errSpan = document.createElement('span');
+    errSpan.textContent = ' ❌ ' + e.message;
+    errSpan.style.cssText = 'font-size:.75rem;color:#9b1c1c;margin-left:6px';
+    btn.parentNode.appendChild(errSpan);
+    setTimeout(() => errSpan.remove(), 4000);
+  }
 }
 
 async function saveProfile() {
