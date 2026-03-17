@@ -440,11 +440,12 @@ async function saveProfile() {
       method: 'PUT',
       headers: {'Content-Type':'application/json', Authorization: 'Bearer ' + teacherToken},
       body: JSON.stringify({
-        bio:       document.getElementById('bioInput').value.trim(),
-        photo_url: document.getElementById('photoUrl').value.trim(),
-        meet_link: meet,
-        subjects:  document.getElementById('subjectsInput').value.trim(),
-        phone:     document.getElementById('phoneInput').value.trim(),
+        bio:            document.getElementById('bioInput').value.trim(),
+        photo_url:      document.getElementById('photoUrl').value.trim(),
+        meet_link:      meet,
+        subjects:       document.getElementById('subjectsInput').value.trim(),
+        phone:          document.getElementById('phoneInput').value.trim(),
+        price_per_hour: parseFloat(document.getElementById('priceInput').value) || 30,
       })
     });
     if (!r.ok) throw new Error((await r.json()).error);
