@@ -313,7 +313,7 @@ body{font-family:'Outfit',sans-serif;background:var(--crema);color:var(--testo);
 
 <script>
 const API = 'https://italian-learning-platform.onrender.com';
-const TOKEN = localStorage.getItem('token') || localStorage.getItem('saff_token');
+const TOKEN = localStorage.getItem('ital_token') || localStorage.getItem('token') || localStorage.getItem('saff_token');
 
 let selectedTeacher = null;
 let selectedSlot    = null;
@@ -339,11 +339,17 @@ async function init() {
       });
       if (r.ok) {
         const d = await r.json();
-        if (!['advanced','gold'].includes(d.package)) {
+        // d.user.package oppure d.package a seconda della struttura
+        const pkg = d.user ? d.user.package : d.package;
+        if (!TOKEN || !['advanced','gold'].includes(pkg)) {
           document.getElementById('accessAlert').style.display = 'block';
         }
+      } else if (!TOKEN) {
+        document.getElementById('accessAlert').style.display = 'block';
       }
-    } catch(e) {}
+    } catch(e) {
+      if (!TOKEN) document.getElementById('accessAlert').style.display = 'block';
+    }
   } else {
     document.getElementById('accessAlert').style.display = 'block';
   }
