@@ -632,11 +632,11 @@ async function initApp() {
     if (!state.user) {
         try { state.user = (await api('/api/user/profile')).user; }
         catch { logout(); return; }
+    }
     // Mostra pulsante Lezioni Live solo per Advanced e Gold
-    if (['advanced','gold'].includes(data.package)) {
+    if (['advanced','gold'].includes(state.user.package)) {
         const btnLezioni = document.getElementById('btnLezioni');
         if (btnLezioni) btnLezioni.style.display = 'inline-block';
-    }
     }
     if (state.user.role === 'admin') {
         showToast('Accesso admin — reindirizzo...', 'success');
