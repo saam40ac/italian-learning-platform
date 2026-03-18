@@ -1492,23 +1492,51 @@ router.post('/public/teacher/apply', async (req, res) => {
              meet_link, subjects]
         );
         const teacher = rows[0];
-        // Notifica admin
+        // Notifica admin — con CV allegato se presente
         const feUrl = process.env.FRONTEND_URL || 'https://italian-learning-platform.onrender.com';
+        const { cv_base64, cv_filename } = req.body;
         if (process.env.BREVO_API_KEY) {
-            await _brevoSendAff(
-                process.env.NOTIFY_EMAIL || 'training@angelopagliara.it',
-                `🎓 Nuova candidatura docente — ${teacher.name}`,
-                `<h2>🎓 Nuova Candidatura Docente</h2>
+            const adminHtml = `<h2>🎓 Nuova Candidatura Docente</h2>
                  <p><strong>Nome:</strong> ${teacher.name}</p>
                  <p><strong>Email:</strong> ${teacher.email}</p>
+                 <p><strong>Telefono:</strong> ${req.body.phone || '—'}</p>
+                 <p><strong>Città:</strong> ${req.body.city || '—'}</p>
+                 <p><strong>Titolo/Qualifica:</strong> ${req.body.qualification || '—'}</p>
                  <p><strong>Centro:</strong> ${aff.rows[0].organization_name}</p>
                  <p><strong>Materie/Livelli:</strong> ${subjects}</p>
-                 <p>
+                 <p><strong>Link Google Meet:</strong> ${meet_link}</p>
+                 <p><strong>Bio:</strong><br>${body || '—'}</p>
+                 ${cv_base64 ? `<p><strong>Curriculum Vitae:</strong> allegato (${cv_filename || 'cv.pdf'})</p>` : '<p><strong>Curriculum Vitae:</strong> non allegato</p>'}
+                 <p style="margin-top:16px">
                    <a href="${feUrl}/admin-affiliazioni.html" style="background:#009246;color:#fff;padding:10px 20px;border-radius:8px;text-decoration:none;font-weight:700">
-                     Vai alla Dashboard Admin →
+                     Approva nella Dashboard Admin →
                    </a>
-                 </p>`
-            ).catch(e => console.error('[EMAIL teacher apply]', e.message));
+                 </p>`;
+            // Usa https diretto a Brevo con allegato
+            const https = require('https');
+            const brevoPayload = {
+                sender:  { name:'SAAM 4.0 Academy School', email:'training@angelopagliara.it' },
+                to:      [{ email: process.env.NOTIFY_EMAIL || 'training@angelopagliara.it' }],
+                subject: `🎓 Nuova candidatura docente — ${teacher.name}`,
+                htmlContent: adminHtml,
+            };
+            if (cv_base64 && cv_filename) {
+                brevoPayload.attachment = [{
+                    name:    cv_filename,
+                    content: cv_base64,
+                }];
+            }
+            await new Promise((resolve) => {
+                const data = JSON.stringify(brevoPayload);
+                const opts = {
+                    hostname:'api.brevo.com', port:443, path:'/v3/smtp/email',
+                    method:'POST',
+                    headers:{ 'Content-Type':'application/json','api-key':process.env.BREVO_API_KEY,'Content-Length':Buffer.byteLength(data) }
+                };
+                const req2 = https.request(opts, res2 => { res2.on('data',()=>{}); res2.on('end', resolve); });
+                req2.on('error', e => { console.error('[EMAIL teacher apply admin]', e.message); resolve(); });
+                req2.write(data); req2.end();
+            });
             // Email di conferma al docente
             await _brevoSendAff(
                 email,
