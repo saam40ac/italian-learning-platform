@@ -417,9 +417,32 @@ footer{background:var(--foresta);padding:48px 5vw 32px}
 
           <!-- Link Google Meet -->
           <div class="form-group full">
-            <label>Link Google Meet Personale <span>*</span></label>
-            <input class="form-input" type="url" id="tMeet" placeholder="https://meet.google.com/..." required>
-            <span class="hint">Il link della tua sala Google Meet personale (Personal Meeting Room). Gli studenti lo riceveranno alla prenotazione.</span>
+            <label>Link Google Meet Personale <span>*</span>
+              <button type="button" onclick="toggleMeetGuide()"
+                style="margin-left:8px;background:rgba(0,146,70,.1);color:var(--verde-d);
+                       border:1px solid rgba(0,146,70,.25);border-radius:100px;
+                       padding:2px 10px;font-size:.7rem;font-weight:600;cursor:pointer;
+                       font-family:var(--sans)">❓ Come generarlo</button>
+            </label>
+            <input class="form-input" type="url" id="tMeet" placeholder="https://meet.google.com/xxx-xxxx-xxx" required>
+            <span class="hint">Il link univoco della tua sala Google Meet. Gli studenti lo riceveranno automaticamente via email alla conferma della prenotazione.</span>
+            <!-- Guida Google Meet -->
+            <div id="meetGuide" style="display:none;margin-top:10px;background:#f0f7f2;
+                 border:1px solid rgba(0,146,70,.2);border-radius:12px;padding:16px 18px;
+                 font-size:.82rem;color:#1c3a22;line-height:1.65">
+              <p style="font-weight:700;margin-bottom:8px;color:var(--verde-d)">📋 Come ottenere il tuo link Google Meet personale:</p>
+              <ol style="padding-left:18px;display:flex;flex-direction:column;gap:5px">
+                <li>Accedi al tuo account Google su <strong>meet.google.com</strong></li>
+                <li>Clicca su <strong>"Nuova riunione"</strong> → seleziona <strong>"Crea una riunione da avviare in un secondo momento"</strong></li>
+                <li>Copia il link che appare (es. <code style="background:#fff;padding:1px 6px;border-radius:4px;font-family:monospace">https://meet.google.com/abc-defg-hij</code>)</li>
+                <li>Incollalo nel campo qui sopra</li>
+              </ol>
+              <p style="margin-top:8px;color:#5a7063">⚠️ <strong>Importante:</strong> usa sempre lo stesso link per tutte le tue lezioni — è la tua "sala personale" permanente. Assicurati di avviare la riunione all'orario concordato.</p>
+              <a href="https://support.google.com/meet/answer/9302870" target="_blank" rel="noopener"
+                 style="display:inline-block;margin-top:8px;color:var(--verde);font-weight:600;font-size:.78rem">
+                → Guida ufficiale Google Meet ↗
+              </a>
+            </div>
           </div>
 
           <!-- Livelli insegnati -->
@@ -450,10 +473,18 @@ footer{background:var(--foresta);padding:48px 5vw 32px}
             <span class="hint">Opzionale. Una foto professionale aumenta le prenotazioni del 40%.</span>
           </div>
 
+          <!-- Curriculum Vitae -->
+          <div class="form-group full">
+            <label>Curriculum Vitae (PDF) <span>*</span></label>
+            <input class="form-input" type="file" id="tCV" accept=".pdf" required
+              style="padding:10px 14px;cursor:pointer">
+            <span class="hint">Carica il tuo CV in formato PDF (max 5 MB). Verrà allegato alla notifica email che il team SAAM 4.0 riceverà.</span>
+          </div>
+
           <!-- Privacy -->
           <label class="privacy-check">
             <input type="checkbox" id="tPrivacy" required>
-            <span>Ho letto e accetto la <a href="PrivacyPolicy-SAAM40.html" target="_blank">Privacy Policy</a> e i <a href="TerminiServizio-SAAM40.html" target="_blank">Termini di Servizio</a> di SAAM 4.0 Academy School. <span style="color:var(--rosso)">*</span></span>
+            <span>Ho letto e accetto la <a href="https://italianlearning.angelopagliara.it/privacy.html" target="_blank">Privacy Policy</a> e i <a href="https://italianlearning.angelopagliara.it/termini.html" target="_blank">Termini di Servizio</a> di SAAM 4.0 Academy School. <span style="color:var(--rosso)">*</span></span>
           </label>
 
           <div id="formAlertInline"></div>
@@ -470,11 +501,19 @@ footer{background:var(--foresta);padding:48px 5vw 32px}
 <!-- FOOTER -->
 <footer>
   <div class="footer-row">
-    <span class="footer-brand">SAAM 4.0 <span>Italian Voice</span></span>
+    <div style="display:flex;align-items:center;gap:10px">
+      <img src="OminiLOGO_Saam40_ItalianVoice.png" alt="SAAM 4.0"
+           style="width:36px;height:36px;border-radius:50%;object-fit:contain"
+           onerror="this.style.display='none'">
+      <span class="footer-brand">SAAM 4.0 <span>Italian Voice</span></span>
+    </div>
     <div class="footer-links">
-      <a href="index.html">Home</a><a href="landing-studenti.html">Per Studenti</a>
+      <a href="index.html">Home</a>
+      <a href="landing-studenti.html">Per Studenti</a>
       <a href="landing-centri.html">Per Centri</a>
-      <a href="PrivacyPolicy-SAAM40.html">Privacy</a><a href="TerminiServizio-SAAM40.html">Termini</a>
+      <a href="https://italianlearning.angelopagliara.it/privacy.html">Privacy</a>
+      <a href="https://italianlearning.angelopagliara.it/cookie.html">Cookie</a>
+      <a href="https://italianlearning.angelopagliara.it/termini.html">Termini</a>
     </div>
   </div>
   <p class="footer-copy">© 2026 SAAM 4.0 Academy School — Angelo Pagliara — P.IVA 02490040744 — Via Dott. Cosimo Argentieri, 24 — 72022 Latiano (BR)</p>
@@ -483,6 +522,11 @@ footer{background:var(--foresta);padding:48px 5vw 32px}
 
 <script>
 const API = 'https://italian-learning-platform.onrender.com';
+
+function toggleMeetGuide() {
+  const guide = document.getElementById('meetGuide');
+  guide.style.display = guide.style.display === 'none' ? 'block' : 'none';
+}
 
 // Reveal
 const obs = new IntersectionObserver(e => e.forEach(el => { if (el.isIntersecting) el.target.classList.add('on'); }), { threshold: .1, rootMargin: '0px 0px -40px 0px' });
@@ -529,6 +573,23 @@ async function submitTeacherForm(e) {
     return;
   }
 
+  // Leggi CV come base64
+  const cvFile = document.getElementById('tCV').files[0];
+  if (!cvFile) {
+    alertEl.innerHTML = '<div class="form-alert fa-error">⚠️ Il Curriculum Vitae in PDF è obbligatorio.</div>';
+    return;
+  }
+  if (cvFile.size > 5 * 1024 * 1024) {
+    alertEl.innerHTML = '<div class="form-alert fa-error">⚠️ Il file PDF supera i 5 MB. Riduci le dimensioni e riprova.</div>';
+    return;
+  }
+  const cvBase64 = await new Promise((res, rej) => {
+    const reader = new FileReader();
+    reader.onload = () => res(reader.result.split(',')[1]);
+    reader.onerror = () => rej(new Error('Errore lettura file'));
+    reader.readAsDataURL(cvFile);
+  });
+
   const body = {
     name:         (document.getElementById('tNome').value + ' ' + document.getElementById('tCognome').value).trim(),
     email:        document.getElementById('tEmail').value.trim(),
@@ -540,6 +601,8 @@ async function submitTeacherForm(e) {
     subjects:     levels.join(', '),
     bio:          document.getElementById('tBio').value.trim(),
     photo_url:    document.getElementById('tFoto').value.trim() || null,
+    cv_filename:  cvFile.name,
+    cv_base64:    cvBase64,
   };
 
   const btn = document.getElementById('btnSubmit');
