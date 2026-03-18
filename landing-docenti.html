@@ -557,7 +557,7 @@ async function loadCenters() {
     wrap.innerHTML = `
       <select class="form-select" id="tCentro" required>
         <option value="">— Seleziona il centro di appartenenza —</option>
-        ${centers.map(ctr => `<option value="${ctr.id}">${ctr.organization_name}${ctr.city ? ' — ' + ctr.city : ''}${ctr.region ? ' (' + ctr.region + ')' : ''}</option>`).join('')}
+        ${centers.map(ctr => `<option value="${ctr.id}">${ctr.organization_name}${ctr.city ? ' — ' + ctr.city : ''}</option>`).join('')}
       </select>
       <p class="hint" style="margin-top:6px">✅ ${centers.length} centr${centers.length === 1 ? 'o' : 'i'} accreditat${centers.length === 1 ? 'o' : 'i'} disponibil${centers.length === 1 ? 'e' : 'i'}</p>`;
   } catch(e) {
