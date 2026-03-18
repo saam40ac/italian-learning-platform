@@ -534,22 +534,43 @@ document.querySelectorAll('.reveal').forEach(el => obs.observe(el));
 
 // ── Carica centri accreditati ──
 async function loadCenters() {
+  const wrap = document.getElementById('centerSelectWrap');
+  // Spinner di caricamento
+  wrap.innerHTML = '<div class="center-loading"><div class="center-spinner"></div><span>Caricamento centri accreditati...</span></div>';
   try {
-    const r = await fetch(API + '/api/public/affiliates/active');
+    const r = await fetch(API + '/api/public/affiliates/active', { cache: 'no-store' });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
     const d = await r.json();
     const centers = d.affiliates || [];
-    const wrap = document.getElementById('centerSelectWrap');
     if (!centers.length) {
-      wrap.innerHTML = '<p style="font-size:.875rem;color:var(--grigio);padding:8px 0">Nessun centro accreditato disponibile al momento. <a href="landing-centri.html" style="color:var(--verde);font-weight:600">Richiedi l\'accreditamento del tuo centro →</a></p>';
+      // Centri trovati ma 0 — messaggio diverso da errore di rete
+      wrap.innerHTML = `<div style="background:#fff9e6;border:1px solid rgba(200,144,10,.3);border-radius:10px;padding:14px 16px;font-size:.875rem;color:#5a4000;line-height:1.6">
+        ⚠️ Nessun centro accreditato trovato nel database.<br>
+        <strong>Se il tuo centro è già accreditato</strong>, contatta l'amministratore a
+        <a href="mailto:training@angelopagliara.it" style="color:var(--verde);font-weight:600">training@angelopagliara.it</a>.<br>
+        <strong>Se il tuo centro non è ancora accreditato</strong>,
+        <a href="landing-centri.html" style="color:var(--verde);font-weight:600">richiedilo qui →</a>
+      </div>`;
       return;
     }
-    wrap.innerHTML = `<select class="form-select" id="tCentro" required>
-      <option value="">— Seleziona il centro di appartenenza —</option>
-      ${centers.map(c => `<option value="${c.id}">${c.organization_name}${c.city ? ' — ' + c.city : ''}${c.region ? ' (' + c.region + ')' : ''}</option>`).join('')}
-    </select>`;
+    // Centri trovati — mostra select
+    wrap.innerHTML = `
+      <select class="form-select" id="tCentro" required>
+        <option value="">— Seleziona il centro di appartenenza —</option>
+        ${centers.map(ctr => `<option value="${ctr.id}">${ctr.organization_name}${ctr.city ? ' — ' + ctr.city : ''}${ctr.region ? ' (' + ctr.region + ')' : ''}</option>`).join('')}
+      </select>
+      <p class="hint" style="margin-top:6px">✅ ${centers.length} centr${centers.length === 1 ? 'o' : 'i'} accreditat${centers.length === 1 ? 'o' : 'i'} disponibil${centers.length === 1 ? 'e' : 'i'}</p>`;
   } catch(e) {
-    document.getElementById('centerSelectWrap').innerHTML =
-      '<p style="font-size:.875rem;color:#9b1c1c;padding:8px 0">⚠️ Impossibile caricare i centri. Ricarica la pagina o contatta <a href="mailto:training@angelopagliara.it" style="color:var(--verde)">training@angelopagliara.it</a></p>';
+    // Errore di rete — mostra messaggio con pulsante Riprova
+    wrap.innerHTML = `<div style="background:#fdecea;border:1px solid rgba(206,43,55,.2);border-radius:10px;padding:14px 16px;font-size:.875rem;color:#7a1c1c;line-height:1.6">
+      ⚠️ Impossibile caricare l'elenco dei centri (${e.message}).<br>
+      <button type="button" onclick="loadCenters()"
+        style="margin-top:8px;background:var(--verde);color:#fff;border:none;padding:7px 18px;
+               border-radius:8px;font-family:var(--sans);font-size:.8rem;font-weight:600;cursor:pointer">
+        🔄 Riprova
+      </button>
+      &nbsp; oppure contatta <a href="mailto:training@angelopagliara.it" style="color:var(--verde);font-weight:600">training@angelopagliara.it</a>
+    </div>`;
   }
 }
 loadCenters();
