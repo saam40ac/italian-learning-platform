@@ -1459,7 +1459,7 @@ async function getAvailableSlots(teacherId, weeksAhead = 4) {
 router.get('/public/affiliates/active', async (req, res) => {
     try {
         const { rows } = await pool.query(`
-            SELECT id, organization_name, city, region
+            SELECT id, organization_name, city
             FROM affiliates
             WHERE status = 'active'
             ORDER BY organization_name`);
