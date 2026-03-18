@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Impara l'Italiano — SAAM 4.0 Italian Voice</title>
+<meta name="description" content="Inizia il tuo viaggio nella lingua italiana con il tuo tutor AI personale. Disponibile 24 ore su 24, 7 giorni su 7.">
+<link rel="icon" href="favicon.ico">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400;1,700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --verde:#009246;--verde-d:#007035;--verde-p:#e6f4ec;
+  --rosso:#CE2B37;--oro:#C8900A;
+  --crema:#fdf8f2;--bianco:#fff;
+  --notte:#0e1a0f;--testo:#1c2b1d;--grigio:#6b7a6c;
+  --serif:'Playfair Display',Georgia,serif;
+  --sans:'DM Sans',system-ui,sans-serif;
+}
+html{scroll-behavior:smooth;font-size:16px}
+body{font-family:var(--sans);background:var(--crema);color:var(--testo);overflow-x:hidden}
+img{display:block;max-width:100%}
+a{text-decoration:none;color:inherit}
+
+/* ── REVEAL ── */
+.reveal{opacity:0;transform:translateY(28px);transition:opacity .7s cubic-bezier(.22,1,.36,1),transform .7s cubic-bezier(.22,1,.36,1)}
+.reveal.on{opacity:1;transform:none}
+.d1{transition-delay:.1s}.d2{transition-delay:.2s}.d3{transition-delay:.3s}.d4{transition-delay:.4s}
+
+/* ── NAV ── */
+nav{position:fixed;inset:0 0 auto;z-index:90;padding:0 5vw;height:68px;
+  display:flex;align-items:center;justify-content:space-between;
+  transition:background .35s,box-shadow .35s}
+nav.solid{background:rgba(253,248,242,.92);backdrop-filter:blur(12px);box-shadow:0 2px 20px rgba(0,0,0,.08)}
+.nav-brand{display:flex;align-items:center;gap:10px}
+.nav-brand img{width:38px;height:38px;border-radius:50%;object-fit:contain}
+.nav-brand span{font-family:var(--serif);font-size:1.1rem;font-weight:700;color:var(--notte)}
+.nav-brand span b{color:var(--verde)}
+.nav-btn{padding:10px 24px;border-radius:100px;background:var(--verde);color:#fff;
+  font-family:var(--sans);font-size:.875rem;font-weight:600;cursor:pointer;border:none;
+  box-shadow:0 4px 14px rgba(0,146,70,.3);transition:all .2s}
+.nav-btn:hover{background:var(--verde-d);transform:translateY(-1px)}
+
+/* ── TRICOLORE ── */
+.tricolore{height:4px;background:linear-gradient(90deg,var(--verde) 33.33%,#fff 33.33% 66.66%,var(--rosso) 66.66%)}
+
+/* ── HERO ── */
+.hero{min-height:100vh;display:grid;place-items:center;position:relative;overflow:hidden;
+  padding:100px 5vw 80px;text-align:center}
+
+/* Organic blob background */
+.hero-bg{position:absolute;inset:0;z-index:0;overflow:hidden}
+.blob{position:absolute;border-radius:50%;filter:blur(80px);opacity:.35}
+.blob-1{width:60vw;height:60vw;background:radial-gradient(circle,#b8e8c8,transparent);
+  top:-15%;left:-10%;animation:drift 14s ease-in-out infinite}
+.blob-2{width:50vw;height:50vw;background:radial-gradient(circle,#fde8d0,transparent);
+  bottom:-10%;right:-5%;animation:drift 18s ease-in-out infinite reverse}
+.blob-3{width:35vw;height:35vw;background:radial-gradient(circle,#ffd6d6,transparent);
+  top:40%;left:50%;animation:drift 10s ease-in-out infinite 2s}
+@keyframes drift{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(2%,3%) scale(1.04)}}
+
+/* Italian flag stripe at top */
+.hero-flag{position:absolute;top:68px;left:0;right:0;height:3px;
+  background:linear-gradient(90deg,var(--verde) 33.33%,rgba(255,255,255,.4) 33.33% 66.66%,var(--rosso) 66.66%)}
+
+.hero-content{position:relative;z-index:1;max-width:800px;margin:0 auto}
+.hero-eyebrow{display:inline-flex;align-items:center;gap:8px;
+  background:rgba(0,146,70,.1);border:1px solid rgba(0,146,70,.2);
+  color:var(--verde-d);padding:6px 18px;border-radius:100px;
+  font-size:.8rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;margin-bottom:28px}
+.hero-eyebrow::before{content:'';width:6px;height:6px;border-radius:50%;
+  background:var(--verde);animation:pulse 2s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.7)}}
+
+.hero-title{font-family:var(--serif);font-size:clamp(2.6rem,6.5vw,5.5rem);
+  font-weight:900;line-height:1.08;letter-spacing:-.03em;color:var(--notte);margin-bottom:16px}
+.hero-title .wave{display:inline-block;color:var(--verde);font-style:italic}
+.hero-title .underline-red{position:relative;display:inline-block}
+.hero-title .underline-red::after{content:'';position:absolute;left:0;bottom:-4px;
+  width:100%;height:4px;background:var(--rosso);border-radius:2px}
+
+.hero-sub{font-family:var(--serif);font-size:clamp(1.1rem,2vw,1.45rem);font-style:italic;
+  color:var(--grigio);margin-bottom:32px;line-height:1.5}
+.hero-desc{font-size:1.05rem;color:#3a4a3b;max-width:560px;margin:0 auto 48px;line-height:1.8}
+
+.hero-cta-group{display:flex;flex-wrap:wrap;gap:14px;justify-content:center;margin-bottom:60px}
+.btn-primary{display:inline-flex;align-items:center;gap:10px;padding:18px 40px;
+  background:var(--verde);color:#fff;border-radius:100px;
+  font-family:var(--sans);font-size:1.05rem;font-weight:600;cursor:pointer;border:none;
+  box-shadow:0 8px 28px rgba(0,146,70,.35);transition:all .25s}
+.btn-primary:hover{background:var(--verde-d);transform:translateY(-3px);box-shadow:0 12px 36px rgba(0,146,70,.45)}
+.btn-secondary{display:inline-flex;align-items:center;gap:8px;padding:16px 32px;
+  background:transparent;color:var(--notte);border:2px solid rgba(14,26,15,.2);border-radius:100px;
+  font-family:var(--sans);font-size:1rem;font-weight:500;cursor:pointer;transition:all .25s}
+.btn-secondary:hover{border-color:var(--verde);color:var(--verde)}
+
+.hero-proof{display:flex;flex-wrap:wrap;gap:32px;justify-content:center;align-items:center}
+.proof-item{display:flex;flex-direction:column;align-items:center;gap:3px}
+.proof-num{font-family:var(--serif);font-size:1.9rem;font-weight:900;color:var(--notte);line-height:1}
+.proof-lbl{font-size:.75rem;font-weight:500;color:var(--grigio);letter-spacing:.04em;text-transform:uppercase}
+.proof-divider{width:1px;height:36px;background:rgba(0,0,0,.12)}
+
+/* ── TUTORS ── */
+.tutors{background:var(--bianco);padding:100px 5vw}
+.section-badge{display:inline-block;font-size:.72rem;font-weight:700;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--verde);margin-bottom:14px}
+.section-title{font-family:var(--serif);font-size:clamp(1.8rem,3.5vw,3rem);
+  font-weight:700;line-height:1.15;color:var(--notte);margin-bottom:16px}
+.section-title em{font-style:italic;color:var(--verde)}
+.section-desc{font-size:1rem;color:var(--grigio);max-width:520px;line-height:1.75;margin-bottom:56px}
+
+.tutors-grid{display:grid;grid-template-columns:1fr 1fr;gap:28px}
+.tutor-card{border-radius:28px;padding:44px 40px;position:relative;overflow:hidden;transition:transform .3s}
+.tutor-card:hover{transform:translateY(-6px)}
+.tc-sofia{background:linear-gradient(145deg,#fef0f5,#ffe8ef)}
+.tc-marco{background:linear-gradient(145deg,#f0f5ff,#e4edff)}
+.tc-emoji{font-size:64px;margin-bottom:20px;display:block;animation:bob 4s ease-in-out infinite}
+.tc-marco .tc-emoji{animation-delay:-2s}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+.tc-name{font-family:var(--serif);font-size:2.2rem;font-weight:700;margin-bottom:4px}
+.tc-sofia .tc-name{color:#c44569}.tc-marco .tc-name{color:#2c5282}
+.tc-role{font-size:.85rem;font-weight:600;color:var(--grigio);margin-bottom:16px}
+.tc-desc{font-size:.925rem;color:#4a5568;line-height:1.7;margin-bottom:20px}
+.tc-tags{display:flex;flex-wrap:wrap;gap:8px}
+.tc-tag{padding:4px 14px;border-radius:100px;font-size:.75rem;font-weight:600}
+.tc-sofia .tc-tag{background:rgba(196,69,105,.12);color:#c44569}
+.tc-marco .tc-tag{background:rgba(44,82,130,.12);color:#2c5282}
+
+/* ── LIVELLI ── */
+.livelli{padding:100px 5vw;background:var(--crema)}
+.livelli-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:14px;margin-top:48px}
+.livello{padding:24px 16px;border-radius:20px;text-align:center;border:2px solid transparent;
+  transition:all .25s;cursor:default;position:relative;overflow:hidden}
+.livello:hover{transform:translateY(-5px)}
+.livello::before{content:'';position:absolute;inset:0;opacity:0;transition:opacity .25s;
+  background:linear-gradient(180deg,rgba(255,255,255,.6),transparent)}
+.livello:hover::before{opacity:1}
+.lv-code{font-family:var(--serif);font-size:1.8rem;font-weight:900;display:block;margin-bottom:4px}
+.lv-name{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:6px}
+.lv-desc{font-size:.7rem;color:var(--grigio);line-height:1.4}
+.l-a1{background:#f0fff4;border-color:#b2f0c8}.l-a1 .lv-code{color:#276749}
+.l-a2{background:#eefff5;border-color:#86e8a9}.l-a2 .lv-code{color:#1a5e36}
+.l-b1{background:#fffbf0;border-color:#f6d860}.l-b1 .lv-code{color:#8a6d00}
+.l-b2{background:#fff9e6;border-color:#f0c040}.l-b2 .lv-code{color:#7a5d00}
+.l-c1{background:#fff5f0;border-color:#f4a87a}.l-c1 .lv-code{color:#92400e}
+.l-c2{background:#fff0f0;border-color:#f4776a}.l-c2 .lv-code{color:#9b1c1c}
+
+/* ── COME FUNZIONA ── */
+.steps{background:var(--notte);padding:100px 5vw;position:relative;overflow:hidden}
+.steps::before{content:'';position:absolute;inset:0;
+  background:radial-gradient(ellipse 70% 60% at 20% 50%,rgba(0,146,70,.15),transparent),
+             radial-gradient(ellipse 50% 70% at 80% 50%,rgba(206,43,55,.1),transparent)}
+.steps .section-title{color:#fff}.steps .section-desc{color:rgba(255,255,255,.6)}
+.steps-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:20px;position:relative;z-index:1}
+.step-card{padding:32px 26px;border-radius:20px;
+  background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);transition:all .3s}
+.step-card:hover{background:rgba(255,255,255,.1);transform:translateY(-4px)}
+.step-num{width:32px;height:32px;border-radius:50%;background:var(--verde);color:#fff;
+  font-size:.75rem;font-weight:700;display:flex;align-items:center;justify-content:center;
+  margin-bottom:16px}
+.step-icon{font-size:32px;margin-bottom:12px;display:block}
+.step-title{font-family:var(--serif);font-size:1.1rem;font-weight:700;
+  color:#fff;margin-bottom:8px}
+.step-desc{font-size:.85rem;color:rgba(255,255,255,.6);line-height:1.6}
+
+/* ── PRICING ── */
+.pricing{padding:100px 5vw;background:var(--bianco)}
+.pricing-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;margin-top:48px}
+.price-card{padding:40px 32px;border-radius:24px;border:2px solid rgba(0,0,0,.07);
+  background:var(--crema);position:relative;transition:all .3s}
+.price-card:hover{transform:translateY(-6px);box-shadow:0 20px 60px rgba(0,0,0,.1)}
+.price-card.pop{background:var(--notte);border-color:var(--verde)}
+.price-tag{position:absolute;top:-14px;left:50%;transform:translateX(-50%);
+  background:var(--verde);color:#fff;font-size:.7rem;font-weight:700;
+  padding:4px 16px;border-radius:100px;white-space:nowrap;letter-spacing:.05em}
+.price-name{font-family:var(--serif);font-size:1.4rem;font-weight:700;color:var(--notte);margin-bottom:6px}
+.price-card.pop .price-name{color:#fff}
+.price-sub{font-size:.8rem;color:var(--grigio);margin-bottom:24px}
+.price-card.pop .price-sub{color:rgba(255,255,255,.55)}
+.price-amount{font-family:var(--serif);font-size:3.2rem;font-weight:900;color:var(--verde);
+  line-height:1;margin-bottom:4px}
+.price-per{font-size:.8rem;color:var(--grigio);margin-bottom:28px}
+.price-card.pop .price-per{color:rgba(255,255,255,.5)}
+.price-features{list-style:none;display:flex;flex-direction:column;gap:10px;margin-bottom:32px}
+.price-features li{display:flex;align-items:center;gap:10px;font-size:.875rem;color:#4a5568}
+.price-card.pop .price-features li{color:rgba(255,255,255,.75)}
+.price-features li::before{content:'✓';width:20px;height:20px;border-radius:50%;flex-shrink:0;
+  background:var(--verde-p);color:var(--verde);display:flex;align-items:center;
+  justify-content:center;font-size:.65rem;font-weight:700}
+.price-card.pop .price-features li::before{background:rgba(0,146,70,.2);color:#4dbb7a}
+.price-btn{display:block;text-align:center;padding:14px;border-radius:100px;
+  font-family:var(--sans);font-size:.9rem;font-weight:600;cursor:pointer;
+  background:var(--verde);color:#fff;border:none;transition:all .25s}
+.price-btn:hover{background:var(--verde-d);transform:translateY(-2px)}
+.price-card:not(.pop) .price-btn{background:transparent;border:2px solid rgba(0,0,0,.15);color:var(--notte)}
+.price-card:not(.pop) .price-btn:hover{border-color:var(--verde);color:var(--verde)}
+
+/* ── CTA FINALE ── */
+.cta-final{padding:120px 5vw;background:var(--crema);position:relative;overflow:hidden;text-align:center}
+.cta-final::before{content:'🇮🇹';position:absolute;font-size:clamp(100px,18vw,220px);
+  top:50%;left:50%;transform:translate(-50%,-50%);opacity:.05;pointer-events:none}
+.cta-final .section-title{font-size:clamp(2rem,4.5vw,3.8rem);max-width:640px;margin:0 auto 20px}
+.cta-final .section-desc{margin:0 auto 48px}
+.cta-guarantee{font-size:.8rem;color:var(--grigio);margin-top:20px}
+.cta-guarantee span{color:var(--verde);font-weight:600}
+
+/* ── FOOTER ── */
+footer{background:var(--notte);padding:60px 5vw 36px}
+.footer-inner{display:flex;justify-content:space-between;align-items:center;
+  flex-wrap:wrap;gap:24px;padding-bottom:36px;
+  border-bottom:1px solid rgba(255,255,255,.08);margin-bottom:28px}
+.footer-brand{font-family:var(--serif);font-size:1.2rem;color:#fff}
+.footer-brand span{color:var(--verde)}
+.footer-links{display:flex;gap:28px;flex-wrap:wrap}
+.footer-links a{font-size:.8rem;color:rgba(255,255,255,.45);transition:color .2s}
+.footer-links a:hover{color:#fff}
+.footer-copy{font-size:.75rem;color:rgba(255,255,255,.3);text-align:center}
+
+/* ── RESPONSIVE ── */
+@media(max-width:900px){.tutors-grid{grid-template-columns:1fr}.steps-grid{grid-template-columns:1fr 1fr}
+  .livelli-grid{grid-template-columns:repeat(3,1fr)}.pricing-grid{grid-template-columns:1fr}}
+@media(max-width:600px){.livelli-grid{grid-template-columns:repeat(2,1fr)}
+  .steps-grid{grid-template-columns:1fr}.hero-proof{gap:20px}.proof-divider{display:none}}
+</style>
+</head>
+<body>
+<div class="tricolore"></div>
+
+<!-- NAV -->
+<nav id="nav">
+  <div class="nav-brand">
+    <img src="OminiLOGO_Saam40_ItalianVoice.png" alt="SAAM 4.0" onerror="this.style.display='none'">
+    <span>SAAM 4.0 <b>Italian Voice</b></span>
+  </div>
+  <a href="https://italianlearning.angelopagliara.it/registrazione-studente.html" class="nav-btn">
+    Inizia a Imparare →
+  </a>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-bg">
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+    <div class="blob blob-3"></div>
+  </div>
+  <div class="hero-flag"></div>
+
+  <div class="hero-content">
+    <div class="hero-eyebrow reveal">Prima piattaforma AI dedicata all'italiano</div>
+    <h1 class="hero-title reveal d1">
+      Il tuo viaggio<br>nella <span class="wave">lingua italiana</span><br>
+      inizia <span class="underline-red">adesso</span>
+    </h1>
+    <p class="hero-sub reveal d2">
+      Un tutor AI che parla italiano con te, 24 ore su 24, 7 giorni su 7.
+    </p>
+    <p class="hero-desc reveal d3">
+      Impara a conversare in italiano in modo naturale, con correzioni immediate e un percorso personalizzato sul tuo livello. Da A1 principiante assoluto a C2 padronanza totale.
+    </p>
+    <div class="hero-cta-group reveal d4">
+      <a href="https://italianlearning.angelopagliara.it/registrazione-studente.html" class="btn-primary">
+        🎓 Inizia a Imparare — è Gratuito
+      </a>
+      <a href="#tutors" class="btn-secondary">Scopri i Tutor ↓</a>
+    </div>
+    <div class="hero-proof reveal" style="transition-delay:.5s">
+      <div class="proof-item"><span class="proof-num">24/7</span><span class="proof-lbl">Disponibile</span></div>
+      <div class="proof-divider"></div>
+      <div class="proof-item"><span class="proof-num">6</span><span class="proof-lbl">Livelli QCER</span></div>
+      <div class="proof-divider"></div>
+      <div class="proof-item"><span class="proof-num">2</span><span class="proof-lbl">Tutor AI</span></div>
+      <div class="proof-divider"></div>
+      <div class="proof-item"><span class="proof-num">€9,70</span><span class="proof-lbl">Da / mese</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- TUTORS -->
+<section class="tutors" id="tutors">
+  <div class="section-badge reveal">I Tuoi Tutor Personali</div>
+  <h2 class="section-title reveal d1">Incontra <em>Sofia</em> e <em>Marco</em></h2>
+  <p class="section-desc reveal d2">Due personalità, due approcci. Scegli il tuo compagno di viaggio nell'italiano — o usali entrambi.</p>
+  <div class="tutors-grid">
+    <div class="tutor-card tc-sofia reveal d1">
+      <span class="tc-emoji">👩‍🏫</span>
+      <h3 class="tc-name">Sofia</h3>
+      <p class="tc-role">Tutor Accademica · Approccio Strutturato</p>
+      <p class="tc-desc">Sofia ti guida con metodo e precisione. Perfetta per la preparazione alle certificazioni CILS, CELI, PLIDA. Con lei ogni sessione è un passo consapevole verso la padronanza della lingua.</p>
+      <div class="tc-tags">
+        <span class="tc-tag">Grammatica</span><span class="tc-tag">Certificazioni</span>
+        <span class="tc-tag">Scrittura</span><span class="tc-tag">Lessico</span>
+      </div>
+    </div>
+    <div class="tutor-card tc-marco reveal d2">
+      <span class="tc-emoji">👨‍💼</span>
+      <h3 class="tc-name">Marco</h3>
+      <p class="tc-role">Tutor Conversazionale · Approccio Naturale</p>
+      <p class="tc-desc">Marco insegna l'italiano come si parla davvero — con le espressioni quotidiane, i modi di dire, il ritmo della conversazione. Parlargli è come avere un amico italiano sempre disponibile.</p>
+      <div class="tc-tags">
+        <span class="tc-tag">Conversazione</span><span class="tc-tag">Vita Quotidiana</span>
+        <span class="tc-tag">Espressioni</span><span class="tc-tag">Cultura</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- LIVELLI -->
+<section class="livelli">
+  <div class="section-badge reveal">Quadro Europeo di Riferimento</div>
+  <h2 class="section-title reveal d1">Qual è il tuo <em>livello</em>?</h2>
+  <p class="section-desc reveal d2">Non importa da dove parti. SAAM 4.0 si adatta a te — dal primo giorno fino alla padronanza completa.</p>
+  <div class="livelli-grid">
+    <div class="livello l-a1 reveal d1"><span class="lv-code">A1</span><span class="lv-name">Principiante</span><span class="lv-desc">Saluti, numeri, presentazioni</span></div>
+    <div class="livello l-a2 reveal d2"><span class="lv-code">A2</span><span class="lv-name">Elementare</span><span class="lv-desc">Vita quotidiana, negozi</span></div>
+    <div class="livello l-b1 reveal d3"><span class="lv-code">B1</span><span class="lv-name">Intermedio</span><span class="lv-desc">Opinioni, viaggi, lavoro</span></div>
+    <div class="livello l-b2 reveal d4"><span class="lv-code">B2</span><span class="lv-name">Avanzato</span><span class="lv-desc">Testi complessi, dibattiti</span></div>
+    <div class="livello l-c1 reveal" style="transition-delay:.5s"><span class="lv-code">C1</span><span class="lv-name">Superiore</span><span class="lv-desc">Espressione spontanea</span></div>
+    <div class="livello l-c2 reveal" style="transition-delay:.6s"><span class="lv-code">C2</span><span class="lv-name">Padronanza</span><span class="lv-desc">Competenza madrelingua</span></div>
+  </div>
+</section>
+
+<!-- STEPS -->
+<section class="steps">
+  <div class="section-badge reveal" style="color:var(--verde)">Come Funziona</div>
+  <h2 class="section-title reveal d1">Sei operativo in <em style="color:#4dbb7a">3 minuti</em></h2>
+  <p class="section-desc reveal d2">Nessuna app da installare. Funziona dal browser su qualsiasi dispositivo.</p>
+  <div class="steps-grid">
+    <div class="step-card reveal d1">
+      <div class="step-num">1</div><span class="step-icon">📝</span>
+      <h3 class="step-title">Registrati</h3>
+      <p class="step-desc">Crea il tuo account in 2 minuti. Scegli il piano più adatto ai tuoi obiettivi.</p>
+    </div>
+    <div class="step-card reveal d2">
+      <div class="step-num">2</div><span class="step-icon">🎯</span>
+      <h3 class="step-title">Scegli il Livello</h3>
+      <p class="step-desc">Seleziona il tuo livello di partenza (A1–C2) e il tuo tutor preferito.</p>
+    </div>
+    <div class="step-card reveal d3">
+      <div class="step-num">3</div><span class="step-icon">💬</span>
+      <h3 class="step-title">Inizia a Parlare</h3>
+      <p class="step-desc">Avvia la conversazione. Il tutor AI risponde, corregge e ti incoraggia in italiano.</p>
+    </div>
+    <div class="step-card reveal d4">
+      <div class="step-num">4</div><span class="step-icon">📈</span>
+      <h3 class="step-title">Monitora i Progressi</h3>
+      <p class="step-desc">Dalla tua dashboard segui l'evoluzione delle tue sessioni e il tuo avanzamento.</p>
+    </div>
+  </div>
+</section>
+
+<!-- PRICING -->
+<section class="pricing" id="piani">
+  <div class="section-badge reveal">Piani e Prezzi</div>
+  <h2 class="section-title reveal d1">Semplice. <em>Trasparente.</em> Conveniente.</h2>
+  <p class="section-desc reveal d2">Tre piani, nessun costo nascosto. Disdici in qualsiasi momento.</p>
+  <div class="pricing-grid">
+    <div class="price-card reveal d1">
+      <p class="price-name">Basic</p>
+      <p class="price-sub">Per iniziare con calma</p>
+      <div class="price-amount">€9,70</div>
+      <p class="price-per">/mese · rinnovo automatico</p>
+      <ul class="price-features">
+        <li>30 minuti di pratica al giorno</li><li>900 minuti/mese</li>
+        <li>Tutor Sofia e Marco</li><li>Tutti i livelli A1–C2</li><li>Dashboard progressi</li>
+      </ul>
+      <a href="https://italianlearning.angelopagliara.it/registrazione-studente.html" class="price-btn">Inizia Ora</a>
+    </div>
+    <div class="price-card pop reveal d2">
+      <div class="price-tag">⭐ Più Scelto</div>
+      <p class="price-name">Advanced</p>
+      <p class="price-sub">Il piano più popolare</p>
+      <div class="price-amount">€16,70</div>
+      <p class="price-per">/mese · rinnovo automatico</p>
+      <ul class="price-features">
+        <li>60 minuti di pratica al giorno</li><li>1.800 minuti/mese</li>
+        <li>Tutor Sofia e Marco</li><li>Tutti i livelli A1–C2</li>
+        <li>Dashboard avanzata</li><li>🎓 Lezioni Live con docenti</li>
+      </ul>
+      <a href="https://italianlearning.angelopagliara.it/registrazione-studente.html" class="price-btn">Inizia Ora</a>
+    </div>
+    <div class="price-card reveal d3">
+      <p class="price-name">Gold</p>
+      <p class="price-sub">Per chi vuole il massimo</p>
+      <div class="price-amount">€27,70</div>
+      <p class="price-per">/mese · rinnovo automatico</p>
+      <ul class="price-features">
+        <li>120 minuti di pratica al giorno</li><li>3.600 minuti/mese</li>
+        <li>Tutor Sofia e Marco</li><li>Tutti i livelli A1–C2</li>
+        <li>Analytics completa</li><li>🎓 Lezioni Live con docenti</li><li>Supporto prioritario</li>
+      </ul>
+      <a href="https://italianlearning.angelopagliara.it/registrazione-studente.html" class="price-btn">Inizia Ora</a>
+    </div>
+  </div>
+</section>
+
+<!-- CTA FINALE -->
+<section class="cta-final">
+  <div class="section-badge reveal">Inizia Oggi</div>
+  <h2 class="section-title reveal d1">Il tuo <em>primo passo</em><br>verso l'italiano</h2>
+  <p class="section-desc reveal d2">Sofia e Marco ti aspettano. La registrazione è gratuita, nessuna carta richiesta per iniziare.</p>
+  <div class="reveal d3">
+    <a href="https://italianlearning.angelopagliara.it/registrazione-studente.html" class="btn-primary" style="font-size:1.1rem;padding:20px 52px">
+      🇮🇹 Registrati Gratis — Inizia Subito
+    </a>
+    <p class="cta-guarantee">
+      <span>✓ Nessun vincolo</span> &nbsp;·&nbsp; <span>✓ Disdici quando vuoi</span> &nbsp;·&nbsp; <span>✓ Supporto incluso</span>
+    </p>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-inner">
+    <span class="footer-brand">SAAM 4.0 <span>Italian Voice</span></span>
+    <div class="footer-links">
+      <a href="index.html">Home</a>
+      <a href="landing-centri.html">Per Centri</a>
+      <a href="landing-docenti.html">Per Docenti</a>
+      <a href="PrivacyPolicy-SAAM40.html">Privacy</a>
+      <a href="CookiePolicy-SAAM40.html">Cookie</a>
+      <a href="TerminiServizio-SAAM40.html">Termini</a>
+    </div>
+  </div>
+  <p class="footer-copy">© 2026 SAAM 4.0 Academy School — Angelo Pagliara — P.IVA 02490040744 — Via Dott. Cosimo Argentieri, 24 — 72022 Latiano (BR)</p>
+</footer>
+<div class="tricolore"></div>
+
+<script>
+// Nav scroll
+window.addEventListener('scroll',()=>document.getElementById('nav').classList.toggle('solid',scrollY>40));
+// Reveal on scroll
+const obs=new IntersectionObserver(e=>e.forEach(el=>{if(el.isIntersecting)el.target.classList.add('on')}),{threshold:.1,rootMargin:'0px 0px -40px 0px'});
+document.querySelectorAll('.reveal').forEach(el=>obs.observe(el));
+</script>
+</body>
+</html>
