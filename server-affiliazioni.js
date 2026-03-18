@@ -1455,6 +1455,88 @@ async function getAvailableSlots(teacherId, weeksAhead = 4) {
     return result.sort((a, b) => new Date(a.datetime) - new Date(b.datetime));
 }
 
+// ── PUBLIC: lista centri affiliati attivi (per select docenti) ──
+router.get('/public/affiliates/active', async (req, res) => {
+    try {
+        const { rows } = await pool.query(`
+            SELECT id, organization_name, city, region
+            FROM affiliates
+            WHERE status = 'active'
+            ORDER BY organization_name`);
+        res.json({ affiliates: rows });
+    } catch(err) { res.status(500).json({ error: err.message }); }
+});
+
+// ── PUBLIC: candidatura docente (auto-registrazione) ──────────
+router.post('/public/teacher/apply', async (req, res) => {
+    const { name, email, phone, city, qualification, affiliate_id,
+            meet_link, subjects, bio, photo_url } = req.body;
+    if (!name || !email || !affiliate_id || !meet_link || !subjects || !bio)
+        return res.status(400).json({ error: 'Campi obbligatori mancanti: name, email, affiliate_id, meet_link, subjects, bio' });
+    try {
+        // Verifica email non già presente
+        const existing = await pool.query('SELECT id FROM teachers WHERE email=$1', [email]);
+        if (existing.rows[0])
+            return res.status(409).json({ error: 'Esiste già una candidatura con questa email.' });
+        // Verifica centro attivo
+        const aff = await pool.query("SELECT id, organization_name FROM affiliates WHERE id=$1 AND status='active'", [affiliate_id]);
+        if (!aff.rows[0])
+            return res.status(404).json({ error: 'Centro non trovato o non accreditato.' });
+        // Inserisce con is_active=false e approved_at=NULL (richiede approvazione admin)
+        const { rows } = await pool.query(
+            `INSERT INTO teachers
+             (affiliate_id, name, email, phone, bio, photo_url, meet_link, subjects,
+              is_active, approved_at)
+             VALUES ($1,$2,$3,$4,$5,$6,$7,$8, false, NULL) RETURNING id, name, email`,
+            [affiliate_id, name, email, phone||null, bio, photo_url||null,
+             meet_link, subjects]
+        );
+        const teacher = rows[0];
+        // Notifica admin
+        const feUrl = process.env.FRONTEND_URL || 'https://italian-learning-platform.onrender.com';
+        if (process.env.BREVO_API_KEY) {
+            await _brevoSendAff(
+                process.env.NOTIFY_EMAIL || 'training@angelopagliara.it',
+                `🎓 Nuova candidatura docente — ${teacher.name}`,
+                `<h2>🎓 Nuova Candidatura Docente</h2>
+                 <p><strong>Nome:</strong> ${teacher.name}</p>
+                 <p><strong>Email:</strong> ${teacher.email}</p>
+                 <p><strong>Centro:</strong> ${aff.rows[0].organization_name}</p>
+                 <p><strong>Materie/Livelli:</strong> ${subjects}</p>
+                 <p>
+                   <a href="${feUrl}/admin-affiliazioni.html" style="background:#009246;color:#fff;padding:10px 20px;border-radius:8px;text-decoration:none;font-weight:700">
+                     Vai alla Dashboard Admin →
+                   </a>
+                 </p>`
+            ).catch(e => console.error('[EMAIL teacher apply]', e.message));
+            // Email di conferma al docente
+            await _brevoSendAff(
+                email,
+                '✅ Candidatura ricevuta — SAAM 4.0 Italian Voice',
+                `<div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto">
+                 <div style="background:#009246;padding:20px 28px;border-radius:10px 10px 0 0">
+                   <h2 style="color:#fff;margin:0">✅ Candidatura Ricevuta!</h2>
+                 </div>
+                 <div style="padding:24px 28px;background:#fff;border:1px solid #e0e0e0">
+                   <p style="font-size:14px;color:#333">Ciao <strong>${name.split(' ')[0]}</strong>,</p>
+                   <p style="font-size:14px;color:#333;margin:12px 0">
+                     Abbiamo ricevuto la tua candidatura come docente per <strong>SAAM 4.0 Italian Voice</strong>.
+                     Il nostro team la valuterà entro <strong>48 ore lavorative</strong> e ti contatterà a questo indirizzo email.
+                   </p>
+                   <div style="background:#f0f7f2;border-radius:10px;padding:16px;margin:16px 0">
+                     <p style="font-size:13px;color:#333;margin:4px 0"><strong>Centro indicato:</strong> ${aff.rows[0].organization_name}</p>
+                     <p style="font-size:13px;color:#333;margin:4px 0"><strong>Livelli/Materie:</strong> ${subjects}</p>
+                   </div>
+                   <p style="font-size:12px;color:#888;margin-top:16px">Per domande: <a href="mailto:training@angelopagliara.it" style="color:#009246">training@angelopagliara.it</a></p>
+                 </div>
+                 <div style="background:#f0f7f2;padding:12px 28px;border-radius:0 0 10px 10px;font-size:11px;color:#888;text-align:center">SAAM 4.0 Academy School — training@angelopagliara.it</div>
+                 </div>`
+            ).catch(e => console.error('[EMAIL teacher confirm]', e.message));
+        }
+        res.json({ success: true, message: 'Candidatura inviata con successo! Ti contatteremo entro 48 ore.', id: teacher.id });
+    } catch(err) { res.status(500).json({ error: err.message }); }
+});
+
 // ── PUBLIC: lista docenti attivi con slot disponibili ────────
 router.get('/public/teachers', async (req, res) => {
     try {
