@@ -519,6 +519,9 @@
             <div class="nav-item" data-page="users">
                 <span class="icon">👥</span> Gestione Utenti
             </div>
+            <div class="nav-item" data-page="trials">
+                <span class="icon">🔬</span> Account Trial
+            </div>
             <div class="nav-item" data-page="materials">
                 <span class="icon">📚</span> Materiali Didattici
             </div>
@@ -571,8 +574,14 @@
                 <div class="panel">
                     <div class="panel-header">
                         <h3>Tutti gli Utenti</h3>
-                        <div class="search-bar" style="margin:0;width:300px">
-                            <input type="text" class="search-input" id="userSearch" placeholder="🔍 Cerca per nome o email..." oninput="filterUsers()">
+                        <div style="display:flex;gap:10px;align-items:center">
+                            <div class="search-bar" style="margin:0;width:260px">
+                                <input type="text" class="search-input" id="userSearch" placeholder="🔍 Cerca per nome o email..." oninput="filterUsers()">
+                            </div>
+                            <button class="btn" onclick="document.querySelector('[data-page=trials]').click()"
+                                style="background:#7c3aed15;color:#7c3aed;border:1px solid #7c3aed40;font-size:.8rem;padding:6px 14px;border-radius:8px;cursor:pointer;white-space:nowrap">
+                                🔬 Vedi Trial
+                            </button>
                         </div>
                     </div>
                     <div class="table-wrapper">
@@ -601,6 +610,53 @@
             </div>
 
             <!-- ── MATERIALI ── -->
+            <!-- ══ PAGE TRIAL ══ -->
+            <div class="page" id="page-trials">
+                <div class="page-header">
+                    <div>
+                        <h2>Account Trial</h2>
+                        <p>Storico di tutti gli account di prova attivati dai Centri Affiliati</p>
+                    </div>
+                    <div style="display:flex;gap:10px">
+                        <button class="btn btn-verde" onclick="exportTrialsCsv()">
+                            ⬇ Esporta CSV
+                        </button>
+                        <button class="btn" onclick="loadTrials()"
+                            style="background:#f0f0f0;color:#333;border:1px solid #ccc;font-size:.85rem">
+                            🔄 Aggiorna
+                        </button>
+                    </div>
+                </div>
+                <div class="panel">
+                    <div class="panel-header" style="flex-wrap:wrap;gap:10px">
+                        <h3>Tutte le Attivazioni Trial</h3>
+                        <div style="display:flex;gap:8px;flex-wrap:wrap">
+                            <span id="trialStats" style="font-size:.8rem;color:#6b7280;padding:6px 0"></span>
+                        </div>
+                    </div>
+                    <div class="table-wrapper">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Studente (Trial)</th>
+                                    <th>Email</th>
+                                    <th>Centro Affiliato</th>
+                                    <th>Attivato il</th>
+                                    <th>Scadenza</th>
+                                    <th>Min. Totali</th>
+                                    <th>Min. Usati</th>
+                                    <th>Stato</th>
+                                </tr>
+                            </thead>
+                            <tbody id="trialsBody">
+                                <tr><td colspan="9" style="text-align:center;color:#9ca3af;padding:24px">Caricamento...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
             <div class="page" id="page-materials">
                 <div class="page-header">
                     <div>
@@ -909,8 +965,8 @@ const api = async (path, opts = {}) => {
 };
 
 function pkgBadge(pkg) {
-    const map = { basic:'🥉 Basic', advanced:'🥈 Advanced', gold:'🥇 Gold', unlimited:'♾️ Unlimited' };
-    const colors = { basic:'#9a9a95', advanced:'#009246', gold:'#d4a017', unlimited:'#3d5af1' };
+    const map = { basic:'🥉 Basic', advanced:'🥈 Advanced', gold:'🥇 Gold', unlimited:'♾️ Unlimited', trial:'🔬 Prova' };
+    const colors = { basic:'#9a9a95', advanced:'#009246', gold:'#d4a017', unlimited:'#3d5af1', trial:'#7c3aed' };
     const label = map[pkg] || '—';
     const color = colors[pkg] || '#9a9a95';
     return `<span style="background:${color}15;color:${color};border:1px solid ${color}40;border-radius:4px;padding:2px 8px;font-size:.72rem;font-weight:700">${label}</span>`;
@@ -984,6 +1040,7 @@ document.querySelectorAll('.nav-item[data-page]').forEach(item => {
         document.getElementById(`page-${item.dataset.page}`).classList.add('active');
 
         if (item.dataset.page === 'users')     loadUsers();
+        if (item.dataset.page === 'trials')    loadTrials();
         if (item.dataset.page === 'materials') loadMaterials();
         if (item.dataset.page === 'settings')  loadTTSSettings();
     });
@@ -1033,6 +1090,7 @@ function renderUsersTable(users) {
         advanced: { day: 60,   month: 1800  },
         gold:     { day: 120,  month: 3600  },
         unlimited:{ day: 9999, month: 99999 },
+        trial:    { day: 15,   month: 105   },
     };
     tbody.innerHTML = users.map(u => {
         const pkg      = u.package || 'basic';
@@ -1057,7 +1115,14 @@ function renderUsersTable(users) {
                 </div>
             </td>
             <td style="font-weight:700;color:${residui < limits.month * 0.1 ? '#CE2B37' : '#009246'}">${residui} min</td>
-            <td>${new Date(u.created_at).toLocaleDateString('it-IT')}</td>
+            <td>
+                <span>${new Date(u.created_at).toLocaleDateString('it-IT')}</span>
+                ${u.registered_via === 'trial' ? `
+                <br><span style="font-size:.7rem;font-weight:600;color:#7c3aed">🔬 Trial</span>
+                ${u.trial_center_name ? `<br><span style="font-size:.7rem;color:#6b7280">🏢 ${esc(u.trial_center_name)}${u.trial_center_city ? ' — '+esc(u.trial_center_city) : ''}</span>` : ''}
+                ${u.trial_expires_at ? `<br><span style="font-size:.7rem;color:${new Date(u.trial_expires_at) < new Date() ? '#CE2B37' : '#009246'};font-weight:700">
+                  ${new Date(u.trial_expires_at) < new Date() ? '⏰ Scaduto' : '⏳ Scade'}: ${new Date(u.trial_expires_at).toLocaleDateString('it-IT')}</span>` : ''}` : ''}
+            </td>
             <td style="display:flex;gap:6px">
                 <button class="btn btn-outline btn-icon" onclick="editUser(${JSON.stringify(u).replace(/"/g,'&quot;')})">✏️</button>
                 <button class="btn btn-rosso btn-icon" onclick="deleteUser(${u.id})">🗑</button>
@@ -1259,6 +1324,85 @@ window.addEventListener('beforeinstallprompt', e => {
         }
     }, 3000);
 });
+
+
+// ══════════════════════════════════════════════
+// ACCOUNT TRIAL
+// ══════════════════════════════════════════════
+async function loadTrials() {
+    try {
+        const data = await api('/api/admin/trial-export');
+        const trials = data.trials || [];
+        const tbody = document.getElementById('trialsBody');
+        const statsEl = document.getElementById('trialStats');
+        if (!tbody) return;
+
+        const active  = trials.filter(t => t.status === 'Attivo').length;
+        const expired = trials.filter(t => t.status === 'Scaduto').length;
+        if (statsEl) statsEl.innerHTML =
+            `<span style="background:#7c3aed15;color:#7c3aed;padding:3px 10px;border-radius:100px;font-size:.75rem;font-weight:700">🔬 Tot: ${trials.length}</span>
+             <span style="background:#00924615;color:#009246;padding:3px 10px;border-radius:100px;font-size:.75rem;font-weight:700">✅ Attivi: ${active}</span>
+             <span style="background:#CE2B3715;color:#CE2B37;padding:3px 10px;border-radius:100px;font-size:.75rem;font-weight:700">⏰ Scaduti: ${expired}</span>`;
+
+        if (!trials.length) {
+            tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:#9ca3af;padding:32px">Nessun account trial attivato</td></tr>';
+            return;
+        }
+        tbody.innerHTML = trials.map((t, i) => {
+            const isExpired = t.status === 'Scaduto';
+            const pct = Math.min(100, Math.round((t.minutes_used / t.minutes_limit) * 100));
+            const barColor = pct >= 90 ? '#CE2B37' : pct >= 60 ? '#d4a017' : '#009246';
+            return `<tr>
+                <td style="color:#9ca3af;font-size:.8rem">${i+1}</td>
+                <td><strong>${esc(t.client_name || '—')}</strong></td>
+                <td style="font-size:.8rem">${esc(t.client_email || '—')}</td>
+                <td>
+                    <strong style="font-size:.85rem">${esc(t.center_name || '—')}</strong>
+                    ${t.center_city ? `<br><span style="font-size:.72rem;color:#9ca3af">${esc(t.center_city)}</span>` : ''}
+                </td>
+                <td style="font-size:.82rem">${t.issued_at ? new Date(t.issued_at).toLocaleDateString('it-IT') : '—'}</td>
+                <td style="font-size:.82rem;font-weight:700;color:${isExpired ? '#CE2B37' : '#009246'}">
+                    ${t.expires_at ? new Date(t.expires_at).toLocaleDateString('it-IT') : '—'}
+                    ${isExpired ? '<br><span style="font-size:.7rem">⏰ Scaduto</span>' : '<br><span style="font-size:.7rem">✅ Attivo</span>'}
+                </td>
+                <td style="text-align:center;font-weight:700">${t.minutes_limit}</td>
+                <td>
+                    <span style="font-size:.82rem;font-weight:700;color:${barColor}">${Math.round(t.minutes_used)} min</span>
+                    <div style="background:#e8e8e5;border-radius:3px;height:4px;width:60px;margin-top:3px">
+                        <div style="background:${barColor};border-radius:3px;height:4px;width:${pct}%"></div>
+                    </div>
+                </td>
+                <td>
+                    <span style="background:${isExpired?'#CE2B3715':'#00924615'};color:${isExpired?'#CE2B37':'#009246'};
+                          border:1px solid ${isExpired?'#CE2B3740':'#00924640'};border-radius:4px;
+                          padding:2px 8px;font-size:.72rem;font-weight:700">
+                        ${isExpired ? '⏰ Scaduto' : '✅ Attivo'}
+                    </span>
+                </td>
+            </tr>`;
+        }).join('');
+    } catch(e) {
+        const tbody = document.getElementById('trialsBody');
+        if (tbody) tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;color:#CE2B37;padding:24px">⚠️ ${e.message}</td></tr>`;
+    }
+}
+
+async function exportTrialsCsv() {
+    try {
+        const token = localStorage.getItem('ital_admin_token') || state.token;
+        const API_BASE = 'https://italian-learning-platform.onrender.com';
+        const r = await fetch(`${API_BASE}/api/admin/trial-export?format=csv`, {
+            headers: { Authorization: 'Bearer ' + token }
+        });
+        if (!r.ok) throw new Error('Errore export');
+        const blob = await r.blob();
+        const url  = URL.createObjectURL(blob);
+        const a    = document.createElement('a');
+        a.href = url; a.download = 'trial_accounts_' + new Date().toISOString().slice(0,10) + '.csv';
+        a.click(); URL.revokeObjectURL(url);
+        showToast('✅ CSV scaricato con successo', 'success');
+    } catch(e) { showToast('⚠️ Errore export: ' + e.message, 'error'); }
+}
 
 </script>
 </body>
