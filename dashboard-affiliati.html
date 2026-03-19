@@ -511,9 +511,9 @@ async function loadDashboard() {
         // All students
         const stT = document.getElementById('studentsTable');
         document.getElementById('studentsCount').textContent = `${students.length} studenti`;
-        const PKG_LIMITS = { basic:900, advanced:1800, gold:3600, unlimited:99999 };
+        const PKG_LIMITS = { basic:900, advanced:1800, gold:3600, unlimited:99999, trial:105 };
         stT.innerHTML = students.length ? students.map(s => {
-            const monthLimit = PKG_LIMITS[s.package] || 900;
+            const monthLimit = PKG_LIMITS[s.package] ?? (s.package === 'trial' ? 105 : 900);
             const used       = parseInt(s.monthly_minutes_used) || 0;
             const residui    = Math.max(0, monthLimit - used);
             const pct        = Math.min(100, Math.round(used / monthLimit * 100));
