@@ -1526,7 +1526,7 @@ router.post('/public/teacher/apply', async (req, res) => {
                  <p><strong>Centro:</strong> ${aff.rows[0].organization_name}</p>
                  <p><strong>Materie/Livelli:</strong> ${subjects}</p>
                  <p><strong>Link Google Meet:</strong> ${meet_link}</p>
-                 <p><strong>Bio:</strong><br>${body || '—'}</p>
+                 <p><strong>Bio:</strong><br>${bio || '—'}</p>
                  ${cv_base64 ? `<p><strong>Curriculum Vitae:</strong> allegato (${cv_filename || 'cv.pdf'})</p>` : '<p><strong>Curriculum Vitae:</strong> non allegato</p>'}
                  <p style="margin-top:16px">
                    <a href="${feUrl}/admin-affiliazioni.html" style="background:#009246;color:#fff;padding:10px 20px;border-radius:8px;text-decoration:none;font-weight:700">
