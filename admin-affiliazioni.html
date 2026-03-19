@@ -1190,7 +1190,6 @@ function openEditAffiliate(id) {
     document.getElementById('eaVat').value         = a.vat_number || '';
     document.getElementById('eaPec').value         = a.pec || '';
     document.getElementById('eaSdi').value         = a.codice_sdi || '';
-    document.getElementById('eaWebsite').value     = a.website || '';
     document.getElementById('editAffAlert').innerHTML = '';
     const modal = document.getElementById('editAffModal');
     modal.style.display = 'flex';
@@ -1209,7 +1208,7 @@ async function saveEditAffiliate() {
         vat_number:        document.getElementById('eaVat').value.trim(),
         pec:               document.getElementById('eaPec').value.trim(),
         codice_sdi:        document.getElementById('eaSdi').value.trim(),
-        website:           document.getElementById('eaWebsite').value.trim(),
+
     };
     if (!body.organization_name || !body.contact_name || !body.email) {
         alertEl.innerHTML = '<div style="background:#fdecea;color:#9b1c1c;padding:10px 14px;border-radius:8px;margin-bottom:12px;font-size:.875rem">⚠️ Ragione sociale, referente ed email sono obbligatori.</div>';
@@ -1308,8 +1307,7 @@ async function saveEditTeacher() {
         <input id="eaPec" style="width:100%;padding:10px 12px;border:1.5px solid #d0d8d0;border-radius:8px;font-family:Lato,sans-serif;font-size:.9rem;outline:none"></div>
       <div><label style="font-size:.75rem;font-weight:700;color:#555;text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:5px">Codice SDI</label>
         <input id="eaSdi" maxlength="7" style="width:100%;padding:10px 12px;border:1.5px solid #d0d8d0;border-radius:8px;font-family:Lato,sans-serif;font-size:.9rem;outline:none"></div>
-      <div><label style="font-size:.75rem;font-weight:700;color:#555;text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:5px">Sito Web</label>
-        <input id="eaWebsite" style="width:100%;padding:10px 12px;border:1.5px solid #d0d8d0;border-radius:8px;font-family:Lato,sans-serif;font-size:.9rem;outline:none"></div>
+
     </div>
     <input type="hidden" id="eaId">
     <div style="display:flex;gap:12px;margin-top:24px">
