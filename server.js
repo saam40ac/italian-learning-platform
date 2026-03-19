@@ -195,6 +195,7 @@ const PACKAGES = {
     advanced: { daily_minutes: 60,  monthly_minutes: 1800, label: 'Advanced' },
     gold:     { daily_minutes: 120, monthly_minutes: 3600, label: 'Gold'     },
     unlimited:{ daily_minutes: 9999,monthly_minutes: 99999,label: 'Unlimited'},
+    trial:    { daily_minutes: 15,  monthly_minutes: 105,  label: 'Prova'    },
 };
 function getPackageLimits(pkg) {
     return PACKAGES[pkg] || PACKAGES.basic;
@@ -281,6 +282,29 @@ app.use((req, res, next) => {
 // ============================================
 // AUTH MIDDLEWARE
 // ============================================
+
+// Helper: controlla se un utente trial è scaduto (usato in chat e usage)
+async function checkTrialExpiry(req, res, next) {
+    try {
+        const result = await pool.query(
+            "SELECT registered_via FROM users WHERE id = $1", [req.user.userId]
+        );
+        const user = result.rows[0];
+        if (user && user.registered_via === 'trial') {
+            const trialRow = await pool.query(
+                `SELECT expires_at FROM trial_accounts WHERE user_id = $1 ORDER BY id DESC LIMIT 1`,
+                [req.user.userId]
+            );
+            if (trialRow.rows[0] && new Date() > new Date(trialRow.rows[0].expires_at)) {
+                return res.status(403).json({
+                    error: 'trial_expired',
+                    message: 'Il tuo account di prova è scaduto.',
+                });
+            }
+        }
+        next();
+    } catch(err) { next(); } // in caso di errore non blocchiamo
+}
 
 function authenticate(req, res, next) {
     const token = req.headers.authorization?.replace('Bearer ', '');
@@ -398,6 +422,24 @@ app.post('/api/auth/login', async (req, res) => {
             return res.status(401).json({ error: 'Credenziali non valide' });
         }
 
+        // Controlla se è un account trial scaduto
+        if (user.registered_via === 'trial') {
+            const trialRow = await client.query(
+                `SELECT expires_at FROM trial_accounts WHERE user_id = $1 ORDER BY id DESC LIMIT 1`,
+                [user.id]
+            );
+            if (trialRow.rows[0]) {
+                const expiresAt = new Date(trialRow.rows[0].expires_at);
+                if (new Date() > expiresAt) {
+                    return res.status(403).json({
+                        error: 'trial_expired',
+                        message: 'Il tuo account di prova è scaduto.',
+                        expires_at: trialRow.rows[0].expires_at
+                    });
+                }
+            }
+        }
+
         await client.query(
             'UPDATE users SET last_login = NOW() WHERE id = $1',
             [user.id]
@@ -508,7 +550,7 @@ app.get('/api/user/usage', authenticate, async (req, res) => {
     }
 });
 
-app.post('/api/user/usage', authenticate, async (req, res) => {
+app.post('/api/user/usage', authenticate, checkTrialExpiry, async (req, res) => {
     const { minutes } = req.body;
 
     if (typeof minutes !== 'number' || minutes <= 0) {
@@ -549,7 +591,7 @@ app.post('/api/user/usage', authenticate, async (req, res) => {
 // CHAT ENDPOINT - ENHANCED WITH LEARNING MATERIALS
 // ============================================
 
-app.post('/api/chat', authenticate, async (req, res) => {
+app.post('/api/chat', authenticate, checkTrialExpiry, async (req, res) => {
     const { message, conversation_history = [], session_type = 'conversation', level, topic, tutor } = req.body;
 
     if (!message) {
