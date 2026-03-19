@@ -1317,17 +1317,26 @@ app.get('/api/admin/users', authenticate, requireAdmin, async (req, res) => {
     const client = await pool.connect();
     try {
         const result = await client.query(`
-            SELECT 
+            SELECT
                 u.id, u.email, u.name, u.role, u.minutes_limit,
                 COALESCE(u.package,'basic') as package,
                 u.created_at, u.last_login,
+                u.registered_via,
                 COALESCE(SUM(us.minutes_used), 0) as total_minutes_used,
                 COALESCE(SUM(CASE WHEN us.date >= date_trunc('month', NOW()) THEN us.minutes_used ELSE 0 END), 0) as monthly_minutes_used,
-                sl.level, sl.topics
+                sl.level, sl.topics,
+                ta.expires_at       AS trial_expires_at,
+                ta.minutes_limit    AS trial_minutes_limit,
+                a.organization_name AS trial_center_name,
+                a.city              AS trial_center_city
             FROM users u
-            LEFT JOIN usage us ON u.id = us.user_id
+            LEFT JOIN usage us        ON u.id = us.user_id
             LEFT JOIN student_levels sl ON u.id = sl.user_id
-            GROUP BY u.id, sl.level, sl.topics
+            LEFT JOIN trial_accounts ta ON ta.user_id = u.id
+            LEFT JOIN affiliates a      ON a.id = ta.affiliate_id
+            GROUP BY u.id, sl.level, sl.topics,
+                     ta.expires_at, ta.minutes_limit,
+                     a.organization_name, a.city
             ORDER BY u.created_at DESC
         `);
 
@@ -1341,6 +1350,48 @@ app.get('/api/admin/users', authenticate, requireAdmin, async (req, res) => {
 });
 
 // PUT /api/admin/users/:id — gestito dall'endpoint completo /:userId più avanti
+
+// ── ADMIN: export trial accounts (CSV o JSON) ───────────────
+app.get('/api/admin/trial-export', authenticate, requireAdmin, async (req, res) => {
+    const client = await pool.connect();
+    try {
+        const { rows } = await client.query(`
+            SELECT
+                ta.id, ta.client_name, ta.client_email,
+                ta.issued_at, ta.expires_at, ta.minutes_limit,
+                a.organization_name AS center_name, a.city AS center_city,
+                CASE WHEN NOW() > ta.expires_at THEN 'Scaduto' ELSE 'Attivo' END AS status,
+                COALESCE(SUM(us.minutes_used),0) AS minutes_used
+            FROM trial_accounts ta
+            LEFT JOIN affiliates a ON a.id = ta.affiliate_id
+            LEFT JOIN usage us     ON us.user_id = ta.user_id
+            GROUP BY ta.id, a.organization_name, a.city
+            ORDER BY ta.issued_at DESC`);
+
+        const fmt = req.query.format || 'json';
+        if (fmt === 'csv') {
+            const header = 'ID,Nome,Email,Centro,Città,Attivato il,Scadenza,Minuti tot.,Minuti usati,Stato';
+            const rows2 = rows.map(r => [
+                r.id,
+                `"${(r.client_name||'').replace(/"/g,'""')}"`,
+                r.client_email,
+                `"${(r.center_name||'').replace(/"/g,'""')}"`,
+                r.center_city||'',
+                r.issued_at ? new Date(r.issued_at).toLocaleDateString('it-IT') : '',
+                r.expires_at ? new Date(r.expires_at).toLocaleDateString('it-IT') : '',
+                r.minutes_limit,
+                Math.round(r.minutes_used),
+                r.status
+            ].join(','));
+            res.setHeader('Content-Type','text/csv; charset=utf-8');
+            res.setHeader('Content-Disposition','attachment; filename="trial_accounts.csv"');
+            const csvContent = '\uFEFF' + header + '\n' + rows2.join('\n');
+            return res.send(Buffer.from(csvContent, 'utf8'));
+        }
+        res.json({ trials: rows, total: rows.length });
+    } catch(err) { res.status(500).json({ error: err.message }); }
+    finally { client.release(); }
+});
 
 app.delete('/api/admin/users/:id', authenticate, requireAdmin, async (req, res) => {
     const { id } = req.params;
