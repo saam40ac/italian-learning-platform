@@ -243,7 +243,8 @@ const { stripeWebhook } = require('./server-affiliazioni');
 app.post('/api/stripe/webhook', express.raw({ type: 'application/json' }), stripeWebhook);
 // Nota: stripeWebhook usa il pool iniettato tramite affiliazioniInit(pool) più sotto
 
-app.use(express.json());
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // ── FILE STATICI (HTML, CSS, immagini) ──
 const path = require('path');
