@@ -343,6 +343,55 @@
 
 <div class="flag-strip"></div>
 
+<!-- ── TRIAL SCADUTO ── -->
+<div id="trialExpiredScreen" style="display:none;position:fixed;inset:0;z-index:200;
+     background:linear-gradient(145deg,#0a4a25,#009246);
+     display:none;align-items:center;justify-content:center;padding:20px">
+  <div style="background:#fff;border-radius:24px;padding:48px 44px;max-width:520px;
+       width:100%;text-align:center;box-shadow:0 32px 80px rgba(0,0,0,.3)">
+    <div style="font-size:56px;margin-bottom:16px">⏰</div>
+    <h2 style="font-family:'Playfair Display',Georgia,serif;font-size:1.8rem;
+        color:#1a3a5c;margin-bottom:12px">Il tuo account di prova è scaduto</h2>
+    <p style="font-size:.95rem;color:#6b7280;line-height:1.7;margin-bottom:28px">
+      Hai esaurito i 7 giorni di prova gratuita.<br>
+      Per continuare a studiare l'italiano con <strong>Sofia</strong> e <strong>Marco</strong>
+      scegli il piano più adatto a te.
+    </p>
+    <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:28px">
+      <a href="https://italianlearning.angelopagliara.it/registrazione-studente.html?plan=basic"
+         style="display:block;padding:14px;background:#f8faf6;border:2px solid rgba(0,146,70,.2);
+                border-radius:12px;text-decoration:none;transition:all .2s"
+         onmouseover="this.style.borderColor='#009246'" onmouseout="this.style.borderColor='rgba(0,146,70,.2)'">
+        <strong style="color:#1a3a5c;font-size:.95rem">🥉 Piano Basic</strong>
+        <span style="color:#009246;font-weight:700;font-size:.95rem"> — €9,70/mese</span>
+        <span style="color:#6b7280;font-size:.8rem;display:block;margin-top:2px">30 min/giorno · 900 min/mese</span>
+      </a>
+      <a href="https://italianlearning.angelopagliara.it/registrazione-studente.html?plan=advanced"
+         style="display:block;padding:14px;background:#009246;border:2px solid #009246;
+                border-radius:12px;text-decoration:none;position:relative">
+        <span style="position:absolute;top:-10px;left:50%;transform:translateX(-50%);
+              background:#C8900A;color:#fff;font-size:.65rem;font-weight:700;
+              padding:2px 12px;border-radius:100px;white-space:nowrap">⭐ Più scelto</span>
+        <strong style="color:#fff;font-size:.95rem">🥈 Piano Advanced</strong>
+        <span style="color:rgba(255,255,255,.9);font-weight:700;font-size:.95rem"> — €16,70/mese</span>
+        <span style="color:rgba(255,255,255,.7);font-size:.8rem;display:block;margin-top:2px">60 min/giorno · 1.800 min/mese</span>
+      </a>
+      <a href="https://italianlearning.angelopagliara.it/registrazione-studente.html?plan=gold"
+         style="display:block;padding:14px;background:#f8faf6;border:2px solid rgba(0,146,70,.2);
+                border-radius:12px;text-decoration:none;transition:all .2s"
+         onmouseover="this.style.borderColor='#009246'" onmouseout="this.style.borderColor='rgba(0,146,70,.2)'">
+        <strong style="color:#1a3a5c;font-size:.95rem">🥇 Piano Gold</strong>
+        <span style="color:#009246;font-weight:700;font-size:.95rem"> — €27,70/mese</span>
+        <span style="color:#6b7280;font-size:.8rem;display:block;margin-top:2px">120 min/giorno · 3.600 min/mese</span>
+      </a>
+    </div>
+    <p style="font-size:.78rem;color:#9ca3af">
+      Per assistenza: <a href="mailto:training@angelopagliara.it"
+      style="color:#009246;font-weight:600">training@angelopagliara.it</a>
+    </p>
+  </div>
+</div>
+
 <!-- ══ LOGIN ══ -->
 <div id="loginScreen">
     <div class="login-card">
@@ -605,6 +654,14 @@ const api = async (path, opts = {}) => {
     });
     if (!res.ok) {
         const err = await res.json().catch(() => ({ error: 'Errore di rete' }));
+        if (res.status === 403 && err.error === 'trial_expired') {
+            // Mostra pagina scadenza trial mid-session
+            localStorage.removeItem('ital_token');
+            const trialScreen = document.getElementById('trialExpiredScreen');
+            if (trialScreen) trialScreen.style.display = 'flex';
+            const appEl = document.getElementById('app');
+            if (appEl) appEl.classList.remove('visible');
+        }
         throw new Error(err.error || `HTTP ${res.status}`);
     }
     return res.json();
@@ -637,8 +694,15 @@ async function doLogin() {
         localStorage.setItem('ital_token', data.token);
         initApp();
     } catch (err) {
-        errEl.textContent = err.message || 'Credenziali non valide.';
-        errEl.style.display = 'block';
+        if (err.message === 'trial_expired') {
+            // Mostra pagina scadenza trial
+            document.getElementById('loginScreen').style.display = 'none';
+            const trialScreen = document.getElementById('trialExpiredScreen');
+            trialScreen.style.display = 'flex';
+        } else {
+            errEl.textContent = err.message || 'Credenziali non valide.';
+            errEl.style.display = 'block';
+        }
     } finally { btn.disabled = false; btn.textContent = 'Accedi'; }
 }
 
