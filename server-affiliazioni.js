@@ -727,14 +727,14 @@ router.post('/affiliate/trial', affiliateAuth, async (req, res) => {
 
         const { rows: newUser } = await pool.query(
             `INSERT INTO users (name, email, password, role, level, package, affiliate_id, registered_via, subscription_status)
-             VALUES ($1,$2,$3,'student','A1','basic',$4,'trial','trialing') RETURNING id`,
+             VALUES ($1,$2,$3,'student','A1','trial',$4,'trial','trialing') RETURNING id`,
             [client_name, client_email, passwordHash, affId]
         );
         const userId = newUser[0].id;
 
-        // Aggiungi utilizzo giornaliero limitato a 30 min
+        // Trial: 15 minuti/giorno, 105 minuti totali, 7 giorni
         await pool.query(
-            'INSERT INTO trial_accounts (affiliate_id, user_id, client_name, client_email, expires_at, minutes_limit) VALUES ($1,$2,$3,$4,$5,30)',
+            'INSERT INTO trial_accounts (affiliate_id, user_id, client_name, client_email, expires_at, minutes_limit) VALUES ($1,$2,$3,$4,$5,105)',
             [affId, userId, client_name, client_email, expiresAt]
         );
 
@@ -1143,6 +1143,27 @@ router.get('/admin/affiliates/:id/contract', authMiddleware, adminOnly, async (r
 });
 
 // Aggiorna commissione affiliato
+// ── ADMIN: modifica anagrafica Centro Affiliato ─────────────
+router.put('/admin/affiliates/:id/profile', authMiddleware, adminOnly, async (req, res) => {
+    const { organization_name, contact_name, email, phone, address, city,
+            vat_number, pec, codice_sdi, website } = req.body;
+    if (!organization_name || !contact_name || !email)
+        return res.status(400).json({ error: 'Ragione sociale, referente ed email sono obbligatori' });
+    try {
+        const { rows } = await pool.query(
+            `UPDATE affiliates
+             SET organization_name=$1, contact_name=$2, email=$3, phone=$4,
+                 address=$5, city=$6, vat_number=$7, pec=$8, codice_sdi=$9, website=$10
+             WHERE id=$11 RETURNING *`,
+            [organization_name, contact_name, email, phone||null, address||null,
+             city||null, vat_number||null, pec||null, codice_sdi||null, website||null,
+             req.params.id]
+        );
+        if (!rows[0]) return res.status(404).json({ error: 'Centro non trovato' });
+        res.json({ success: true, affiliate: rows[0] });
+    } catch(err) { res.status(500).json({ error: err.message }); }
+});
+
 router.put('/admin/affiliates/:id/commission', authMiddleware, adminOnly, async (req, res) => {
     const { commission_rate } = req.body;
     try {
@@ -2010,6 +2031,34 @@ router.get('/admin/teachers', authMiddleware, adminOnly, async (req, res) => {
 });
 
 // ── ADMIN: approva/disattiva docente ─────────────────────────
+// ── ADMIN: modifica anagrafica Docente ───────────────────────
+router.put('/admin/teachers/:id/profile', authMiddleware, adminOnly, async (req, res) => {
+    const { name, email, phone, bio, photo_url, meet_link, subjects,
+            price_per_hour, affiliate_id } = req.body;
+    if (!name || !email)
+        return res.status(400).json({ error: 'Nome ed email sono obbligatori' });
+    try {
+        const params = [
+            name, email, phone||null, bio||null, photo_url||null,
+            meet_link||null, subjects||null,
+            price_per_hour ? parseFloat(price_per_hour) : null,
+            affiliate_id ? parseInt(affiliate_id) : null,
+            req.params.id
+        ];
+        const { rows } = await pool.query(
+            `UPDATE teachers
+             SET name=$1, email=$2, phone=$3, bio=$4, photo_url=$5,
+                 meet_link=$6, subjects=$7,
+                 price_per_hour = COALESCE($8, price_per_hour),
+                 affiliate_id   = COALESCE($9, affiliate_id)
+             WHERE id=$10 RETURNING *`,
+            params
+        );
+        if (!rows[0]) return res.status(404).json({ error: 'Docente non trovato' });
+        res.json({ success: true, teacher: rows[0] });
+    } catch(err) { res.status(500).json({ error: err.message }); }
+});
+
 router.put('/admin/teachers/:id/approve', authMiddleware, adminOnly, async (req, res) => {
     try {
         const { rows } = await pool.query(
