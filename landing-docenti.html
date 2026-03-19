@@ -636,7 +636,16 @@ async function submitTeacherForm(e) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body)
     });
-    const d = await r.json();
+    // Leggi risposta come testo prima, poi prova a parsare JSON
+    const text = await r.text();
+    let d = {};
+    try { d = JSON.parse(text); } catch(_) {
+      // Il server ha risposto con HTML — probabilmente payload troppo grande
+      if (text.includes('PayloadTooLargeError') || text.includes('request entity too large') || r.status === 413) {
+        throw new Error('Il file CV è troppo grande. Riduci il PDF a meno di 5 MB e riprova.');
+      }
+      throw new Error('Errore del server. Riprova tra qualche momento.');
+    }
     if (!r.ok) throw new Error(d.error || 'Errore del server');
 
     // Successo — mostra messaggio e nascondi form
