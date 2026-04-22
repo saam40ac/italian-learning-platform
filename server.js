@@ -1949,6 +1949,11 @@ app.get('/api/admin/users/:userId/sessions', authenticate, requireAdmin, async (
 // ══════════════════════════════════════════════════════════════
 
 // ── Helper: genera codice breve univoco ─────────────────────
+// IMPORTANTE: i link /s/:code devono sempre puntare al backend Render
+// Il sottodominio italianlearning.angelopagliara.it è statico e non può gestirli
+const DOCSHARE_BASE_URL = process.env.RENDER_EXTERNAL_URL
+    || 'https://italian-learning-platform.onrender.com';
+
 function genDocCode(len = 7) {
     const chars = 'abcdefghijkmnpqrstuvwxyz23456789';
     let code = '';
@@ -2026,7 +2031,7 @@ app.post('/api/docs/links', authenticate, requireAdmin, async (req, res) => {
              file_type||'pdf', affiliate_id||null, req.user.userId,
              expires_at||null, max_opens||null]
         );
-        const feUrl = process.env.FRONTEND_URL || 'https://italian-learning-platform.onrender.com';
+        const feUrl = DOCSHARE_BASE_URL;
         res.json({ link: rows[0], short_url: `${feUrl}/s/${code}` });
     } catch(err) { res.status(500).json({ error: err.message }); }
     finally { client.release(); }
@@ -2047,7 +2052,7 @@ app.get('/api/docs/links', authenticate, requireAdmin, async (req, res) => {
         if (affiliate_id) { q += ' WHERE dl.affiliate_id=$1'; params.push(affiliate_id); }
         q += ' ORDER BY dl.created_at DESC';
         const { rows } = await client.query(q, params);
-        const feUrl = process.env.FRONTEND_URL || 'https://italian-learning-platform.onrender.com';
+        const feUrl = DOCSHARE_BASE_URL;
         res.json({ links: rows.map(r => ({ ...r, short_url: `${feUrl}/s/${r.code}` })) });
     } catch(err) { res.status(500).json({ error: err.message }); }
     finally { client.release(); }
@@ -2079,7 +2084,7 @@ app.put('/api/docs/links/:id', authenticate, requireAdmin, async (req, res) => {
             [label, description, file_url, is_active, expires_at||null, max_opens||null, req.params.id]
         );
         if (!rows[0]) return res.status(404).json({ error: 'Link non trovato' });
-        const feUrl = process.env.FRONTEND_URL || 'https://italian-learning-platform.onrender.com';
+        const feUrl = DOCSHARE_BASE_URL;
         res.json({ link: rows[0], short_url: `${feUrl}/s/${rows[0].code}` });
     } catch(err) { res.status(500).json({ error: err.message }); }
     finally { client.release(); }
@@ -2104,7 +2109,7 @@ app.post('/api/docs/links/:id/send', authenticate, requireAdmin, async (req, res
         const { rows } = await client.query('SELECT * FROM doc_links WHERE id=$1', [req.params.id]);
         if (!rows[0]) return res.status(404).json({ error: 'Link non trovato' });
         const link = rows[0];
-        const feUrl  = process.env.FRONTEND_URL || 'https://italian-learning-platform.onrender.com';
+        const feUrl = DOCSHARE_BASE_URL;
         const shortUrl = `${feUrl}/s/${link.code}`;
         const emailSubject = subject || `📄 Documento: ${link.label} — SAAM 4.0 Academy School`;
         const emailHtml = body_html || `
