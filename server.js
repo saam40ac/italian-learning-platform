@@ -1943,6 +1943,239 @@ app.get('/api/admin/users/:userId/sessions', authenticate, requireAdmin, async (
 });
 
 
+
+// ══════════════════════════════════════════════════════════════
+// DOCSHARE — Gestione Documenti & Link Brevi Tracciabili
+// ══════════════════════════════════════════════════════════════
+
+// ── Helper: genera codice breve univoco ─────────────────────
+function genDocCode(len = 7) {
+    const chars = 'abcdefghijkmnpqrstuvwxyz23456789';
+    let code = '';
+    for (let i = 0; i < len; i++)
+        code += chars[Math.floor(Math.random() * chars.length)];
+    return code;
+}
+
+// ── Redirect pubblico: /s/:code ─────────────────────────────
+app.get('/s/:code', async (req, res) => {
+    const client = await pool.connect();
+    try {
+        const { rows } = await client.query(
+            `SELECT * FROM doc_links WHERE code=$1 AND is_active=true`, [req.params.code]
+        );
+        if (!rows[0]) return res.status(404).send(`
+            <html><body style="font-family:Arial;text-align:center;padding:60px">
+            <h2>🔗 Link non trovato o scaduto</h2>
+            <p>Il documento richiesto non è disponibile.</p>
+            </body></html>`);
+
+        const link = rows[0];
+
+        // Controlla scadenza
+        if (link.expires_at && new Date() > new Date(link.expires_at))
+            return res.status(410).send(`<html><body style="font-family:Arial;text-align:center;padding:60px">
+            <h2>⏰ Link scaduto</h2><p>Questo documento non è più disponibile.</p></body></html>`);
+
+        // Controlla max aperture
+        if (link.max_opens) {
+            const { rows: countRows } = await client.query(
+                `SELECT COUNT(*) FROM doc_events WHERE link_id=$1 AND event_type='open'`, [link.id]
+            );
+            if (parseInt(countRows[0].count) >= link.max_opens)
+                return res.status(410).send(`<html><body style="font-family:Arial;text-align:center;padding:60px">
+                <h2>🚫 Limite aperture raggiunto</h2></body></html>`);
+        }
+
+        // Registra evento apertura
+        const ip = (req.headers['x-forwarded-for'] || req.socket.remoteAddress || '').split(',')[0].trim();
+        await client.query(
+            `INSERT INTO doc_events (link_id, event_type, ip_address, user_agent, referer)
+             VALUES ($1,'open',$2,$3,$4)`,
+            [link.id, ip, req.headers['user-agent'] || null, req.headers['referer'] || null]
+        );
+
+        // Redirect al documento
+        res.redirect(302, link.file_url);
+    } catch(err) {
+        console.error('[DocShare redirect]', err.message);
+        res.status(500).send('Errore server');
+    } finally { client.release(); }
+});
+
+// ── POST /api/docs/links — crea nuovo link breve ─────────────
+app.post('/api/docs/links', authenticate, requireAdmin, async (req, res) => {
+    const { label, description, file_url, file_type, affiliate_id, expires_at, max_opens } = req.body;
+    if (!label || !file_url) return res.status(400).json({ error: 'label e file_url sono obbligatori' });
+    const client = await pool.connect();
+    try {
+        // Genera codice univoco
+        let code, exists = true;
+        let attempts = 0;
+        while (exists && attempts < 10) {
+            code = genDocCode(7);
+            const check = await client.query('SELECT id FROM doc_links WHERE code=$1', [code]);
+            exists = !!check.rows[0];
+            attempts++;
+        }
+        const { rows } = await client.query(
+            `INSERT INTO doc_links (code, label, description, file_url, file_type, affiliate_id,
+             created_by, expires_at, max_opens)
+             VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *`,
+            [code, label, description||null, file_url,
+             file_type||'pdf', affiliate_id||null, req.user.userId,
+             expires_at||null, max_opens||null]
+        );
+        const feUrl = process.env.FRONTEND_URL || 'https://italian-learning-platform.onrender.com';
+        res.json({ link: rows[0], short_url: `${feUrl}/s/${code}` });
+    } catch(err) { res.status(500).json({ error: err.message }); }
+    finally { client.release(); }
+});
+
+// ── GET /api/docs/links — lista tutti i link ─────────────────
+app.get('/api/docs/links', authenticate, requireAdmin, async (req, res) => {
+    const { affiliate_id } = req.query;
+    const client = await pool.connect();
+    try {
+        let q = `SELECT dl.*, a.organization_name AS center_name,
+                    (SELECT COUNT(*) FROM doc_events de WHERE de.link_id=dl.id AND de.event_type='open') AS opens,
+                    (SELECT COUNT(*) FROM doc_email_sends ds WHERE ds.link_id=dl.id) AS emails_sent,
+                    (SELECT MAX(de.created_at) FROM doc_events de WHERE de.link_id=dl.id) AS last_open
+                 FROM doc_links dl
+                 LEFT JOIN affiliates a ON a.id=dl.affiliate_id`;
+        const params = [];
+        if (affiliate_id) { q += ' WHERE dl.affiliate_id=$1'; params.push(affiliate_id); }
+        q += ' ORDER BY dl.created_at DESC';
+        const { rows } = await client.query(q, params);
+        const feUrl = process.env.FRONTEND_URL || 'https://italian-learning-platform.onrender.com';
+        res.json({ links: rows.map(r => ({ ...r, short_url: `${feUrl}/s/${r.code}` })) });
+    } catch(err) { res.status(500).json({ error: err.message }); }
+    finally { client.release(); }
+});
+
+// ── GET /api/docs/links/:id/events — storico eventi ──────────
+app.get('/api/docs/links/:id/events', authenticate, requireAdmin, async (req, res) => {
+    const client = await pool.connect();
+    try {
+        const { rows } = await client.query(
+            `SELECT * FROM doc_events WHERE link_id=$1 ORDER BY created_at DESC LIMIT 200`,
+            [req.params.id]
+        );
+        res.json({ events: rows });
+    } catch(err) { res.status(500).json({ error: err.message }); }
+    finally { client.release(); }
+});
+
+// ── PUT /api/docs/links/:id — modifica link ───────────────────
+app.put('/api/docs/links/:id', authenticate, requireAdmin, async (req, res) => {
+    const { label, description, file_url, is_active, expires_at, max_opens } = req.body;
+    const client = await pool.connect();
+    try {
+        const { rows } = await client.query(
+            `UPDATE doc_links SET label=COALESCE($1,label), description=$2,
+             file_url=COALESCE($3,file_url), is_active=COALESCE($4,is_active),
+             expires_at=$5, max_opens=$6, updated_at=NOW()
+             WHERE id=$7 RETURNING *`,
+            [label, description, file_url, is_active, expires_at||null, max_opens||null, req.params.id]
+        );
+        if (!rows[0]) return res.status(404).json({ error: 'Link non trovato' });
+        const feUrl = process.env.FRONTEND_URL || 'https://italian-learning-platform.onrender.com';
+        res.json({ link: rows[0], short_url: `${feUrl}/s/${rows[0].code}` });
+    } catch(err) { res.status(500).json({ error: err.message }); }
+    finally { client.release(); }
+});
+
+// ── DELETE /api/docs/links/:id ────────────────────────────────
+app.delete('/api/docs/links/:id', authenticate, requireAdmin, async (req, res) => {
+    const client = await pool.connect();
+    try {
+        await client.query('DELETE FROM doc_links WHERE id=$1', [req.params.id]);
+        res.json({ success: true });
+    } catch(err) { res.status(500).json({ error: err.message }); }
+    finally { client.release(); }
+});
+
+// ── POST /api/docs/links/:id/send — invia email con link ─────
+app.post('/api/docs/links/:id/send', authenticate, requireAdmin, async (req, res) => {
+    const { recipient_email, recipient_name, subject, body_html } = req.body;
+    if (!recipient_email) return res.status(400).json({ error: 'recipient_email obbligatoria' });
+    const client = await pool.connect();
+    try {
+        const { rows } = await client.query('SELECT * FROM doc_links WHERE id=$1', [req.params.id]);
+        if (!rows[0]) return res.status(404).json({ error: 'Link non trovato' });
+        const link = rows[0];
+        const feUrl  = process.env.FRONTEND_URL || 'https://italian-learning-platform.onrender.com';
+        const shortUrl = `${feUrl}/s/${link.code}`;
+        const emailSubject = subject || `📄 Documento: ${link.label} — SAAM 4.0 Academy School`;
+        const emailHtml = body_html || `
+            <div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto">
+              <div style="background:#009246;padding:20px 28px;border-radius:10px 10px 0 0">
+                <h2 style="color:#fff;margin:0;font-size:18px">📄 ${link.label}</h2>
+              </div>
+              <div style="padding:24px 28px;background:#fff;border:1px solid #e0e0e0">
+                ${recipient_name ? `<p style="font-size:14px;color:#333">Gentile <strong>${recipient_name}</strong>,</p>` : ''}
+                <p style="font-size:14px;color:#333;margin:12px 0">
+                  Ti inviamo il documento richiesto. Clicca il pulsante qui sotto per aprirlo.
+                </p>
+                ${link.description ? `<p style="font-size:13px;color:#666;margin:8px 0">${link.description}</p>` : ''}
+                <a href="${shortUrl}" style="display:inline-block;background:#009246;color:#fff;padding:13px 28px;
+                   border-radius:8px;text-decoration:none;font-weight:700;font-size:14px;margin:16px 0">
+                  📄 Apri Documento →
+                </a>
+                <p style="font-size:12px;color:#888;margin-top:16px">
+                  Link diretto: <a href="${shortUrl}" style="color:#009246">${shortUrl}</a>
+                </p>
+              </div>
+              <div style="background:#f0f7f2;padding:12px 28px;border-radius:0 0 10px 10px;
+                   font-size:11px;color:#888;text-align:center">
+                SAAM 4.0 Academy School — training@angelopagliara.it
+              </div>
+            </div>`;
+
+        await _brevoSend(
+            [{ email: recipient_email, name: recipient_name || recipient_email }],
+            emailSubject,
+            emailHtml
+        );
+
+        // Registra invio
+        await client.query(
+            `INSERT INTO doc_email_sends (link_id, recipient_email, recipient_name, subject, status, sent_by)
+             VALUES ($1,$2,$3,$4,'sent',$5)`,
+            [link.id, recipient_email, recipient_name||null, emailSubject, req.user.userId]
+        );
+
+        res.json({ success: true, short_url: shortUrl });
+    } catch(err) {
+        // Registra fallimento
+        await client.query(
+            `INSERT INTO doc_email_sends (link_id, recipient_email, recipient_name, subject, status, error_message, sent_by)
+             VALUES ($1,$2,$3,$4,'failed',$5,$6)`,
+            [req.params.id, recipient_email, recipient_name||null, 'Invio fallito', err.message, req.user.userId]
+        ).catch(() => {});
+        res.status(500).json({ error: err.message });
+    } finally { client.release(); }
+});
+
+// ── GET /api/docs/stats — statistiche generali ───────────────
+app.get('/api/docs/stats', authenticate, requireAdmin, async (req, res) => {
+    const client = await pool.connect();
+    try {
+        const [linksR, eventsR, emailsR] = await Promise.all([
+            client.query("SELECT COUNT(*) AS total, COUNT(*) FILTER (WHERE is_active) AS active FROM doc_links"),
+            client.query("SELECT COUNT(*) AS total FROM doc_events WHERE event_type='open'"),
+            client.query("SELECT COUNT(*) AS total FROM doc_email_sends WHERE status='sent'"),
+        ]);
+        res.json({
+            total_links:  parseInt(linksR.rows[0].total),
+            active_links: parseInt(linksR.rows[0].active),
+            total_opens:  parseInt(eventsR.rows[0].total),
+            total_emails: parseInt(emailsR.rows[0].total),
+        });
+    } catch(err) { res.status(500).json({ error: err.message }); }
+    finally { client.release(); }
+});
+
 app.listen(PORT, () => {
     console.log(`🚀 Server running on http://localhost:${PORT}`);
     console.log(`📡 API endpoint: http://localhost:${PORT}/api/chat`);
